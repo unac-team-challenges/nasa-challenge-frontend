@@ -105,6 +105,7 @@ pnpm dev   # abrir /#explorar
 Qué mirar:
 
 - Mover el mouse sobre el mapa: el resaltado es inmediato.
+- En pantalla táctil, tocar un personaje: salta y muestra su dato 4 s.
 - Pasar el puntero sobre una alpaca (Puno), el cóndor (Arequipa) o un pingüino (frente a Paracas): saltan y muestran su dato.
 - En la máquina del tiempo, ningún departamento desaparece bajo el mar.
 - Cambiar el tema y el idioma.
@@ -116,3 +117,9 @@ Qué mirar:
 - **Que la fauna reaccione al dato:** por ejemplo, en un año de El Niño los pelícanos se alejan de la costa.
 - **Botón para ocultar la fauna** si el jurado quiere ver solo los datos.
 - **Revisión de los textos de la fauna** por el equipo.
+
+## Ajustes tras la revisión
+
+- **Táctil:** el dato de la fauna sale al tocar al personaje (antes solo con el puntero encima). Arrastrar con el dedo sigue girando el mapa.
+- **i18n:** los textos de la fauna pasaron de `fauna.ts` a `FAUNA_TEXTOS` en `src/i18n/textos.ts`. Cambiar el idioma con el dato abierto lo actualiza.
+- **Carga tardía:** si el mapa se cierra mientras carga `mundo.png`, la textura se libera.

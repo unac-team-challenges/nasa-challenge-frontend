@@ -341,6 +341,8 @@ export class EscenaPeru {
   private elegir: (e: PointerEvent) => { animal: Animal } | string | null
   private fauna: Fauna
   private animalHover: Animal | null = null
+  private tipTimer = 0
+  private destruida = false
   private tip: HTMLDivElement
   private idioma: 'es' | 'en' = 'es'
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
@@ -477,6 +479,7 @@ export class EscenaPeru {
       ['mapa/mundo2.png', 'uMundo2'],
     ] as const)
       cargador.load(base + archivo, (tx) => {
+        if (this.destruida) return tx.dispose() // el mapa se cerró mientras cargaba
         tx.flipY = false
         tx.minFilter = THREE.LinearMipmapLinearFilter
         tx.anisotropy = Math.min(4, r.capabilities.getMaxAnisotropy())
@@ -622,9 +625,11 @@ export class EscenaPeru {
     }
     // El raycast se hace como mucho una vez por cuadro (el mouse dispara más de 100 eventos/s)
     const mover = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return // al arrastrar con el dedo se gira; el dato sale al tocar
       this.puntero = e
     }
-    const salir = () => {
+    const salir = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return // al soltar el dedo no se cierra el dato
       this.puntero = null
       this.setHover(null)
       this.setAnimal(null)
@@ -638,6 +643,13 @@ export class EscenaPeru {
       abajo = null
       if (movido >= 6) return
       const hit = this.elegir(e)
+      if (e.pointerType === 'touch') {
+        // sin puntero que pase por encima: el dato sale al tocar al personaje y se va a los 4 s
+        clearTimeout(this.tipTimer)
+        const animal = hit && typeof hit !== 'string' ? hit.animal : null
+        this.setAnimal(animal, e.clientX, e.clientY)
+        if (animal) this.tipTimer = window.setTimeout(() => this.setAnimal(null), 4000)
+      }
       if (hit && typeof hit !== 'string') {
         this.fauna.saltar(hit.animal)
         if (this.modo === 'explorar') this.alElegir?.(hit.animal.f.dept)
@@ -780,6 +792,7 @@ export class EscenaPeru {
 
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
+    if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.sucio = true
   }
@@ -898,6 +911,8 @@ export class EscenaPeru {
   }
 
   destruir() {
+    this.destruida = true
+    clearTimeout(this.tipTimer)
     this.renderer.setAnimationLoop(null)
     this.quitarEventos()
     this.observadores.forEach((o) => o.disconnect())

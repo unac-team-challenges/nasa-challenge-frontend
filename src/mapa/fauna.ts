@@ -7,6 +7,7 @@
  * Por cuadro solo se actualizan ~22 matrices.
  */
 import * as THREE from 'three'
+import { FAUNA_TEXTOS, type Idioma } from '../i18n/textos'
 
 type Prim = 'B' | 'S' | 'C' | 'Y'
 /** [primitiva, color, posición, escala, rotación?] */
@@ -27,8 +28,6 @@ interface Ficha {
   at?: number[]
   a?: number[]
   b?: number[]
-  es: [string, string]
-  en: [string, string]
 }
 
 const ESCALA = 0.8
@@ -125,24 +124,24 @@ const ESPECIES: Record<string, () => Pieza[]> = {
 // swim (flota en el mar), glide (planea por la costa), jump (salta en el río), perch (saltitos).
 // Los datos son generales y verificables; revisarlos antes de la demo.
 const FAUNA: Ficha[] = [
-  { especie: 'alpaca', dept: '21', n: 2, kind: 'walk', speed: 0.5, es: ['Alpaca · Puno', 'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.'], en: ['Alpaca · Puno', 'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.'] },
-  { especie: 'vicuna', dept: '05', n: 1, kind: 'walk', speed: 0.8, es: ['Vicuña · Ayacucho', 'Animal nacional: está en el escudo del Perú. La Reserva Pampa Galeras ayudó a salvarla de la extinción.'], en: ['Vicuña · Ayacucho', "National animal, shown on Peru's coat of arms. The Pampa Galeras reserve helped save it from extinction."] },
-  { especie: 'condor', dept: '04', n: 1, kind: 'fly', scale: 0.6, r: 2.6, h: 4.5, w: 0.35, es: ['Cóndor andino · Arequipa', 'Planea sobre el Cañón del Colca aprovechando el aire caliente; sus alas pasan los 3 metros.'], en: ['Andean condor · Arequipa', 'It soars over the Colca Canyon on warm air currents; its wingspan exceeds 3 metres.'] },
-  { especie: 'pastora', dept: '08', n: 1, kind: 'walk', speed: 0.4, es: ['Pastora andina · Cusco', 'Pollera y montera: ropa tradicional de las comunidades quechuas del Cusco.'], en: ['Andean shepherdess · Cusco', "Pollera skirt and montera hat: traditional clothing of Cusco's Quechua communities."] },
-  { especie: 'caballito', dept: '13', n: 1, kind: 'swim', at: [-79.35, -8.12], es: ['Caballito de totora · La Libertad', 'Los pescadores de Huanchaco usan estas balsas de junco desde tiempos preincas.'], en: ['Reed boat · La Libertad', "Huanchaco's fishermen have used these reed boats since pre-Inca times."] },
-  { especie: 'agricultor', dept: '11', n: 1, kind: 'walk', speed: 0.35, es: ['Agricultor · Ica', 'El riego convierte el desierto de Ica en viñedos para el pisco y campos de espárragos.'], en: ['Farmer · Ica', "Irrigation turns Ica's desert into vineyards for pisco and asparagus fields."] },
-  { especie: 'pinguino', dept: '11', n: 3, kind: 'swim', at: [-76.55, -13.85], es: ['Pingüino de Humboldt · Ica', 'Vive en las islas Ballestas, en el agua fría de la corriente de Humboldt. Es una especie vulnerable.'], en: ['Humboldt penguin · Ica', 'It lives on the Ballestas Islands, in the cold Humboldt Current. It is a vulnerable species.'] },
-  { especie: 'lobo', dept: '07', n: 2, kind: 'swim', at: [-77.35, -12.12], es: ['Lobo marino · Callao', 'Forma colonias en las islas Palomino, frente al Callao.'], en: ['Sea lion · Callao', 'It forms colonies on the Palomino Islands, off Callao.'] },
-  { especie: 'pelicano', dept: '20', n: 2, kind: 'glide', scale: 0.6, a: [-81.7, -5.6], b: [-79.6, -10.2], es: ['Pelícano peruano · costa norte', 'Pesca anchoveta en el mar frío de la corriente de Humboldt.'], en: ['Peruvian pelican · north coast', 'It fishes for anchovy in the cold Humboldt Current.'] },
-  { especie: 'delfin', dept: '16', n: 1, kind: 'jump', es: ['Delfín rosado · Loreto', 'Vive en los ríos amazónicos, como los de la Reserva Pacaya Samiria.'], en: ['Pink river dolphin · Loreto', 'It lives in Amazonian rivers, such as those of the Pacaya Samiria reserve.'] },
-  { especie: 'guacamayo', dept: '17', n: 2, kind: 'fly', scale: 0.75, r: 1.8, h: 2.8, w: 0.9, flap: true, es: ['Guacamayo escarlata · Madre de Dios', 'Cientos se reúnen en las collpas, paredes de arcilla junto a los ríos de Tambopata.'], en: ['Scarlet macaw · Madre de Dios', "Hundreds gather at the clay licks along Tambopata's rivers."] },
-  { especie: 'jaguar', dept: '25', n: 1, kind: 'walk', speed: 0.7, es: ['Jaguar · Ucayali', 'El felino más grande de América vive en la selva amazónica.'], en: ['Jaguar · Ucayali', 'The largest cat in the Americas lives in the Amazon rainforest.'] },
-  { especie: 'gallito', dept: '22', n: 1, kind: 'perch', es: ['Gallito de las rocas · San Martín', 'Ave nacional del Perú; vive en los bosques nublados.'], en: ['Andean cock-of-the-rock · San Martín', "Peru's national bird; it lives in cloud forests."] },
-  { especie: 'mono', dept: '01', n: 1, kind: 'perch', es: ['Mono choro de cola amarilla · Amazonas', 'Solo existe en el Perú y está en peligro crítico de extinción.'], en: ['Yellow-tailed woolly monkey · Amazonas', 'Found only in Peru and critically endangered.'] },
-  { especie: 'oso', dept: '06', n: 1, kind: 'walk', speed: 0.35, es: ['Oso de anteojos · Cajamarca', 'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.'], en: ['Spectacled bear · Cajamarca', "South America's only bear; its pale face markings differ in every individual."] },
-  { especie: 'cocodrilo', dept: '24', n: 1, kind: 'walk', speed: 0.2, es: ['Cocodrilo americano · Tumbes', 'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.'], en: ['American crocodile · Tumbes', "Peru's only crocodile lives in Tumbes' mangroves and rivers."] },
-  { especie: 'caballo', dept: '15', n: 1, kind: 'walk', speed: 0.6, es: ['Caballo peruano de paso · Lima', 'Su andar suave, el «paso llano», es patrimonio cultural de la nación.'], en: ['Peruvian Paso horse · Lima', "Its smooth gait, the 'paso llano', is part of Peru's national heritage."] }
-];
+  { especie: 'alpaca', dept: '21', n: 2, kind: 'walk', speed: 0.5 },
+  { especie: 'vicuna', dept: '05', n: 1, kind: 'walk', speed: 0.8 },
+  { especie: 'condor', dept: '04', n: 1, kind: 'fly', scale: 0.6, r: 2.6, h: 4.5, w: 0.35 },
+  { especie: 'pastora', dept: '08', n: 1, kind: 'walk', speed: 0.4 },
+  { especie: 'caballito', dept: '13', n: 1, kind: 'swim', at: [-79.35, -8.12] },
+  { especie: 'agricultor', dept: '11', n: 1, kind: 'walk', speed: 0.35 },
+  { especie: 'pinguino', dept: '11', n: 3, kind: 'swim', at: [-76.55, -13.85] },
+  { especie: 'lobo', dept: '07', n: 2, kind: 'swim', at: [-77.35, -12.12] },
+  { especie: 'pelicano', dept: '20', n: 2, kind: 'glide', scale: 0.6, a: [-81.7, -5.6], b: [-79.6, -10.2] },
+  { especie: 'delfin', dept: '16', n: 1, kind: 'jump' },
+  { especie: 'guacamayo', dept: '17', n: 2, kind: 'fly', scale: 0.75, r: 1.8, h: 2.8, w: 0.9, flap: true },
+  { especie: 'jaguar', dept: '25', n: 1, kind: 'walk', speed: 0.7 },
+  { especie: 'gallito', dept: '22', n: 1, kind: 'perch' },
+  { especie: 'mono', dept: '01', n: 1, kind: 'perch' },
+  { especie: 'oso', dept: '06', n: 1, kind: 'walk', speed: 0.35 },
+  { especie: 'cocodrilo', dept: '24', n: 1, kind: 'walk', speed: 0.2 },
+  { especie: 'caballo', dept: '15', n: 1, kind: 'walk', speed: 0.6 },
+]
 
 interface Animal {
   f: Ficha
@@ -341,8 +340,8 @@ export class Fauna {
     a.salto = 1
   }
 
-  texto(a: Animal, idioma: 'es' | 'en') {
-    const [nombre, dato] = a.f[idioma]
+  texto(a: Animal, idioma: Idioma) {
+    const [nombre, dato] = FAUNA_TEXTOS[idioma][a.f.especie]
     return `${nombre}: ${dato}`
   }
 

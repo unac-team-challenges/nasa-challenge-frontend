@@ -33,7 +33,6 @@ const es = {
   sample: 'Prototipo con datos de ejemplo',
   heroCap: 'Arrastra para girar el Perú. Altura: cambio de la lluvia por década, 2000–2025.',
   ocean: 'Océano Pacífico',
-  sinWebgl: 'Tu navegador no puede mostrar el mapa en 3D. Pronto verás aquí la versión en 2D.',
   mapaAria: 'Mapa del Perú en 3D: cada departamento sube o se hunde según cuánto cambió la lluvia',
   // Explorador
   explorador: 'Explorador',
@@ -121,6 +120,12 @@ const es = {
     ndvi: 'Verás cuánto cambió su vegetación desde el año 2000 y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   emptyCase: 'Abrir el Expediente 1',
+  // Mapa 2D
+  vistaMapa: 'Vista del mapa',
+  mapa2dAria: 'Mapa del Perú en 2D',
+  noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
+  tipVal: (nombre: string, v: string, u: string, estado: string) =>
+    `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,
 }
 
 type Textos = typeof es
@@ -152,7 +157,6 @@ const en: Textos = {
   sample: 'Prototype with sample data',
   heroCap: 'Drag to turn Peru. Height: rainfall change per decade, 2000–2025.',
   ocean: 'Pacific Ocean',
-  sinWebgl: 'Your browser cannot show the 3D map. The 2D version will appear here soon.',
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much rainfall changed',
   explorador: 'Explorer',
   mapH: { lluvia: 'Annual rainfall', ndvi: 'Vegetation (NDVI)' },
@@ -240,6 +244,10 @@ const en: Textos = {
     ndvi: "You'll see how much its vegetation changed since 2000 and whether the change is real or chance.",
   },
   emptyCase: 'Open Case file 1',
+  vistaMapa: 'Map view',
+  mapa2dAria: 'Map of Peru in 2D',
+  noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
+  tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,
 }
 
 export const TEXTOS: Record<Idioma, Textos> = { es, en }

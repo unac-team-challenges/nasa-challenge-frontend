@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { TEXTOS } from '../i18n/textos'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
-import { EscenaPeru, hayWebgl, type ModoMapa } from './escena'
+import { EscenaPeru, type ModoMapa } from './escena'
+import { Mapa2D } from './Mapa2D'
 
 interface Props {
   modo: ModoMapa
@@ -12,13 +13,12 @@ interface Props {
   alGirar?: (girando: boolean) => void
 }
 
-/** Mapa del Perú en 3D. Si no hay WebGL, muestra un aviso (el mapa 2D llega en otro PR). */
+/** Mapa del Perú en 3D. Si no hay WebGL, muestra el mapa 2D con los mismos datos. */
 export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const [conWebgl] = useState(hayWebgl)
-  const { idioma, variable, tema, sel } = useApp()
+  const { idioma, variable, tema, sel, conWebgl } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const alGirarRef = useRef(alGirar)
@@ -69,13 +69,7 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
     escena.current?.setTextoOceano(t.ocean)
   }, [t.ocean])
 
-  if (!conWebgl) {
-    return (
-      <div className="absolute inset-0 grid place-items-center p-6 text-center text-muted">
-        <p className="max-w-80">{t.sinWebgl}</p>
-      </div>
-    )
-  }
+  if (!conWebgl) return <Mapa2D interactivo={modo === 'explorar'} />
   return (
     <div ref={contenedor} className="absolute inset-0" role="img" aria-label={t.mapaAria}>
       <div

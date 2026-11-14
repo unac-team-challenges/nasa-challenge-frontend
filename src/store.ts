@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Variable } from './data/ejemplo'
 import type { Idioma, Perfil } from './i18n/textos'
+import { hayWebgl } from './lib/webgl'
 
 export type Tema = 'claro' | 'oscuro'
 
@@ -16,6 +17,9 @@ function temaDelSistema(): Tema {
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro'
 }
 
+export type ModoVista = '3d' | '2d'
+const GL = hayWebgl()
+
 interface EstadoApp {
   idioma: Idioma
   perfil: Perfil
@@ -28,6 +32,10 @@ interface EstadoApp {
   informeMin: boolean
   /** null = sigue al sistema */
   tema: Tema | null
+  /** El navegador puede dibujar 3D (WebGL) */
+  conWebgl: boolean
+  modoMapa: ModoVista
+  setModoMapa: (m: ModoVista) => void
   setIdioma: (i: Idioma) => void
   setPerfil: (p: Perfil) => void
   setVariable: (v: Variable) => void
@@ -45,6 +53,10 @@ export const useApp = create<EstadoApp>((set, get) => ({
   sel: null,
   informeMin: true,
   tema: null,
+  conWebgl: GL,
+  modoMapa: GL ? '3d' : '2d',
+  // Sin WebGL, el 2D es la única vista posible
+  setModoMapa: (modoMapa) => set({ modoMapa: GL ? modoMapa : '2d' }),
   setIdioma: (idioma) => set({ idioma }),
   setPerfil: (perfil) => set({ perfil }),
   setVariable: (variable) => set({ variable, sinNino: false }),

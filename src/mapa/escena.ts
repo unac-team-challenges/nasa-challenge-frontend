@@ -35,15 +35,6 @@ const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
 
-export function hayWebgl(): boolean {
-  try {
-    const c = document.createElement('canvas')
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')))
-  } catch {
-    return false
-  }
-}
-
 interface DatosMalla {
   id: string
   h: number

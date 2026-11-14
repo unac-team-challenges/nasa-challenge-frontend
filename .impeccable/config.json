@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/Ficha.tsx"
+        ],
+        "createdAt": "2026-11-14T19:11:45.690Z",
+        "reason": "Diseño del prototipo v2 aprobado por el equipo (v18 en CLAUDE.md): el borde izquierdo del veredicto lleva el color de dirección del dato (azul/ocre/verde), no es decorativo"
+      }
+    ]
+  }
+}

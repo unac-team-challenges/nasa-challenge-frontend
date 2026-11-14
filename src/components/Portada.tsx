@@ -58,7 +58,7 @@ export function Portada() {
           </div>
         </div>
         <div className="relative order-first min-h-100 overflow-hidden rounded-l border border-line min-[901px]:order-none min-[901px]:min-h-105">
-          <Mapa3D />
+          <Mapa3D modo="inicio" />
           <p className="pointer-events-none absolute right-4 bottom-3.5 left-4 z-[2] m-0 text-[13px] text-muted">
             {t.heroCap}
           </p>

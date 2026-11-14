@@ -1,10 +1,19 @@
-import { TEXTOS } from '../i18n/textos'
+import type { Variable } from '../data/ejemplo'
+import { ORDEN_PERFILES, TEXTOS, type Perfil } from '../i18n/textos'
 import { useApp } from '../store'
 
-/** Barra superior: marca, idioma y tema. Variable, perfil y expedientes llegan con el explorador. */
+/**
+ * Barra superior: marca, variable, perfil, idioma y tema.
+ * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
+ * Pendiente: el menú de expedientes.
+ */
 export function Cabecera() {
-  const { idioma, setIdioma, alternarTema } = useApp()
+  const { idioma, setIdioma, alternarTema, variable, setVariable, perfil, setPerfil } = useApp()
   const t = TEXTOS[idioma]
+  const variables: [Variable, string][] = [
+    ['lluvia', t.varRain],
+    ['ndvi', t.varVeg],
+  ]
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4.5 gap-y-2.5 border-b border-line bg-panel px-4 py-2.5">
       <a
@@ -29,6 +38,42 @@ export function Cabecera() {
         </svg>
         <b className="font-display text-base font-bold tracking-display sm:text-lg">{t.marca}</b>
       </a>
+      <div className="order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-0 min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
+        <div
+          className="inline-flex flex-none overflow-hidden rounded-s border border-line-2"
+          role="group"
+          aria-label={t.variableLbl}
+        >
+          {variables.map(([v, nombre]) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={variable === v}
+              onClick={() => setVariable(v)}
+              className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm ${
+                variable === v ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
+              }`}
+            >
+              {nombre}
+            </button>
+          ))}
+        </div>
+        <label className="sr-only" htmlFor="perfil">
+          {t.perfilLbl}
+        </label>
+        <select
+          id="perfil"
+          value={perfil}
+          onChange={(e) => setPerfil(e.target.value as Perfil)}
+          className="min-h-10 flex-none cursor-pointer rounded-s border border-line-2 bg-panel pr-2 pl-3.5 text-sm hover:border-fg"
+        >
+          {ORDEN_PERFILES.map((p) => (
+            <option key={p} value={p}>
+              {t.perfiles[p][0]}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="flex items-center gap-2">
         <button
           type="button"

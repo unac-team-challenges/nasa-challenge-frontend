@@ -13,8 +13,11 @@ import { cssVar, esTemaClaro, hexMix } from '../lib/color'
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
 
+export type ModoMapa = 'inicio' | 'explorar'
+
 const PISO = 2.2
 const ALTURA_MAX = 3.2
+const ELEVA_SEL = 0.35
 const LON0 = -75.0
 const LAT0 = -9.2
 const K = 2.2
@@ -24,9 +27,13 @@ const LUZ = Math.PI
 /** Zonas con etiqueta flotante. */
 const CLAVE = ['24', '20', '15', '21', '16', '08']
 const DESPLAZA_ETIQUETA: Record<string, number> = { '24': -30 } // Tumbes queda pegado a Piura
-const VISTA_INICIO = { pos: [8, 29, 66], tgt: [0, -1, 5] }
+const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
+  inicio: { pos: [8, 29, 66], tgt: [0, -1, 5] },
+  explorar: { pos: [0, 44, 34], tgt: [0, 0, 1] },
+}
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const celular = () => matchMedia('(max-width: 900px)').matches
 
 export function hayWebgl(): boolean {
   try {
@@ -46,6 +53,15 @@ interface DatosMalla {
 }
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
+}
+
+export interface OpcionesEscena {
+  oceano: string
+  modo: ModoMapa
+  /** Se llama al tocar un departamento (solo en el explorador). */
+  alElegir?: (id: string) => void
+  /** Se llama cuando cambia el giro automático. */
+  alGirar?: (girando: boolean) => void
 }
 
 const proyectar = ([lon, lat]: number[]) =>
@@ -115,10 +131,10 @@ function lienzoCurvas(size: number, fondo: string, linea: string, alfa: number, 
     g.beginPath()
     for (let j = 0; j < N; j++)
       for (let i = 0; i < N; i++) {
-        const a = F[j][i],
-          b = F[j][i + 1],
-          cc = F[j + 1][i + 1],
-          d = F[j + 1][i]
+        const a = F[j][i]
+        const b = F[j][i + 1]
+        const cc = F[j + 1][i + 1]
+        const d = F[j + 1][i]
         const idx = (a > L ? 8 : 0) | (b > L ? 4 : 0) | (cc > L ? 2 : 0) | (d > L ? 1 : 0)
         const segs = SEG[idx]
         if (!segs) continue
@@ -177,6 +193,15 @@ function texturaRayada(hex: string) {
   return tx
 }
 
+interface Vuelo {
+  p0: THREE.Vector3
+  t0: THREE.Vector3
+  p1: THREE.Vector3
+  t1: THREE.Vector3
+  inicio: number
+  dur: number
+}
+
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -191,10 +216,13 @@ export class EscenaPeru {
   private zonas: Record<string, Zona> = {}
   private variable: Variable = 'lluvia'
   private hover: string | null = null
+  private sel: string | null = null
+  private vuelo: Vuelo | null = null
   private fueraDePantalla = false
   private ancho = 1
   private alto = 1
   private etiquetas: { id: string; el: HTMLDivElement }[] = []
+  private etiquetaSel: HTMLDivElement
   private etiquetaOceano: HTMLDivElement
   private v3 = new THREE.Vector3()
   private perf = { n: 0, suma: 0, ultimo: 0, listo: false }
@@ -202,10 +230,17 @@ export class EscenaPeru {
   private quitarEventos: () => void
   private contenedor: HTMLElement
   private capaEtiquetas: HTMLElement
+  private modo: ModoMapa
+  private alElegir?: (id: string) => void
+  private alGirar?: (girando: boolean) => void
 
-  constructor(contenedor: HTMLElement, capaEtiquetas: HTMLElement, textoOceano: string) {
+  constructor(contenedor: HTMLElement, capaEtiquetas: HTMLElement, op: OpcionesEscena) {
     this.contenedor = contenedor
     this.capaEtiquetas = capaEtiquetas
+    this.modo = op.modo
+    this.alElegir = op.alElegir
+    this.alGirar = op.alGirar
+
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     r.outputColorSpace = THREE.LinearSRGBColorSpace
     r.setPixelRatio(Math.min(devicePixelRatio, 1.5))
@@ -295,18 +330,19 @@ export class EscenaPeru {
     for (const m of this.mallas)
       m.userData.centro = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()).setY(0)
 
-    // Etiquetas flotantes (capa HTML encima del lienzo)
+    // Etiquetas flotantes (capa HTML encima del lienzo; texto, nunca HTML)
     capaEtiquetas.replaceChildren()
-    for (const id of CLAVE) {
+    const nuevaEtiqueta = (clase: string) => {
       const el = document.createElement('div')
-      el.className = 'lbl3d'
+      el.className = clase
       capaEtiquetas.appendChild(el)
-      this.etiquetas.push({ id, el })
+      return el
     }
-    this.etiquetaOceano = document.createElement('div')
-    this.etiquetaOceano.className = 'lbl3d ocean'
-    this.etiquetaOceano.textContent = textoOceano
-    capaEtiquetas.appendChild(this.etiquetaOceano)
+    for (const id of CLAVE) this.etiquetas.push({ id, el: nuevaEtiqueta('lbl3d') })
+    this.etiquetaSel = nuevaEtiqueta('lbl3d sel')
+    this.etiquetaSel.hidden = true
+    this.etiquetaOceano = nuevaEtiqueta('lbl3d ocean')
+    this.etiquetaOceano.textContent = op.oceano
 
     const ro = new ResizeObserver(() => this.redimensionar())
     ro.observe(contenedor)
@@ -317,9 +353,10 @@ export class EscenaPeru {
     this.observadores.push(ro, io)
     this.redimensionar()
 
-    // Pasar el puntero resalta el departamento
+    // Puntero: resaltar al pasar y elegir con un toque (sin arrastrar)
     const rayo = new THREE.Raycaster()
     const ptr = new THREE.Vector2()
+    let abajo: [number, number] | null = null
     const elegir = (e: PointerEvent) => {
       const b = r.domElement.getBoundingClientRect()
       ptr.set(((e.clientX - b.left) / b.width) * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1)
@@ -331,21 +368,43 @@ export class EscenaPeru {
       const id = elegir(e)
       if (id === this.hover) return
       this.hover = id
-      r.domElement.style.cursor = id ? 'pointer' : ''
+      r.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
       this.pintar()
     }
     const salir = () => {
       this.hover = null
       this.pintar()
     }
+    const bajar = (e: PointerEvent) => {
+      abajo = [e.clientX, e.clientY]
+    }
+    const subir = (e: PointerEvent) => {
+      if (!abajo) return
+      const movido = Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1])
+      abajo = null
+      if (movido < 6 && this.modo === 'explorar') {
+        const id = elegir(e)
+        if (id) this.alElegir?.(id)
+      }
+    }
+    const alEmpezar = () => {
+      this.vuelo = null
+      if (this.modo === 'explorar' && this.controles.autoRotate) this.setGiro(false)
+    }
     r.domElement.addEventListener('pointermove', mover)
     r.domElement.addEventListener('pointerleave', salir)
+    r.domElement.addEventListener('pointerdown', bajar)
+    r.domElement.addEventListener('pointerup', subir)
+    c.addEventListener('start', alEmpezar)
     this.quitarEventos = () => {
       r.domElement.removeEventListener('pointermove', mover)
       r.domElement.removeEventListener('pointerleave', salir)
+      r.domElement.removeEventListener('pointerdown', bajar)
+      r.domElement.removeEventListener('pointerup', subir)
+      c.removeEventListener('start', alEmpezar)
     }
 
-    this.vistaInicio()
+    this.vista(true)
     r.setAnimationLoop((t) => this.cuadro(t))
   }
 
@@ -356,6 +415,16 @@ export class EscenaPeru {
     this.pintar()
     this.alturas(instantaneo)
     this.textosEtiquetas()
+  }
+
+  /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
+  seleccionar(id: string | null, volar: boolean) {
+    const antes = this.sel
+    this.sel = id
+    this.pintar()
+    this.textosEtiquetas()
+    if (id && volar && id !== antes) this.volarA(id)
+    else if (id) this.setGiro(false)
   }
 
   /** Relee los tokens del tema (claro/oscuro) y repinta. */
@@ -391,6 +460,27 @@ export class EscenaPeru {
     this.pintar()
   }
 
+  setTextoOceano(t: string) {
+    this.etiquetaOceano.textContent = t
+  }
+
+  /** Activa o pausa el giro automático. */
+  setGiro(girando: boolean) {
+    const v = girando && !reducido()
+    if (this.controles.autoRotate === v) return
+    this.controles.autoRotate = v
+    this.alGirar?.(v)
+  }
+
+  alternarGiro() {
+    this.setGiro(!this.controles.autoRotate)
+  }
+
+  /** Vuelve a la vista inicial del modo actual. */
+  recentrar() {
+    this.vista(false)
+  }
+
   destruir() {
     this.renderer.setAnimationLoop(null)
     this.quitarEventos()
@@ -417,6 +507,7 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
+    const acento = cssVar('--accent')
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -438,12 +529,13 @@ export class EscenaPeru {
         mat.transparent = true
         mat.opacity = 0.16
       }
-      if (m.userData.id === this.hover) mat.emissive.set(cssVar('--accent')).multiplyScalar(0.18)
+      if (m.userData.id === this.hover) mat.emissive.set(acento).multiplyScalar(0.18)
       mat.needsUpdate = true
       const pocos = d.status === 'pocos_datos'
+      const elegida = m.userData.id === this.sel
       for (const l of m.userData.contorno.children) {
         const lm = (l as THREE.Line).material as THREE.LineDashedMaterial
-        lm.color.set(cssVar(pocos ? '--muted' : '--bg'))
+        lm.color.set(elegida ? acento : cssVar(pocos ? '--muted' : '--bg'))
         lm.dashSize = pocos ? 0.35 : 1
         lm.gapSize = pocos ? 0.25 : 0.0001
         lm.needsUpdate = true
@@ -466,20 +558,23 @@ export class EscenaPeru {
     this.renderer.shadowMap.needsUpdate = true
   }
 
-  private textosEtiquetas() {
-    for (const L of this.etiquetas) {
-      const d = this.zonas[L.id]
-      if (!d) continue
-      const v = d.status === 'pocos_datos' ? '—' : this.formatear(d.slope_per_decade)
-      L.el.replaceChildren(NOMBRE[L.id])
-      const small = document.createElement('small')
-      small.textContent = v
-      L.el.appendChild(small)
-    }
+  private texto(el: HTMLElement, id: string) {
+    const d = this.zonas[id]
+    if (!d) return
+    const v = d.status === 'pocos_datos' ? '—' : this.formatear(d.slope_per_decade)
+    const small = document.createElement('small')
+    small.textContent = v
+    el.replaceChildren(NOMBRE[id], small)
   }
 
-  setTextoOceano(t: string) {
-    this.etiquetaOceano.textContent = t
+  private textosEtiquetas() {
+    for (const L of this.etiquetas) {
+      this.texto(L.el, L.id)
+      L.el.classList.toggle('sel', L.id === this.sel)
+    }
+    const aparte = !!this.sel && !CLAVE.includes(this.sel)
+    this.etiquetaSel.hidden = !aparte
+    if (aparte && this.sel) this.texto(this.etiquetaSel, this.sel)
   }
 
   private formatear(v: number) {
@@ -489,13 +584,45 @@ export class EscenaPeru {
       : signo + Math.round(Math.abs(v)) + ' mm'
   }
 
-  private vistaInicio() {
-    const v = VISTA_INICIO
-    const k = this.camara.aspect >= 1 ? 1 : 1.05
-    this.camara.position.set(v.pos[0] * k, v.pos[1] * k, v.pos[2] * k)
-    this.controles.target.set(v.tgt[0], v.tgt[1], v.tgt[2])
-    this.controles.update()
-    this.controles.autoRotate = !reducido()
+  private vista(instantaneo: boolean) {
+    const v = VISTAS[this.modo]
+    const a = this.camara.aspect
+    // En pantallas angostas, la cámara se aleja para que el Perú entre completo (v12)
+    const k = a >= 1 ? 1 : this.modo === 'inicio' ? 1.05 : a < 0.85 ? 1.6 : 1.35
+    this.volarCamara(
+      new THREE.Vector3(v.pos[0] * k, v.pos[1] * k, v.pos[2] * k),
+      new THREE.Vector3(v.tgt[0], v.tgt[1], v.tgt[2]),
+      instantaneo,
+    )
+    // Gira en la portada y en el explorador mientras no haya zona elegida
+    this.setGiro(this.modo === 'inicio' || !this.sel)
+  }
+
+  private volarA(id: string) {
+    const m = this.mallas.find((x) => x.userData.id === id)
+    if (!m) return
+    const c = m.userData.centro.clone()
+    const k = this.camara.aspect < 1 ? 1.3 : 1
+    this.volarCamara(c.clone().add(new THREE.Vector3(0, 38 * k, 30 * k)), c, false)
+    this.setGiro(false)
+  }
+
+  private volarCamara(pos: THREE.Vector3, tgt: THREE.Vector3, instantaneo: boolean) {
+    if (instantaneo || reducido()) {
+      this.camara.position.copy(pos)
+      this.controles.target.copy(tgt)
+      this.controles.update()
+      this.vuelo = null
+      return
+    }
+    this.vuelo = {
+      p0: this.camara.position.clone(),
+      t0: this.controles.target.clone(),
+      p1: pos,
+      t1: tgt,
+      inicio: performance.now(),
+      dur: 1100,
+    }
   }
 
   private redimensionar() {
@@ -534,12 +661,22 @@ export class EscenaPeru {
 
   private cuadro(t: number) {
     this.vigilarRendimiento(t)
+    if (this.vuelo) {
+      const v = this.vuelo
+      const k = Math.min(1, (t - v.inicio) / v.dur)
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2
+      this.camara.position.lerpVectors(v.p0, v.p1, e)
+      this.controles.target.lerpVectors(v.t0, v.t1, e)
+      if (k >= 1) this.vuelo = null
+    }
     let moviendo = false
     for (const m of this.mallas) {
       const dh = m.userData.objetivo - m.userData.h
-      if (Math.abs(dh) > 0.002) moviendo = true
+      const dz = -PISO + (m.userData.id === this.sel ? ELEVA_SEL : 0) - m.position.z
+      if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) moviendo = true
       m.userData.h += dh * 0.12
       m.scale.z = m.userData.h
+      m.position.z += dz * 0.2
     }
     if (moviendo) this.renderer.shadowMap.needsUpdate = true
     this.controles.update()
@@ -561,11 +698,12 @@ export class EscenaPeru {
 
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
-    const apretado = matchMedia('(max-width: 900px)').matches
+    const apretado = celular() && this.modo === 'inicio'
+    const malla = (id: string) => this.mallas.find((x) => x.userData.id === id)
     for (const L of this.etiquetas) {
       if (L.el.hidden !== apretado) L.el.hidden = apretado
       if (apretado) continue
-      const m = this.mallas.find((x) => x.userData.id === L.id)!
+      const m = malla(L.id)!
       this.ubicarEtiqueta(
         L.el,
         m.userData.centro.x,
@@ -574,7 +712,17 @@ export class EscenaPeru {
         DESPLAZA_ETIQUETA[L.id],
       )
     }
-    const lima = this.mallas.find((x) => x.userData.id === '15')
+    if (this.sel && !CLAVE.includes(this.sel) && !apretado) {
+      const m = malla(this.sel)
+      if (m)
+        this.ubicarEtiqueta(
+          this.etiquetaSel,
+          m.userData.centro.x,
+          m.position.z + m.scale.z + 0.4,
+          m.userData.centro.z,
+        )
+    }
+    const lima = malla('15')
     if (lima)
       this.ubicarEtiqueta(
         this.etiquetaOceano,

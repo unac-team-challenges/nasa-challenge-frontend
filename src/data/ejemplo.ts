@@ -124,8 +124,40 @@ const POCOS: Record<Variable, Record<string, number>> = {
   lluvia: { '07': 9, '18': 8 },
   ndvi: { '07': 8 },
 }
-const ANIOS_NINO = [2016, 2017, 2023]
+export const ANIOS_NINO = [2016, 2017, 2023]
 export const ANIO_INICIO = 2000
+/** Zonas probadas en la corrección de Benjamini-Hochberg (las que tienen 10 años o más). */
+export function zonasProbadas(zonas: Record<string, Zona>) {
+  return Object.values(zonas).filter((z) => z.n_years >= 10).length
+}
+export type Region = 'costa' | 'sierra' | 'selva'
+export const REGION: Record<string, Region> = {
+  '04': 'costa',
+  '07': 'costa',
+  '11': 'costa',
+  '13': 'costa',
+  '14': 'costa',
+  '15': 'costa',
+  '18': 'costa',
+  '20': 'costa',
+  '23': 'costa',
+  '24': 'costa',
+  '02': 'sierra',
+  '03': 'sierra',
+  '05': 'sierra',
+  '06': 'sierra',
+  '08': 'sierra',
+  '09': 'sierra',
+  '10': 'sierra',
+  '12': 'sierra',
+  '19': 'sierra',
+  '21': 'sierra',
+  '01': 'selva',
+  '16': 'selva',
+  '17': 'selva',
+  '22': 'selva',
+  '25': 'selva',
+}
 export const ANIO_FIN = 2025
 
 function ruido(id: string, y: number) {
@@ -172,9 +204,10 @@ export function calcularZonas(variable: Variable, sinNino = false): Record<strin
 }
 
 /** Serie anual de ejemplo de una zona. */
-export function serie(id: string, variable: Variable): { y: number; v: number }[] {
+export function serie(id: string, variable: Variable, sinNino = false): { y: number; v: number }[] {
   const pts: { y: number; v: number }[] = []
   for (let y = ANIO_INICIO; y <= ANIO_FIN; y++) {
+    if (sinNino && variable === 'lluvia' && ANIOS_NINO.includes(y)) continue
     let v: number
     if (variable === 'ndvi') {
       const [base, slope] = NDVI[id]

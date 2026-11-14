@@ -1,18 +1,25 @@
 import { useEffect } from 'react'
 import { Cabecera } from './components/Cabecera'
+import { Explorador } from './components/Explorador'
 import { Portada } from './components/Portada'
+import { useRuta } from './lib/ruta'
 import { useApp } from './store'
 
 export default function App() {
   const idioma = useApp((s) => s.idioma)
+  const ruta = useRuta()
   useEffect(() => {
     document.documentElement.lang = idioma
   }, [idioma])
+  useEffect(() => {
+    scrollTo(0, 0)
+  }, [ruta])
 
   return (
-    <div className="flex min-h-full flex-col">
+    // En escritorio el explorador ocupa justo la pantalla (el informe se desplaza por dentro)
+    <div className={`flex min-h-full flex-col ${ruta === 'explorar' ? 'min-[901px]:h-full' : ''}`}>
       <Cabecera />
-      <Portada />
+      {ruta === 'explorar' ? <Explorador /> : <Portada />}
     </div>
   )
 }

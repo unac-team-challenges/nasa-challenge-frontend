@@ -32,6 +32,7 @@
   --sea: #c7d1d4;
   --plane: #4b5e68;
   --shadow: rgba(26, 42, 51, 0.1);
+  --nino: #ebdfbe;
   color-scheme: light;
 }
 
@@ -60,6 +61,7 @@
     --sea: #0b161e;
     --plane: #e7eef0;
     --shadow: rgba(0, 0, 0, 0.35);
+    --nino: #3a3420;
     color-scheme: dark;
   }
 }
@@ -88,6 +90,7 @@
   --sea: #0b161e;
   --plane: #e7eef0;
   --shadow: rgba(0, 0, 0, 0.35);
+  --nino: #3a3420;
   color-scheme: dark;
 }
 
@@ -187,4 +190,12 @@ h3 {
   letter-spacing: 0.12em;
   color: var(--muted);
   font-size: 13px;
+}
+.lbl3d.sel {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.lbl3d.sel small {
+  color: var(--accent-fg);
 }

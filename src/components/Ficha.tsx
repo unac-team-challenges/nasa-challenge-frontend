@@ -1,0 +1,254 @@
+import { useEffect, useRef } from 'react'
+import { NOMBRE, REGION, zonasProbadas, type Variable, type Zona } from '../data/ejemplo'
+import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
+import { fmtP, fmtValor, mayuscula, num } from '../lib/formato'
+import { useZonas } from '../lib/useZonas'
+import { useApp } from '../store'
+import { GraficoSerie } from './GraficoSerie'
+
+const DOI: Record<Variable, [string, string]> = {
+  lluvia: ['https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07', 'GPM IMERG V07'],
+  ndvi: ['https://doi.org/10.5067/MODIS/MOD13A3.061', 'MODIS MOD13A3 V6.1'],
+}
+const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
+
+/** Token del color de dirección: azul (o verde en NDVI) si sube, ocre si baja. */
+export function colorDireccion(pendiente: number, variable: Variable) {
+  return pendiente >= 0 ? (variable === 'ndvi' ? '--green' : '--up') : '--down'
+}
+
+function frase(d: Zona, perfil: Perfil, variable: Variable, idioma: Idioma, m: number) {
+  const P = FRASES[idioma]
+  const z = NOMBRE[d.id]
+  const mas = d.slope_per_decade >= 0
+  if (d.status === 'pocos_datos') return P.few(z)
+  const real = d.status === 'real'
+  const val = fmtValor(Math.abs(d.slope_per_decade), variable, idioma).replace('+', '')
+  switch (perfil) {
+    case 'agricultor':
+      return real ? P.agricultorUp(z, P.farmNoun[variable], mas) : P.agricultorCas(z)
+    case 'municipalidad':
+      return real
+        ? P.municipalidadUp(z, P.noun[variable], val, mas)
+        : P.municipalidadCas(z, mayuscula(P.noun[variable]))
+    case 'estudiante':
+      return real
+        ? P.estudianteUp(
+            fmtP(d.p_value, idioma),
+            fmtP(d.q_value, idioma),
+            m,
+            fmtValor(d.slope_per_decade, variable, idioma),
+          )
+        : P.estudianteCas(fmtP(d.p_value, idioma), fmtP(d.q_value, idioma), m)
+    default:
+      return real
+        ? P.publicoUp(z, mas ? P.more[variable] : P.less[variable])
+        : P.publicoCas(z, P.noun[variable])
+  }
+}
+
+/** Zona de contraste para la pista "sube aquí, baja allá". */
+function zonaContraste(d: Zona, variable: Variable) {
+  let id =
+    variable === 'ndvi'
+      ? d.slope_per_decade >= 0
+        ? '15'
+        : '13'
+      : d.slope_per_decade >= 0
+        ? '21'
+        : '20'
+  if (id === d.id)
+    id = variable === 'ndvi' ? (d.id === '15' ? '13' : '15') : d.id === '20' ? '21' : '20'
+  return id
+}
+
+/** Ficha-informe de la zona elegida (o la invitación a tocar el mapa). */
+export function Ficha() {
+  const { idioma, variable, perfil, sel, sinNino, setSinNino, seleccionar } = useApp()
+  const t = TEXTOS[idioma]
+  const zonas = useZonas()
+  const raiz = useRef<HTMLDivElement>(null)
+
+  // Fundido de 220 ms al cambiar de zona (v18), no al cambiar otros datos
+  useEffect(() => {
+    const el = raiz.current
+    if (!el || !sel || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    el.animate(
+      [
+        { opacity: 0, transform: 'translateY(6px)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      {
+        duration: 220,
+        easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+      },
+    )
+  }, [sel])
+
+  if (!sel) {
+    return (
+      <div className="flex flex-col gap-3.5">
+        <h2 className="m-0 mr-11 font-display text-[26px] leading-[1.1] font-bold tracking-display">
+          {t.tapH}
+        </h2>
+        <p className="m-0 text-muted">{t.tapP[variable]}</p>
+        <div>
+          <a
+            href="#expediente-1"
+            className="presionable inline-flex min-h-10 items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm text-fg no-underline hover:border-fg"
+          >
+            {t.emptyCase}
+          </a>
+        </div>
+        <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>
+      </div>
+    )
+  }
+
+  const d = zonas[sel]
+  const m = zonasProbadas(zonas)
+  const st = d.status
+  const color = st === 'pocos_datos' ? '--muted' : colorDireccion(d.slope_per_decade, variable)
+  const lluvia = variable === 'lluvia'
+  const tid = zonaContraste(d, variable)
+  const td = zonas[tid]
+  const bh = d.p_value < 0.05 && (d.q_value ?? 1) >= 0.05
+  const fmt = (v: number) => fmtValor(v, variable, idioma)
+
+  const insignia =
+    st === 'real'
+      ? 'bg-fg text-bg'
+      : st === 'pocos_datos'
+        ? 'border-[1.5px] border-dashed border-muted text-muted'
+        : 'border border-fg [background-image:repeating-linear-gradient(135deg,var(--line)_0_3px,transparent_3px_7px)]'
+
+  return (
+    <div ref={raiz} className="flex flex-col gap-4.5">
+      <div className="mr-11 flex flex-col gap-0.5">
+        <span className="text-[13px] text-muted">{t.kind(REGION[sel])}</span>
+        <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
+          {NOMBRE[sel]}
+        </h2>
+        <span className="text-[13px] text-muted">{t.src[variable]}</span>
+      </div>
+
+      <div
+        className="flex flex-col gap-2 rounded-m border-l-4 bg-panel-2 p-3.5"
+        style={{ borderLeftColor: `var(${color})` }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex gap-[5px]" aria-hidden="true">
+            {ESTADOS.map((s) => (
+              <i
+                key={s}
+                className={`block size-3 rounded-full ${s === st ? 'bg-fg' : 'bg-line'}`}
+              />
+            ))}
+          </span>
+          <span className={`rounded-full px-2.5 py-[3px] text-sm font-semibold ${insignia}`}>
+            {t.status[st]}
+          </span>
+        </div>
+        <p className="m-0 text-base">{frase(d, perfil, variable, idioma, m)}</p>
+      </div>
+
+      {st === 'pocos_datos' ? (
+        <p className="m-0">{t.fewExpl(d.n_years)}</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-0.5">
+            <span
+              className="font-display text-[38px] leading-none font-[750] tracking-[-0.02em] min-[521px]:text-[46px]"
+              style={{ color: `var(${color})` }}
+            >
+              {fmt(d.slope_per_decade)}
+            </span>
+            <span className="text-[15px]">{t.perDecade[variable]}</span>
+            <span className="text-[13px] text-muted">{t.range(fmt(d.ci_low), fmt(d.ci_high))}</span>
+          </div>
+          <figure className="m-0 flex flex-col gap-1.5">
+            <GraficoSerie
+              zona={d}
+              variable={variable}
+              sinNino={sinNino}
+              idioma={idioma}
+              color={color}
+            />
+            <figcaption className="text-xs text-muted">{t.chartCap(lluvia, sinNino)}</figcaption>
+          </figure>
+          {lluvia && (
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+              <input
+                type="checkbox"
+                className="size-[18px] accent-accent"
+                checked={sinNino}
+                onChange={(e) => setSinNino(e.target.checked)}
+              />
+              {t.ninoToggle}
+            </label>
+          )}
+        </>
+      )}
+
+      <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
+        <h3 className="m-0 text-sm font-semibold">{t.clueH}</h3>
+        <p className="m-0">
+          {t.clue(
+            NOMBRE[tid],
+            t.verb[variable][td.slope_per_decade >= 0 ? 0 : 1],
+            fmt(Math.abs(td.slope_per_decade)).replace('+', ''),
+            t.status[td.status].toLowerCase(),
+          )}
+        </p>
+        <div>
+          <button
+            type="button"
+            className="presionable inline-flex min-h-10 cursor-pointer items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm hover:border-fg"
+            onClick={() => seleccionar(tid)}
+          >
+            {t.clueBtn(NOMBRE[tid])}
+          </button>
+        </div>
+      </div>
+
+      {st !== 'pocos_datos' && (
+        <details className="border-t border-line pt-3" open={perfil === 'estudiante'}>
+          <summary className="flex min-h-8 cursor-pointer items-center font-semibold">
+            {t.howH}
+          </summary>
+          <dl className="mt-2.5 mb-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3.5 gap-y-1.5 text-sm">
+            <dt className="text-muted">{t.howMethod}</dt>
+            <dd className="m-0">{t.howMethodV}</dd>
+            <dt className="text-muted">{t.howSlope}</dt>
+            <dd className="m-0">{t.howSlopeV(fmt(d.slope_per_decade))}</dd>
+            <dt className="text-muted">p_value</dt>
+            <dd className="m-0">{fmtP(d.p_value, idioma)}</dd>
+            <dt className="text-muted">q_value</dt>
+            <dd className="m-0">{fmtP(d.q_value, idioma)}</dd>
+            <dd className="col-span-full m-0 text-[13px] text-muted">
+              {bh ? t.bhExpl(fmtP(d.q_value, idioma), m) : t.qExpl(m)}
+            </dd>
+            <dt className="text-muted">{t.howN}</dt>
+            <dd className="m-0">{d.n_years}</dd>
+            <dt className="text-muted">{t.howLag}</dt>
+            <dd className="m-0">{num(d.lag1, 2, idioma)}</dd>
+            <dd className="col-span-full m-0 text-[13px] text-muted">{t.lagExpl}</dd>
+            <dt className="text-muted">{t.howSrc}</dt>
+            <dd className="m-0">
+              <a
+                href={DOI[variable][0]}
+                target="_blank"
+                rel="noopener"
+                className="text-accent-text"
+              >
+                {DOI[variable][1]}
+              </a>
+            </dd>
+          </dl>
+        </details>
+      )}
+
+      <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>
+    </div>
+  )
+}

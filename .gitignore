@@ -24,3 +24,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Solo pnpm: no subir lockfiles de npm o yarn
+package-lock.json
+yarn.lock

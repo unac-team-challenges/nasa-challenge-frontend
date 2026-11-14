@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/newsreader';
 @import '@fontsource-variable/public-sans';
+@import './shadcn.css';
 
 /*
  * Tokens del prototipo v2 (tema Humboldt).

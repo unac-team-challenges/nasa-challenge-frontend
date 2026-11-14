@@ -13,7 +13,7 @@ npm install -g pnpm@10    # una sola vez (o: corepack enable pnpm, si tienes per
 pnpm install
 pnpm dev                  # http://localhost:5173
 pnpm build                # revisa tipos y genera dist/
-pnpm lint                 # oxlint
+pnpm lint                 # eslint
 pnpm format               # prettier
 pnpm test                 # vitest
 ```
@@ -22,26 +22,33 @@ pnpm test                 # vitest
 
 ## Stack
 
-| Parte | Librería |
-|---|---|
-| Base | React 19 + Vite 8 + TypeScript |
-| Mapa | **three.js** (3D) con respaldo 2D en SVG. Reemplaza a Leaflet: ver `15-decision-mapa-threejs-14nov.md` en el Drive |
-| Estilos | Tailwind CSS v4 (`@tailwindcss/vite`) + lucide-react |
-| Datos del servidor | TanStack Query |
-| Rutas y enlaces | TanStack Router + Zod (`/zona/20?perfil=agricultor&variable=lluvia`) |
-| Estado de la pantalla | Zustand |
-| Gráficos | Recharts |
-| Antes y después (Caso 2) | react-compare-slider |
-| Letra "Carta" | Newsreader + Public Sans (`@fontsource-variable`, incluidas en el build: funcionan sin internet) |
+| Parte                    | Librería                                                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Base                     | React 19 + Vite 8 + TypeScript                                                                                             |
+| Mapa                     | **three.js** (3D) con respaldo 2D en SVG. Reemplaza a Leaflet: ver `15-decision-mapa-threejs-14nov.md` en el Drive         |
+| Estilos y componentes    | Tailwind CSS v4 (`@tailwindcss/vite`) + **shadcn/ui** (componentes en `src/components/ui`, estilo new-york) + lucide-react |
+| Calidad                  | **ESLint** (typescript-eslint, react-hooks) + Prettier + Vitest                                                            |
+| Datos del servidor       | TanStack Query                                                                                                             |
+| Rutas y enlaces          | TanStack Router + Zod (`/zona/20?perfil=agricultor&variable=lluvia`)                                                       |
+| Estado de la pantalla    | Zustand                                                                                                                    |
+| Gráficos                 | Recharts                                                                                                                   |
+| Antes y después (Caso 2) | react-compare-slider                                                                                                       |
+| Letra "Carta"            | Newsreader + Public Sans (`@fontsource-variable`, incluidas en el build: funcionan sin internet)                           |
 
-Pendientes: shadcn/ui (se agrega por componente con `pnpm dlx shadcn@latest add …`) y el cliente `openapi-*` (cuando el backend publique su `openapi.json`).
+shadcn/ui se agrega por componente: `pnpm dlx shadcn@latest add button`. Sus colores apuntan a nuestros tokens en `src/shadcn.css` (`accent` sigue siendo el cochinilla del proyecto).
+
+TypeScript va en 6.0 porque typescript-eslint todavía no soporta TS 7.
+
+Pendiente: el cliente `openapi-*`, en una PR aparte (el backend ya publica `openapi.json`, PR #21 del backend).
 
 ## Diseño
 
 Los colores salen del prototipo v2. Están como variables CSS en `src/index.css` y como clases de Tailwind (`bg-map-up`, `bg-map-down`, `bg-map-green`, `bg-accent`, `font-display`…):
+
 - **Humboldt** (oscuro) y **Garúa** (claro), según el sistema, o forzados con `data-theme`.
 - Azul = más, ocre = menos, verde = más vegetación. El acento cochinilla se usa solo en selección y botones.
 
 ## Ramas
+
 - `developer`: integración (vista previa en Vercel).
 - `main`: producción. Solo recibe PR desde `developer`.

@@ -1,0 +1,29 @@
+/*
+ * Puente entre shadcn/ui y los tokens del prototipo v2 (src/index.css).
+ * Los componentes de shadcn usan estos nombres; aquí apuntan a nuestros colores.
+ * Ojo: `accent` sigue siendo el cochinilla del proyecto (selección y botones), no el gris de shadcn.
+ */
+@import 'tw-animate-css';
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #fff;
+  --color-secondary: var(--floor);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--floor);
+  --color-muted-foreground: color-mix(in oklab, var(--text) 65%, transparent);
+  --color-accent-foreground: #fff;
+  --color-destructive: #b3261e;
+  --color-border: var(--floor);
+  --color-input: var(--floor);
+  --color-ring: var(--accent);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+}

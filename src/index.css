@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/newsreader';
+@import '@fontsource-variable/public-sans';
+
+/*
+ * Tokens del prototipo v2 (tema Humboldt).
+ * Pendiente: portar del prototipo las otras 3 paletas (Andes, Amazonía, Nazca)
+ * y los colores del mapa en oscuro.
+ */
+:root {
+  /* Claro "Garúa" (v20) */
+  --bg: #dce2e3;
+  --panel: #ebefef;
+  --floor: #c7d1d4;
+  --text: #13222c;
+  --accent: #b3245a;
+  --accent-text: #b3245a;
+  --map-up: #5e95c8;
+  --map-down: #c49061;
+  --map-green: #5fa07c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    /* Oscuro "Humboldt" */
+    --bg: #0f1c26;
+    --panel: #16283a;
+    --floor: #1b3043;
+    --text: #e6eef2;
+    --accent: #e0457b;
+    --accent-text: #f2789f;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1c26;
+  --panel: #16283a;
+  --floor: #1b3043;
+  --text: #e6eef2;
+  --accent: #e0457b;
+  --accent-text: #f2789f;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-floor: var(--floor);
+  --color-text: var(--text);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-map-up: var(--map-up);
+  --color-map-down: var(--map-down);
+  --color-map-green: var(--map-green);
+  --font-display: 'Newsreader Variable', Georgia, serif;
+  --font-sans: 'Public Sans Variable', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}

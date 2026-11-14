@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Variable } from './data/ejemplo'
+import type { Periodo, Variable } from './data/datos'
 import type { Idioma, Perfil } from './i18n/textos'
 import { hayWebgl } from './lib/webgl'
 
@@ -24,6 +24,9 @@ interface EstadoApp {
   idioma: Idioma
   perfil: Perfil
   variable: Variable
+  /** largo = 1981–2024, reciente = 2001–2024 */
+  periodo: Periodo
+  setPeriodo: (p: Periodo) => void
   /** Quitar los años de El Niño (solo lluvia) */
   sinNino: boolean
   /** Departamento elegido (ubigeo "01"–"25") */
@@ -49,6 +52,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   idioma: idiomaInicial(),
   perfil: 'publico',
   variable: 'lluvia',
+  periodo: 'largo',
+  setPeriodo: (periodo) => set({ periodo }),
   sinNino: false,
   sel: null,
   informeMin: true,

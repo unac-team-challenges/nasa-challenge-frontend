@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { DEPARTAMENTOS, NOMBRE } from '../data/ejemplo'
+import { DEPARTAMENTOS, NOMBRE } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
+import { claveMapa } from '../lib/direccion'
 import { fmtValor } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
@@ -69,7 +70,7 @@ export function Mapa2D({ interactivo = true }: Props) {
       : t.tipVal(
           NOMBRE[id],
           fmtValor(d.slope_per_decade, variable, idioma),
-          t.perDecade[variable],
+          t.perDecade,
           t.status[d.status],
         )
   }
@@ -100,7 +101,7 @@ export function Mapa2D({ interactivo = true }: Props) {
         </defs>
         {RUTAS.map(({ id, d: ruta }) => {
           const d = zonas[id]
-          const clave = d.slope_per_decade >= 0 ? (variable === 'ndvi' ? 'green' : 'up') : 'down'
+          const clave = claveMapa(d.slope_per_decade, variable)
           let relleno = `var(--map-${clave})`
           let trazo = 'var(--bg)'
           let grosor = 1.2

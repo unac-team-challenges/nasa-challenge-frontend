@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TEXTOS } from '../i18n/textos'
+import { claveMapa } from '../lib/direccion'
 import { fmtValor } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
@@ -11,7 +12,9 @@ export function Leyenda() {
   const zonas = useZonas()
   // Abierta en escritorio; en celular empieza cerrada para no tapar el mapa
   const [abierta, setAbierta] = useState(() => !matchMedia('(max-width: 900px)').matches)
-  const sube = variable === 'ndvi' ? 'var(--map-green)' : 'var(--map-up)'
+  // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
+  const sube = `var(--map-${claveMapa(1, variable)})`
+  const baja = `var(--map-${claveMapa(-1, variable)})`
   const cols = t.legCols[variable]
   const maxima = Math.max(
     ...Object.values(zonas)
@@ -78,7 +81,7 @@ export function Leyenda() {
           />
           {columna(36, 16, 56, sube)}
           {columna(146, 52, 56, 'var(--muted)')}
-          {columna(256, 70, 84, 'var(--map-down)')}
+          {columna(256, 70, 84, baja)}
           <text x={322} y={51} textAnchor="end" fontSize={9.5} style={{ fill: 'var(--muted)' }}>
             {t.noChange}
           </text>

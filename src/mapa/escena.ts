@@ -7,8 +7,9 @@
  */
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/ejemplo'
+import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
 import { cssVar, esTemaClaro, hexMix } from '../lib/color'
+import { claveMapa } from '../lib/direccion'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -503,8 +504,7 @@ export class EscenaPeru {
       const d = this.zonas[m.userData.id]
       if (!d) continue
       const mat = m.material
-      const sube = d.slope_per_decade >= 0
-      const clave = sube ? (this.variable === 'ndvi' ? 'green' : 'up') : 'down'
+      const clave = claveMapa(d.slope_per_decade, this.variable)
       mat.map = null
       mat.transparent = false
       mat.opacity = 1
@@ -570,8 +570,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
-    return this.variable === 'ndvi'
-      ? signo + Math.abs(v).toFixed(2).replace('.', ',')
+    return this.variable === 'temperatura'
+      ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'
   }
 

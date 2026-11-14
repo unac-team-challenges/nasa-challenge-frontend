@@ -1,3 +1,4 @@
+import { PERIODOS } from '../data/datos'
 import { ORDEN_PERFILES, TEXTOS } from '../i18n/textos'
 import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
@@ -48,13 +49,7 @@ export function Portada() {
             >
               {t.exploreBtn}
             </a>
-            <a
-              href="#expediente-1"
-              className="inline-flex min-h-11 items-center text-[15px] text-accent-text underline underline-offset-3"
-            >
-              {t.heroCase}
-            </a>
-            <span className="text-[13px] text-muted">{t.sample}</span>
+            <span className="text-[13px] text-muted">{t.fuenteReal}</span>
           </div>
         </div>
         <div className="relative order-first min-h-100 overflow-hidden rounded-l border border-line min-[901px]:order-none min-[901px]:min-h-105">
@@ -62,7 +57,7 @@ export function Portada() {
           {/* "Arrastra para girar" solo tiene sentido en 3D */}
           {conWebgl && (
             <p className="pointer-events-none absolute right-4 bottom-3.5 left-4 z-[2] m-0 text-[13px] text-muted">
-              {t.heroCap}
+              {t.heroCap(PERIODOS.largo.year_start, PERIODOS.largo.year_end)}
             </p>
           )}
         </div>

@@ -33,6 +33,29 @@ const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
   explorar: { pos: [0, 44, 34], tgt: [0, 0, 1] },
 }
 
+/** Nombres de países vecinos (solo texto tenue; v14–v15 del prototipo). */
+const PAISES = [
+  { es: 'Ecuador', en: 'Ecuador', lon: -78.6, lat: -1.4 },
+  { es: 'Colombia', en: 'Colombia', lon: -73.6, lat: 2.6 },
+  { es: 'Brasil', en: 'Brazil', lon: -63.5, lat: -7.5 },
+  { es: 'Bolivia', en: 'Bolivia', lon: -64.6, lat: -16.2 },
+  { es: 'Chile', en: 'Chile', lon: -69.5, lat: -20.6 },
+]
+/** Partículas de la lluvia viva (máximo). */
+const N_PARTICULAS = 1600
+
+interface Particulas {
+  pos: Float32Array
+  geo: THREE.BufferGeometry
+  puntos: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>
+  zona: Int16Array
+  velocidad: Float32Array
+  acumulado: number[]
+  total: number
+  cuenta: number
+  ultimo: number
+}
+
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
 
@@ -218,6 +241,10 @@ export class EscenaPeru {
   private etiquetas: { id: string; el: HTMLDivElement }[] = []
   private etiquetaSel: HTMLDivElement
   private etiquetaOceano: HTMLDivElement
+  private etiquetasPais: { el: HTMLDivElement; x: number; z: number; es: string; en: string }[] = []
+  /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
+  private particulas: Particulas
+  private muestras: [number, number][][] = []
   private v3 = new THREE.Vector3()
   private perf = { n: 0, suma: 0, ultimo: 0, listo: false }
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
@@ -337,6 +364,73 @@ export class EscenaPeru {
     this.etiquetaSel.hidden = true
     this.etiquetaOceano = nuevaEtiqueta('lbl3d ocean')
     this.etiquetaOceano.textContent = op.oceano
+    for (const p of PAISES) {
+      const v = proyectar([p.lon, p.lat])
+      const el = nuevaEtiqueta('lbl3d country')
+      el.textContent = p.es
+      this.etiquetasPais.push({
+        el,
+        x: v.x + this.mapa.position.x,
+        z: -v.y + this.mapa.position.z,
+        es: p.es,
+        en: p.en,
+      })
+    }
+
+    // Lluvia viva: puntos de muestra dentro de cada departamento (en coordenadas del mundo)
+    for (const z of DEPARTAMENTOS) {
+      const anillos = z.polys.flatMap((poly) => poly.map((r) => r.map((p) => proyectar(p))))
+      let x0 = Infinity
+      let x1 = -Infinity
+      let y0 = Infinity
+      let y1 = -Infinity
+      for (const r of anillos)
+        for (const v of r) {
+          x0 = Math.min(x0, v.x)
+          x1 = Math.max(x1, v.x)
+          y0 = Math.min(y0, v.y)
+          y1 = Math.max(y1, v.y)
+        }
+      const dentro = (x: number, y: number) => {
+        let ins = false
+        for (const r of anillos)
+          for (let i = 0, j = r.length - 1; i < r.length; j = i++)
+            if (
+              r[i].y > y !== r[j].y > y &&
+              x < ((r[j].x - r[i].x) * (y - r[i].y)) / (r[j].y - r[i].y) + r[i].x
+            )
+              ins = !ins
+        return ins
+      }
+      const out: [number, number][] = []
+      for (let k = 0; k < 3000 && out.length < 40; k++) {
+        const x = x0 + Math.random() * (x1 - x0)
+        const y = y0 + Math.random() * (y1 - y0)
+        if (dentro(x, y)) out.push([x + this.mapa.position.x, -y + this.mapa.position.z])
+      }
+      this.muestras.push(out)
+    }
+    const geoP = new THREE.BufferGeometry()
+    const pos = new Float32Array(N_PARTICULAS * 3)
+    geoP.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    const puntos = new THREE.Points(
+      geoP,
+      new THREE.PointsMaterial({ size: 0.17, transparent: true, opacity: 0.8, depthWrite: false }),
+    )
+    puntos.frustumCulled = false
+    puntos.visible = false
+    this.escena.add(puntos)
+    this.particulas = {
+      pos,
+      geo: geoP,
+      puntos,
+      zona: new Int16Array(N_PARTICULAS).fill(-1),
+      velocidad: new Float32Array(N_PARTICULAS),
+      acumulado: [],
+      total: 0,
+      cuenta: 0,
+      ultimo: 0,
+    }
 
     const ro = new ResizeObserver(() => this.redimensionar())
     ro.observe(contenedor)
@@ -409,6 +503,7 @@ export class EscenaPeru {
     this.pintar()
     this.alturas(instantaneo)
     this.textosEtiquetas()
+    this.actualizarParticulas()
   }
 
   /**
@@ -420,6 +515,7 @@ export class EscenaPeru {
     this.pintar()
     this.alturas(false)
     this.textosEtiquetas()
+    this.actualizarParticulas()
   }
 
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
@@ -463,10 +559,113 @@ export class EscenaPeru {
     }
     this.renderer.shadowMap.needsUpdate = true
     this.pintar()
+    this.actualizarParticulas()
   }
 
   setTextoOceano(t: string) {
     this.etiquetaOceano.textContent = t
+  }
+
+  setIdioma(idioma: 'es' | 'en') {
+    for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
+  }
+
+  /**
+   * Lluvia viva (v6): gotas sobre las zonas donde llueve más (tendencia real que sube, o año
+   * por encima de su promedio). En temperatura, partículas de calor que suben sobre las zonas
+   * que se calientan. Sin animación si la persona pidió reducir el movimiento.
+   */
+  private actualizarParticulas() {
+    const P = this.particulas
+    if (!P) return
+    const calor = this.variable === 'temperatura'
+    // Más claras que las columnas para que se lean encima de ellas
+    const claro = esTemaClaro()
+    P.puntos.material.color.set(
+      hexMix(
+        cssVar(calor ? '--map-down' : '--map-up'),
+        claro ? '#1a2a33' : '#ffffff',
+        // El calor sube como un brillo casi blanco: sobre columnas ocre, el ocre no se vería
+        calor ? (claro ? 0.5 : 0.78) : claro ? 0.25 : 0.5,
+      ),
+    )
+    P.puntos.material.size = calor ? 0.32 : 0.22
+    const positivas = Object.values(this.zonas)
+      .filter((d) => d.status === 'real' && d.slope_per_decade > 0)
+      .map((d) => d.slope_per_decade)
+    const maxPos = Math.max(0.0001, ...positivas)
+    let total = 0
+    P.acumulado = []
+    for (const m of this.mallas) {
+      const d = this.zonas[m.userData.id]
+      let w = 0
+      if (d && d.status !== 'pocos_datos') {
+        const valorAnio = this.anio?.valores[m.userData.id]
+        if (this.anio) w = valorAnio != null ? Math.max(0, valorAnio / this.anio.max) : 0
+        else if (d.status === 'real' && d.slope_per_decade > 0) w = d.slope_per_decade / maxPos
+      }
+      total += w
+      P.acumulado.push(total)
+    }
+    P.total = total
+    const porPeso = calor ? 70 : this.anio ? 260 : 520
+    P.cuenta = Math.min(N_PARTICULAS, Math.round(total * porPeso))
+    P.puntos.visible = !reducido() && P.cuenta > 0
+    P.geo.setDrawRange(0, P.cuenta)
+    for (let i = 0; i < P.cuenta; i++) this.renacer(i, true)
+    P.geo.attributes.position.needsUpdate = true
+  }
+
+  private renacer(i: number, alAzar: boolean) {
+    const P = this.particulas
+    const r = Math.random() * P.total
+    let k = P.acumulado.findIndex((c) => c >= r)
+    if (k < 0) k = 0
+    const m = this.mallas[k]
+    const s = this.muestras[k]
+    if (!s || !s.length) {
+      P.zona[i] = -1
+      P.pos[i * 3 + 1] = -99
+      return
+    }
+    const p = s[(Math.random() * s.length) | 0]
+    const tope = m.position.z + m.scale.z
+    const calor = this.variable === 'temperatura'
+    P.zona[i] = k
+    P.pos[i * 3] = p[0] + (Math.random() - 0.5) * 0.3
+    P.pos[i * 3 + 2] = p[1] + (Math.random() - 0.5) * 0.3
+    P.pos[i * 3 + 1] = calor
+      ? tope + (alAzar ? Math.random() * 2.4 : 0)
+      : tope + (alAzar ? 0.4 + Math.random() * 8 : 6 + Math.random() * 3)
+    P.velocidad[i] = calor ? 0.5 + Math.random() * 0.6 : 6 + Math.random() * 4
+  }
+
+  private pasoParticulas(t: number) {
+    const P = this.particulas
+    if (!P.puntos.visible) {
+      P.ultimo = t
+      return
+    }
+    const dt = Math.min(0.05, (t - (P.ultimo || t)) / 1000)
+    P.ultimo = t
+    const calor = this.variable === 'temperatura'
+    for (let i = 0; i < P.cuenta; i++) {
+      const k = P.zona[i]
+      if (k < 0) {
+        this.renacer(i, false)
+        continue
+      }
+      const m = this.mallas[k]
+      const tope = m.position.z + m.scale.z
+      if (calor) {
+        P.pos[i * 3 + 1] += P.velocidad[i] * dt
+        if (P.pos[i * 3 + 1] > tope + 2.6) this.renacer(i, false)
+      } else {
+        P.pos[i * 3 + 1] -= P.velocidad[i] * dt
+        if (P.pos[i * 3 + 1] < tope) this.renacer(i, false)
+      }
+    }
+    P.geo.attributes.position.needsUpdate = true
   }
 
   /** Activa o pausa el giro automático. */
@@ -500,6 +699,8 @@ export class EscenaPeru {
         linea.material.dispose()
       })
     }
+    this.particulas.geo.dispose()
+    this.particulas.puntos.material.dispose()
     this.mar.geometry.dispose()
     this.mar.material.map?.dispose()
     this.mar.material.dispose()
@@ -707,6 +908,7 @@ export class EscenaPeru {
     if (moviendo) this.renderer.shadowMap.needsUpdate = true
     this.controles.update()
     if (this.fueraDePantalla) return // no dibujar lo que no se ve
+    this.pasoParticulas(t)
     this.renderer.render(this.escena, this.camara)
     this.ubicarEtiquetas()
   }
@@ -747,6 +949,11 @@ export class EscenaPeru {
           m.position.z + m.scale.z + 0.4,
           m.userData.centro.z,
         )
+    }
+    for (const p of this.etiquetasPais) {
+      // En celular no se muestran los nombres de países (v12)
+      if (p.el.hidden !== celular()) p.el.hidden = celular()
+      if (!p.el.hidden) this.ubicarEtiqueta(p.el, p.x, -PISO, p.z)
     }
     const lima = malla('15')
     if (lima)

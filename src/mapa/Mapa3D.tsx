@@ -39,6 +39,7 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
     escena.current = e
     if (controlRef) controlRef.current = e
     e.aplicarTema()
+    e.setIdioma(useApp.getState().idioma)
     const { variable: v, sel: s } = useApp.getState()
     e.setDatos(zonas, v, true)
     if (modo === 'explorar' && s) e.seleccionar(s, true)
@@ -84,7 +85,8 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
 
   useEffect(() => {
     escena.current?.setTextoOceano(t.ocean)
-  }, [t.ocean])
+    escena.current?.setIdioma(idioma)
+  }, [t.ocean, idioma])
 
   if (!conWebgl) return <Mapa2D interactivo={modo === 'explorar'} />
   return (

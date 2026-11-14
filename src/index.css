@@ -201,6 +201,22 @@ h3 {
   color: var(--accent-fg);
 }
 
+/* Dato de la fauna del 3D (lo crea la escena; texto, nunca HTML) */
+.tip3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  max-width: 280px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 6px 18px var(--shadow, rgba(0, 0, 0, 0.2));
+}
+
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;

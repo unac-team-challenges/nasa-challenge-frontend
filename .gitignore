@@ -34,3 +34,5 @@ test-results
 # Caché de descargas de NASA POWER del script de datos
 scripts/.cache_power/
 __pycache__/
+# Caché de descargas del script del suelo del mapa (terrain tiles, Natural Earth)
+scripts/.cache_mundo/

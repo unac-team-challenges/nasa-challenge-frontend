@@ -12,7 +12,7 @@ import {
 import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
 import { colorDireccion } from '../lib/direccion'
 import { fmtP, fmtPct, fmtValor, mayuscula, num } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useFuente, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 import { AntesDespues } from './AntesDespues'
 import { GraficoSerie } from './GraficoSerie'
@@ -82,6 +82,7 @@ export function Ficha() {
     useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
+  const fuente = useFuente()
   const raiz = useRef<HTMLDivElement>(null)
 
   // Fundido de 220 ms al cambiar de zona (v18), no al cambiar otros datos
@@ -259,6 +260,8 @@ export function Ficha() {
             <dt className="text-muted">{t.howLag}</dt>
             <dd className="m-0">{d.lag1 == null ? '—' : num(d.lag1, 2, idioma)}</dd>
             <dd className="col-span-full m-0 text-[13px] text-muted">{t.lagExpl}</dd>
+            <dt className="text-muted">{t.howDatos}</dt>
+            <dd className="m-0">{fuente === 'api' ? t.datosApi : t.datosLocal}</dd>
             <dt className="text-muted">{t.howSrc}</dt>
             <dd className="m-0">
               <a

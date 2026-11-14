@@ -90,92 +90,124 @@ export interface OpcionesEscena {
 const proyectar = ([lon, lat]: number[]) =>
   new THREE.Vector2((lon - LON0) * COSLAT * K, (lat - LAT0) * K)
 
-/* Curvas de nivel del piso: campo periódico + marching squares (del prototipo). */
-function campo(x: number, y: number) {
-  const P = Math.PI * 2
-  return (
-    Math.sin(P * 2 * x + 1.3 * Math.sin(P * y)) * 0.6 +
-    Math.cos(P * 3 * y - P * x) * 0.45 +
-    Math.sin(P * (x + y)) * 0.5 +
-    0.28 * Math.sin(P * 5 * x) * Math.cos(P * 2 * y) +
-    0.18 * Math.cos(P * 4 * (x - y))
-  )
-}
-const SEG: Record<number, [string, string][]> = {
-  1: [['L', 'B']],
-  2: [['B', 'R']],
-  3: [['L', 'R']],
-  4: [['T', 'R']],
-  5: [
-    ['T', 'R'],
-    ['L', 'B'],
-  ],
-  6: [['T', 'B']],
-  7: [['L', 'T']],
-  8: [['L', 'T']],
-  9: [['T', 'B']],
-  10: [
-    ['L', 'T'],
-    ['B', 'R'],
-  ],
-  11: [['T', 'R']],
-  12: [['L', 'R']],
-  13: [['B', 'R']],
-  14: [['L', 'B']],
-}
-function lienzoCurvas(size: number, fondo: string, linea: string, alfa: number, niveles: number) {
-  const c = document.createElement('canvas')
-  c.width = c.height = size
-  const g = c.getContext('2d')!
-  g.fillStyle = fondo
-  g.fillRect(0, 0, size, size)
-  const N = 120
-  const F: number[][] = []
-  for (let j = 0; j <= N; j++) {
-    F[j] = []
-    for (let i = 0; i <= N; i++) F[j][i] = campo(i / N, j / N)
-  }
-  let lo = Infinity
-  let hi = -Infinity
-  for (const r of F)
-    for (const v of r) {
-      lo = Math.min(lo, v)
-      hi = Math.max(hi, v)
-    }
-  const s = size / N
-  const t = (p: number, q: number, L: number) => (L - p) / (q - p || 1e-9)
-  g.strokeStyle = linea
-  g.lineCap = 'round'
-  for (let k = 1; k < niveles; k++) {
-    const L = lo + ((hi - lo) * k) / niveles
-    const mayor = k % 4 === 0
-    g.globalAlpha = alfa * (mayor ? 1.6 : 1)
-    g.lineWidth = ((mayor ? 1.6 : 1) * size) / 720
-    g.beginPath()
-    for (let j = 0; j < N; j++)
-      for (let i = 0; i < N; i++) {
-        const a = F[j][i]
-        const b = F[j][i + 1]
-        const cc = F[j + 1][i + 1]
-        const d = F[j + 1][i]
-        const idx = (a > L ? 8 : 0) | (b > L ? 4 : 0) | (cc > L ? 2 : 0) | (d > L ? 1 : 0)
-        const segs = SEG[idx]
-        if (!segs) continue
-        const pt: Record<string, [number, number]> = {
-          T: [i + t(a, b, L), j],
-          R: [i + 1, j + t(b, cc, L)],
-          B: [i + t(d, cc, L), j + 1],
-          L: [i, j + t(a, d, L)],
-        }
-        for (const [e1, e2] of segs) {
-          g.moveTo(pt[e1][0] * s, pt[e1][1] * s)
-          g.lineTo(pt[e2][0] * s, pt[e2][1] * s)
-        }
+/**
+ * Suelo de Sudamérica en un solo shader: mar con profundidad sugerida, costa con espuma y
+ * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
+ * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
+ */
+const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+const SUELO_VS = `
+varying vec3 vW;
+#include <fog_pars_vertex>
+void main() {
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vW = w.xyz;
+  vec4 mvPosition = viewMatrix * w;
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`
+const SUELO_FS = `
+uniform float uTime;
+uniform sampler2D uMundo, uMundo2, uPeru;
+uniform vec4 uCaja, uCajaPeru;
+uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uAgua, uFrontera;
+varying vec3 vW;
+#include <fog_pars_fragment>
+void main() {
+  vec2 uv = (vW.xz - uCaja.xy) / uCaja.zw;
+  vec3 t = texture2D(uMundo, uv).rgb;   // r: relieve (tierra) o profundidad (mar); g, b: costa
+  vec3 t2 = texture2D(uMundo2, uv).rgb; // g: ríos y lagos; b: fronteras
+  vec2 b2 = smoothstep(0.0, 0.04, uv) * smoothstep(0.0, 0.04, 1.0 - uv);
+  float borde = b2.x * b2.y; // fuera de la caja el mar sigue
+  float cerca = t.g * borde, lejos = t.b * borde, tierra = smoothstep(0.44, 0.56, cerca);
+  vec3 mar = mix(uSomero, uHondo, smoothstep(0.05, 0.95, mix(0.6, t.r, borde)));
+  mar = mix(mar, uSomero, smoothstep(0.05, 0.6, lejos) * 0.55);
+  float ola = sin(vW.x * 0.7 + uTime * 0.5) * sin(vW.z * 0.8 - uTime * 0.4) * 0.6
+            + sin(length(vW.xz) * 0.55 - uTime * 0.8) * 0.4;
+  mar += ola * 0.012 * (1.0 - lejos);
+  float banda = smoothstep(0.1, 0.36, cerca) * (1.0 - smoothstep(0.4, 0.47, cerca));
+  mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)));
+  vec3 suelo = mix(uTierraBaja, uTierraAlta, 0.35 + 0.65 * smoothstep(0.45, 0.9, t.r));
+  suelo = mix(suelo, uAgua, t2.g * 0.55);
+  suelo = mix(suelo, uFrontera, t2.b * 0.45);
+  vec3 col = mix(mar, suelo, tierra);
+  // sombra suave del Perú (sol del noroeste): los departamentos se "apoyan" en el suelo
+  vec2 pv = (vW.xz + vec2(-1.2, 1.2) - uCajaPeru.xy) / uCajaPeru.zw;
+  col = mix(col, uSombra, texture2D(uPeru, pv).r * 0.35);
+  gl_FragColor = vec4(col, 1.0);
+  #include <fog_fragment>
+}`
+
+/** Desenfoque de caja separable, 3 pasadas (≈ gaussiano). */
+function desenfocar(src: Float32Array, S: number, r: number) {
+  const a = Float32Array.from(src)
+  const b = new Float32Array(S * S)
+  const n = 2 * r + 1
+  const cl = (v: number) => (v < 0 ? 0 : v >= S ? S - 1 : v)
+  for (let pasada = 0; pasada < 3; pasada++) {
+    for (let y = 0; y < S; y++) {
+      const o = y * S
+      let acc = 0
+      for (let x = -r; x <= r; x++) acc += a[o + cl(x)]
+      for (let x = 0; x < S; x++) {
+        b[o + x] = acc / n
+        acc += a[o + cl(x + r + 1)] - a[o + cl(x - r)]
       }
-    g.stroke()
+    }
+    for (let x = 0; x < S; x++) {
+      let acc = 0
+      for (let y = -r; y <= r; y++) acc += b[cl(y) * S + x]
+      for (let y = 0; y < S; y++) {
+        a[y * S + x] = acc / n
+        acc += b[cl(y + r + 1) * S + x] - b[cl(y - r) * S + x]
+      }
+    }
   }
-  g.globalAlpha = 1
-  return c
+  return a
+}
+
+/** Silueta del Perú difuminada (256 px, una vez): sombra suave sobre el suelo. */
+function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number; w: number }) {
+  const S = 256
+  const c = document.createElement('canvas')
+  c.width = c.height = S
+  const g = c.getContext('2d')!
+  g.fillStyle = '#000'
+  g.fillRect(0, 0, S, S)
+  g.fillStyle = '#fff'
+  for (const z of DEPARTAMENTOS)
+    for (const poly of z.polys) {
+      g.beginPath()
+      for (const ring of poly)
+        ring.forEach((p, i) => {
+          const v = proyectar(p)
+          const x = ((v.x + desplaza.x - caja.x) / caja.w) * S
+          const y = ((-v.y + desplaza.z - caja.z) / caja.w) * S
+          if (i) g.lineTo(x, y)
+          else g.moveTo(x, y)
+        })
+      g.fill('evenodd')
+    }
+  const img = g.getImageData(0, 0, S, S).data
+  const tierra = new Float32Array(S * S)
+  for (let i = 0; i < S * S; i++) tierra[i] = img[i * 4] / 255
+  const ancho = desenfocar(tierra, S, 6)
+  const out = new Uint8Array(S * S * 4)
+  for (let i = 0; i < S * S; i++) {
+    out[i * 4] = ancho[i] * 255
+    out[i * 4 + 3] = 255
+  }
+  const tx = new THREE.DataTexture(out, S, S, THREE.RGBAFormat)
+  tx.magFilter = tx.minFilter = THREE.LinearFilter
+  tx.needsUpdate = true
+  return tx
+}
+
+/** Textura de 1 píxel mientras carga la del mundo (mar liso, nunca negro). */
+function pixel(r: number, g: number, b: number) {
+  const tx = new THREE.DataTexture(new Uint8Array([r, g, b, 255]), 1, 1, THREE.RGBAFormat)
+  tx.needsUpdate = true
+  return tx
 }
 
 function texturaCielo() {
@@ -232,7 +264,8 @@ export class EscenaPeru {
   private controles: OrbitControls
   private hemi = new THREE.HemisphereLight(0xdbeaf3, 0x14202b, 0.8 * LUZ)
   private sol = new THREE.DirectionalLight(0xfff4e0, 0.8 * LUZ)
-  private mar: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>
+  private mar: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
+  private texturas: THREE.Texture[] = []
   private mapa = new THREE.Group()
   private mallas: Malla[] = []
   private rayadas: Record<'up' | 'down' | 'green', THREE.CanvasTexture> | null = null
@@ -291,11 +324,7 @@ export class EscenaPeru {
     r.outputColorSpace = THREE.LinearSRGBColorSpace
     this.dprMax = Math.min(devicePixelRatio || 1, 1.5)
     this.dpr = Math.min(this.dprMax, 1.25)
-    r.setPixelRatio(this.dpr)
-    r.shadowMap.enabled = true
-    r.shadowMap.type = THREE.PCFSoftShadowMap
-    r.shadowMap.autoUpdate = false // las sombras se recalculan solo cuando cambian las alturas
-    r.shadowMap.needsUpdate = true
+    r.setPixelRatio(this.dpr) // sin mapa de sombras: la sombra del Perú va en el shader del suelo
     r.domElement.style.display = 'block'
     r.domElement.style.width = '100%'
     r.domElement.style.height = '100%'
@@ -313,26 +342,7 @@ export class EscenaPeru {
 
     this.escena.add(this.hemi)
     this.sol.position.set(-25, 50, 25)
-    this.sol.castShadow = true
-    this.sol.shadow.mapSize.set(1024, 1024)
-    Object.assign(this.sol.shadow.camera, {
-      left: -40,
-      right: 40,
-      top: 40,
-      bottom: -40,
-      near: 1,
-      far: 140,
-    })
     this.escena.add(this.sol)
-
-    this.mar = new THREE.Mesh(
-      new THREE.PlaneGeometry(300, 300),
-      new THREE.MeshStandardMaterial({ roughness: 1 }),
-    )
-    this.mar.rotation.x = -Math.PI / 2
-    this.mar.position.y = -PISO - 0.02
-    this.mar.receiveShadow = true
-    this.escena.add(this.mar)
 
     this.mapa.rotation.x = -Math.PI / 2
     this.escena.add(this.mapa)
@@ -348,8 +358,6 @@ export class EscenaPeru {
         geom,
         new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 }),
       ) as unknown as Malla
-      malla.castShadow = true
-      malla.receiveShadow = true
       malla.position.z = -PISO
       // Un solo LineSegments por departamento (antes: una línea y un material por anillo)
       const seg: number[] = []
@@ -380,6 +388,70 @@ export class EscenaPeru {
     this.mapa.updateMatrixWorld(true)
     for (const m of this.mallas)
       m.userData.centro = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()).setY(0)
+
+    // Suelo: un plano, un material, un draw call; se dibuja después de los departamentos
+    const aEscena = (lon: number, lat: number) => {
+      const v = proyectar([lon, lat])
+      return [v.x + this.mapa.position.x, -v.y + this.mapa.position.z]
+    }
+    const [cx0, cz0] = aEscena(MUNDO.lon0, MUNDO.lat1)
+    const [cx1, cz1] = aEscena(MUNDO.lon1, MUNDO.lat0)
+    const tam = caja.getSize(new THREE.Vector3())
+    const lado = Math.max(tam.x, tam.z) + 16
+    const cajaPeru = { x: -lado / 2, z: -lado / 2, w: lado }
+    const sombra = texturaSombraPeru(this.mapa.position, cajaPeru)
+    const vacio1 = pixel(153, 0, 0)
+    const vacio2 = pixel(0, 0, 0)
+    this.texturas.push(sombra, vacio1, vacio2)
+    const u = (v: unknown) => ({ value: v })
+    const matSuelo = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib.fog,
+        {
+          uTime: u(0),
+          uMundo: u(vacio1),
+          uMundo2: u(vacio2),
+          uPeru: u(sombra),
+          uCaja: u(new THREE.Vector4(cx0, cz0, cx1 - cx0, cz1 - cz0)),
+          uCajaPeru: u(new THREE.Vector4(cajaPeru.x, cajaPeru.z, lado, lado)),
+          uHondo: u(new THREE.Color()),
+          uSomero: u(new THREE.Color()),
+          uEspuma: u(new THREE.Color()),
+          uSombra: u(new THREE.Color()),
+          uTierraBaja: u(new THREE.Color()),
+          uTierraAlta: u(new THREE.Color()),
+          uAgua: u(new THREE.Color()),
+          uFrontera: u(new THREE.Color()),
+        },
+      ]),
+      vertexShader: SUELO_VS,
+      fragmentShader: SUELO_FS,
+      fog: true,
+    })
+    // UniformsUtils.merge clona: las texturas se asignan después
+    matSuelo.uniforms.uMundo.value = vacio1
+    matSuelo.uniforms.uMundo2.value = vacio2
+    matSuelo.uniforms.uPeru.value = sombra
+    const cargador = new THREE.TextureLoader()
+    const base = import.meta.env.BASE_URL
+    for (const [archivo, clave] of [
+      ['mapa/mundo.png', 'uMundo'],
+      ['mapa/mundo2.png', 'uMundo2'],
+    ] as const)
+      cargador.load(base + archivo, (tx) => {
+        tx.flipY = false
+        tx.minFilter = THREE.LinearMipmapLinearFilter
+        tx.anisotropy = Math.min(4, r.capabilities.getMaxAnisotropy())
+        tx.needsUpdate = true
+        this.texturas.push(tx)
+        matSuelo.uniforms[clave].value = tx
+        this.sucio = true
+      })
+    this.mar = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matSuelo)
+    this.mar.rotation.x = -Math.PI / 2
+    this.mar.position.y = -PISO - 0.02
+    this.mar.renderOrder = 1
+    this.escena.add(this.mar)
 
     // Etiquetas flotantes (capa HTML encima del lienzo; texto, nunca HTML)
     capaEtiquetas.replaceChildren()
@@ -580,16 +652,21 @@ export class EscenaPeru {
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     this.escena.background = texturaCielo()
     this.escena.fog = new THREE.Fog(bg, 95, 235)
-    this.mar.material.map?.dispose()
-    const curvas = new THREE.CanvasTexture(
-      lienzoCurvas(1024, this.color('--sea'), this.color('--plane'), claro ? 0.08 : 0.18, 18),
-    )
-    curvas.wrapS = curvas.wrapT = THREE.RepeatWrapping
-    curvas.repeat.set(5, 5)
-    curvas.anisotropy = 4
-    this.mar.material.map = curvas
-    this.mar.material.color.set(0xffffff)
-    this.mar.material.needsUpdate = true
+    const fondo = this.color('--bg')
+    const mar = this.color('--sea')
+    const fg = this.color('--fg')
+    const U = this.mar.material.uniforms
+    U.uHondo.value.set(hexMix(mar, claro ? fg : '#000000', claro ? 0.18 : 0.4))
+    U.uSomero.value.set(hexMix(mar, claro ? '#ffffff' : this.color('--accent-soft'), claro ? 0.35 : 0.2))
+    U.uEspuma.value.set(hexMix(mar, claro ? '#ffffff' : fg, claro ? 0.8 : 0.35))
+    U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
+    U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
+    U.uTierraAlta.value.set(hexMix(fondo, claro ? '#ffffff' : fg, claro ? 0.6 : 0.32))
+    U.uAgua.value.set(hexMix(mar, claro ? fg : this.color('--accent-soft'), claro ? 0.25 : 0.35))
+    U.uFrontera.value.set(hexMix(fondo, fg, claro ? 0.55 : 0.45))
+    U.fogColor.value.copy(bg)
+    U.fogNear.value = 95
+    U.fogFar.value = 235
     // En claro, luz más suave para que los colores no se "quemen"
     this.hemi.intensity = (claro ? 0.78 : 0.8) * LUZ
     this.hemi.color.set(claro ? 0xf4f6f7 : 0xdbeaf3)
@@ -602,7 +679,6 @@ export class EscenaPeru {
       down: texturaRayada(this.color('--map-down')),
       green: texturaRayada(this.color('--map-green')),
     }
-    this.renderer.shadowMap.needsUpdate = true
     this.pintar()
     this.actualizarParticulas()
   }
@@ -770,8 +846,8 @@ export class EscenaPeru {
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
     this.mar.geometry.dispose()
-    this.mar.material.map?.dispose()
     this.mar.material.dispose()
+    this.texturas.forEach((t) => t.dispose())
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     if (this.rayadas) Object.values(this.rayadas).forEach((t) => t.dispose())
     this.renderer.dispose()
@@ -839,7 +915,6 @@ export class EscenaPeru {
         m.scale.z = m.userData.h
       }
     }
-    this.renderer.shadowMap.needsUpdate = true
     this.sucio = true
   }
 
@@ -1013,7 +1088,6 @@ export class EscenaPeru {
       }
     }
     this.moviendo = moviendo
-    if (moviendo) this.renderer.shadowMap.needsUpdate = true
     if (this.puntero) {
       const id = this.elegir(this.puntero)
       this.puntero = null
@@ -1021,6 +1095,7 @@ export class EscenaPeru {
     }
     this.amortiguando = this.controles.update(dt) && !this.controles.autoRotate
     this.pasoParticulas(t)
+    if (fondo) this.mar.material.uniforms.uTime.value += dt
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)
     this.ubicarEtiquetas()

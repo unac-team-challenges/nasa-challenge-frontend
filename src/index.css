@@ -200,3 +200,14 @@ h3 {
 .lbl3d.sel small {
   color: var(--accent-fg);
 }
+
+/* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
+.lbl3d.country {
+  background: none;
+  border: 0;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+}

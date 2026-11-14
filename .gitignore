@@ -28,3 +28,6 @@ dist-ssr
 # Solo pnpm: no subir lockfiles de npm o yarn
 package-lock.json
 yarn.lock
+
+playwright-report
+test-results

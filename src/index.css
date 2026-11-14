@@ -4,64 +4,199 @@
 @import './shadcn.css';
 
 /*
- * Tokens del prototipo v2 (tema Humboldt).
- * Pendiente: portar del prototipo las otras 3 paletas (Andes, Amazonía, Nazca)
- * y los colores del mapa en oscuro.
+ * Tokens del prototipo v2, paleta Humboldt.
+ * Claro "Garúa" (el cielo gris de Lima) y oscuro "Humboldt" (el mar frío del Pacífico).
+ * --up/--down/--green son para textos (contraste); --map-* solo para el mapa.
+ * Pendiente: las paletas Andes, Amazonía y Nazca.
  */
 :root {
-  /* Claro "Garúa" (v20) */
   --bg: #dce2e3;
   --panel: #ebefef;
-  --floor: #c7d1d4;
-  --text: #13222c;
-  --accent: #b3245a;
-  --accent-text: #b3245a;
+  --panel-2: #e1e7e8;
+  --line: #c5ced1;
+  --line-2: #a9b6bc;
+  --fg: #1a2a33;
+  --muted: #4b5e68;
+  --up: #2367a6;
+  --up-soft: #b4cbe0;
+  --down: #94582a;
+  --down-soft: #d9c0a2;
+  --green: #2f7550;
+  --green-soft: #b3d2bf;
   --map-up: #5e95c8;
   --map-down: #c49061;
   --map-green: #5fa07c;
+  --accent: #a8285a;
+  --accent-text: #a8285a;
+  --accent-fg: #ffffff;
+  --accent-soft: #eed8e1;
+  --sea: #c7d1d4;
+  --plane: #4b5e68;
+  --shadow: rgba(26, 42, 51, 0.1);
+  --nino: #ebdfbe;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    /* Oscuro "Humboldt" */
     --bg: #0f1c26;
-    --panel: #16283a;
-    --floor: #1b3043;
-    --text: #e6eef2;
+    --panel: #172833;
+    --panel-2: #1c303c;
+    --line: #2a3f4d;
+    --line-2: #3b5363;
+    --fg: #e7eef0;
+    --muted: #9fb2bc;
+    --up: #4fa3e0;
+    --up-soft: #2c5a78;
+    --down: #d9a05b;
+    --down-soft: #6e5537;
+    --green: #5bc08a;
+    --green-soft: #2e5a44;
+    --map-up: #4fa3e0;
+    --map-down: #d9a05b;
+    --map-green: #5bc08a;
     --accent: #e0457b;
     --accent-text: #f2789f;
+    --accent-fg: #0f1c26;
+    --accent-soft: #3a2030;
+    --sea: #0b161e;
+    --plane: #e7eef0;
+    --shadow: rgba(0, 0, 0, 0.35);
+    --nino: #3a3420;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
   --bg: #0f1c26;
-  --panel: #16283a;
-  --floor: #1b3043;
-  --text: #e6eef2;
+  --panel: #172833;
+  --panel-2: #1c303c;
+  --line: #2a3f4d;
+  --line-2: #3b5363;
+  --fg: #e7eef0;
+  --muted: #9fb2bc;
+  --up: #4fa3e0;
+  --up-soft: #2c5a78;
+  --down: #d9a05b;
+  --down-soft: #6e5537;
+  --green: #5bc08a;
+  --green-soft: #2e5a44;
+  --map-up: #4fa3e0;
+  --map-down: #d9a05b;
+  --map-green: #5bc08a;
   --accent: #e0457b;
   --accent-text: #f2789f;
+  --accent-fg: #0f1c26;
+  --accent-soft: #3a2030;
+  --sea: #0b161e;
+  --plane: #e7eef0;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --nino: #3a3420;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-panel: var(--panel);
-  --color-floor: var(--floor);
-  --color-text: var(--text);
-  --color-accent: var(--accent);
-  --color-accent-text: var(--accent-text);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-green: var(--green);
   --color-map-up: var(--map-up);
   --color-map-down: var(--map-down);
   --color-map-green: var(--map-green);
-  --font-display: 'Newsreader Variable', Georgia, serif;
-  --font-sans: 'Public Sans Variable', system-ui, sans-serif;
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --font-display: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Public Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 16px;
+  --tracking-display: -0.01em;
+}
+
+html,
+body,
+#root {
+  height: 100%;
 }
 
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
+  color: var(--fg);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* Botones que responden al presionar (v18): escala 0.97 en 150 ms */
+.presionable {
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.presionable:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .presionable:active {
+    transform: none;
+  }
+}
+
+/* Etiquetas flotantes del 3D (las crea la escena) */
+.lbl3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  white-space: nowrap;
+  will-change: transform;
+}
+.lbl3d small {
+  font-weight: 500;
+  margin-left: 5px;
+  color: var(--muted);
+}
+.lbl3d.ocean {
+  background: none;
+  border: 0;
+  font-weight: 500;
+  font-style: italic;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-size: 13px;
+}
+.lbl3d.sel {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.lbl3d.sel small {
+  color: var(--accent-fg);
 }

@@ -1,0 +1,297 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Detective del Perú",
+    "description": "API de solo lectura: sirve resultados ya calculados.",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/variables": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Variables del producto con unidad, fuente y rango de años.",
+        "operationId": "variables",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VariableInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zonas": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Las 25 zonas (departamentos) sin series.",
+        "operationId": "zonas",
+        "parameters": [
+          {
+            "name": "variable",
+            "in": "query",
+            "description": "Obligatoria: el plan B estático la necesita en la ruta",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Variable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Zona"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zonas/{id}": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Serie anual de una zona (`id` = ubigeo como texto, \"01\"–\"25\").",
+        "operationId": "zona",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Ubigeo del departamento, como texto",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "15"
+          },
+          {
+            "name": "variable",
+            "in": "query",
+            "description": "Obligatoria",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Variable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonaDetalle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorRespuesta": {
+        "type": "object",
+        "description": "Cuerpo de los errores 400 y 404.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Punto": {
+        "type": "object",
+        "required": [
+          "anio",
+          "valor"
+        ],
+        "properties": {
+          "anio": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "valor": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Variable": {
+        "type": "string",
+        "enum": [
+          "lluvia",
+          "temperatura"
+        ]
+      },
+      "VariableInfo": {
+        "type": "object",
+        "description": "`GET /api/variables`",
+        "required": [
+          "id",
+          "unidad",
+          "fuente",
+          "descripcion"
+        ],
+        "properties": {
+          "anio_fin": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "anio_inicio": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "fuente": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "unidad": {
+            "type": "string"
+          }
+        }
+      },
+      "Zona": {
+        "type": "object",
+        "description": "`GET /api/zonas`: una zona del mapa (sin serie).",
+        "required": [
+          "id",
+          "nombre",
+          "lat",
+          "lon"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Ubigeo como texto: \"01\"–\"25\"."
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lon": {
+            "type": "number",
+            "format": "double"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        }
+      },
+      "ZonaDetalle": {
+        "type": "object",
+        "description": "`GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Josue.",
+        "required": [
+          "id",
+          "nombre",
+          "lat",
+          "lon",
+          "variable",
+          "unidad",
+          "fuente",
+          "serie"
+        ],
+        "properties": {
+          "fuente": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lon": {
+            "type": "number",
+            "format": "double"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "serie": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Punto"
+            }
+          },
+          "unidad": {
+            "type": "string"
+          },
+          "variable": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

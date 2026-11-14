@@ -1,4 +1,5 @@
-import { NOMBRE, ninoEn, serie, type Periodo, type Variable, type Zona } from '../data/datos'
+import { NOMBRE, ninoEn, type Periodo, type Variable, type Zona } from '../data/datos'
+import { useSerie } from '../lib/useZonas'
 import { TEXTOS, type Idioma } from '../i18n/textos'
 import { fmtValor, num } from '../lib/formato'
 
@@ -33,7 +34,7 @@ export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, colo
   const mr = 10
   const mt = 12
   const mb = 28
-  const pts = serie(d.id, variable, periodo, sinNino)
+  const pts = useSerie(d.id)
   if (pts.length < 2) return null
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y

@@ -19,9 +19,15 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
 
   // Variable: lluvia → vegetación
   const variable = page.getByRole('group', { name: 'Variable' })
-  await expect(variable.getByRole('button', { name: 'Lluvia' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(variable.getByRole('button', { name: 'Lluvia' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await variable.getByRole('button', { name: 'Vegetación' }).click()
-  await expect(variable.getByRole('button', { name: 'Vegetación' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(variable.getByRole('button', { name: 'Vegetación' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await variable.getByRole('button', { name: 'Lluvia' }).click()
 
   // Cambiar a 2D y elegir un departamento con el teclado
@@ -55,7 +61,10 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.locator('html')).toHaveAttribute('data-theme', /dark|light/)
 
   // Volver al inicio
-  await page.getByRole('link', { name: /Detective del Perú|Detective of Peru|home/i }).first().click()
+  await page
+    .getByRole('link', { name: /Detective del Perú|Detective of Peru|home/i })
+    .first()
+    .click()
   await expect(page).not.toHaveURL(/#explorar$/)
 
   expect(errores).toEqual([])

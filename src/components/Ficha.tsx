@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { NOMBRE, REGION, zonasProbadas, type Variable, type Zona } from '../data/ejemplo'
 import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
+import { colorDireccion } from '../lib/color'
 import { fmtP, fmtValor, mayuscula, num } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
@@ -11,11 +12,6 @@ const DOI: Record<Variable, [string, string]> = {
   ndvi: ['https://doi.org/10.5067/MODIS/MOD13A3.061', 'MODIS MOD13A3 V6.1'],
 }
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
-
-/** Token del color de dirección: azul (o verde en NDVI) si sube, ocre si baja. */
-export function colorDireccion(pendiente: number, variable: Variable) {
-  return pendiente >= 0 ? (variable === 'ndvi' ? '--green' : '--up') : '--down'
-}
 
 function frase(d: Zona, perfil: Perfil, variable: Variable, idioma: Idioma, m: number) {
   const P = FRASES[idioma]

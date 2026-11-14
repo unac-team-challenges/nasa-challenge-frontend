@@ -8,7 +8,9 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     trace: 'retain-on-failure',
     // WebGL por software, para que el mapa 3D también funcione en el CI
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] },
+    launchOptions: {
+      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    },
   },
   webServer: {
     command: 'pnpm build && pnpm preview --port 4173 --strictPort',

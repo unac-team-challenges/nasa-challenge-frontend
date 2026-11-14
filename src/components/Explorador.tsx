@@ -7,7 +7,8 @@ import { EscenaPeru } from '../mapa/escena'
 import { Mapa2D } from '../mapa/Mapa2D'
 import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
-import { colorDireccion, Ficha } from './Ficha'
+import { colorDireccion } from '../lib/color'
+import { Ficha } from './Ficha'
 import { Leyenda } from './Leyenda'
 
 const boton =

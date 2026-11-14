@@ -22,7 +22,9 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const alGirarRef = useRef(alGirar)
-  alGirarRef.current = alGirar
+  useEffect(() => {
+    alGirarRef.current = alGirar
+  })
 
   // Crear y destruir la escena cuando cambia el modo
   useEffect(() => {

@@ -169,8 +169,9 @@ function ruido(id: string, y: number) {
 export function calcularZonas(variable: Variable, sinNino = false): Record<string, Zona> {
   const fuente = variable === 'ndvi' ? NDVI : LLUVIA
   const filas = Object.keys(NOMBRE).map((id) => {
-    let [base, slope, p, lag1] = fuente[id]
-    if (variable === 'lluvia' && sinNino && LLUVIA_SIN_NINO[id]) [slope, p] = LLUVIA_SIN_NINO[id]
+    const [base, slope0, p0, lag1] = fuente[id]
+    const [slope, p] =
+      variable === 'lluvia' && sinNino && LLUVIA_SIN_NINO[id] ? LLUVIA_SIN_NINO[id] : [slope0, p0]
     return { id, base, slope, p, lag1, n: POCOS[variable][id] ?? 26, q: null as number | null }
   })
   const probadas = filas.filter((r) => r.n >= 10).sort((a, b) => a.p - b.p)

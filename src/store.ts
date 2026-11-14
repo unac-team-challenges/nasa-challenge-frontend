@@ -57,6 +57,7 @@ export const useApp = create<EstadoApp>((set, get) => ({
   idioma: idiomaInicial(),
   perfil: 'publico',
   variable: 'lluvia',
+  // Solo la tendencia larga (1981–2024): decisión de Favio, 14 nov. El periodo reciente sigue en los datos.
   periodo: 'largo',
   // Al cambiar de periodo se vuelve a la tendencia: el año puede quedar fuera del rango
   setPeriodo: (periodo) => set({ periodo, anio: null, reproduciendo: false }),

@@ -14,6 +14,7 @@ import { colorDireccion } from '../lib/direccion'
 import { fmtP, fmtPct, fmtValor, mayuscula, num } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
+import { AntesDespues } from './AntesDespues'
 import { GraficoSerie } from './GraficoSerie'
 
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
@@ -202,6 +203,8 @@ export function Ficha() {
           )}
         </>
       )}
+
+      <AntesDespues departamento={sel} />
 
       {td && st !== 'pocos_datos' && (
         <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">

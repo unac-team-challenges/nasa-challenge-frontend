@@ -38,4 +38,3 @@ export function pct(a: number): string {
   const s = Math.round(Math.abs(a) * 100)
   return (a > 0 ? '+' : a < 0 ? '−' : '') + s + ' %'
 }
-

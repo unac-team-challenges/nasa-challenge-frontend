@@ -17,14 +17,14 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
   await expect(page.locator('#perfil')).toHaveValue('agricultor')
 
-  // Variable: lluvia → vegetación
+  // Variable: lluvia → temperatura (datos reales de NASA POWER)
   const variable = page.getByRole('group', { name: 'Variable' })
   await expect(variable.getByRole('button', { name: 'Lluvia' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
-  await variable.getByRole('button', { name: 'Vegetación' }).click()
-  await expect(variable.getByRole('button', { name: 'Vegetación' })).toHaveAttribute(
+  await variable.getByRole('button', { name: 'Temperatura' }).click()
+  await expect(variable.getByRole('button', { name: 'Temperatura' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )

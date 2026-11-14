@@ -114,6 +114,9 @@ const es = {
   howLag: 'Autocorrelación (lag1)',
   howMotivo: 'Por qué no es «cambio real»',
   howSrc: 'Fuente',
+  howDatos: 'Datos servidos por',
+  datosApi: 'la API del proyecto',
+  datosLocal: 'la copia local del proyecto (la API no respondió o aún no trae tendencias)',
   lagExpl:
     'Mide cuánto se parece un año al siguiente. Si es alta, la prueba lo corrige para no exagerar la tendencia.',
   qExpl: (m: number) =>
@@ -264,6 +267,9 @@ const en: Textos = {
   howLag: 'Autocorrelation (lag1)',
   howMotivo: 'Why it is not a real change',
   howSrc: 'Source',
+  howDatos: 'Data served by',
+  datosApi: 'the project API',
+  datosLocal: "the project's local copy (the API did not answer or has no trends yet)",
   lagExpl:
     'How much one year resembles the next. When it is high, the test corrects for it so the trend is not overstated.',
   qExpl: (m) =>

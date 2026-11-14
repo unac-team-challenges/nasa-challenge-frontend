@@ -1,18 +1,18 @@
-// Pantalla provisional: confirma que Tailwind, las fuentes y los tokens cargan.
-// Se reemplaza al portar el prototipo v2 (portada y explorador).
+import { useEffect } from 'react'
+import { Cabecera } from './components/Cabecera'
+import { Portada } from './components/Portada'
+import { useApp } from './store'
+
 export default function App() {
+  const idioma = useApp((s) => s.idioma)
+  useEffect(() => {
+    document.documentElement.lang = idioma
+  }, [idioma])
+
   return (
-    <main className="grid min-h-screen place-items-center p-4 text-center">
-      <div>
-        <h1 className="font-display text-5xl">Detective del Perú</h1>
-        <p className="mt-2">NASA Space Apps Challenge 2026 · En construcción</p>
-        <div className="mt-6 flex justify-center gap-2" aria-hidden="true">
-          <span className="size-6 rounded bg-map-up" />
-          <span className="size-6 rounded bg-map-down" />
-          <span className="size-6 rounded bg-map-green" />
-          <span className="size-6 rounded bg-accent" />
-        </div>
-      </div>
-    </main>
+    <div className="flex min-h-full flex-col">
+      <Cabecera />
+      <Portada />
+    </div>
   )
 }

@@ -139,6 +139,16 @@ const es = {
   scaleTime: (v: string) => `Columna más alta: ${v} frente a su promedio`,
   legTimeNote: (y: number) => `Año ${y}: cada departamento frente a su propio promedio`,
   tipTime: (nombre: string, v: string, y: number) => `${nombre} en ${y}: ${v} frente a su promedio`,
+  // Caso 2: antes y después (NDVI real de MODIS)
+  cmpH: 'La costa que reverdece',
+  cmpTexto: (valle: string, a: number, b: number, pct: number) =>
+    `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (+${pct} %). Es tierra irrigada ganada al desierto.`,
+  cmpLbl: 'Comparar la vegetación de 2001 y 2024',
+  cmpAlt: (valle: string, anio: number) =>
+    `Vegetación (NDVI) de ${valle} en ${anio}, imagen satelital MODIS`,
+  cmpDesierto: 'Desierto',
+  cmpVerde: 'Vegetación densa',
+  cmpCap: 'NDVI anual de MODIS MOD13A3 (NASA), píxeles de 1 km. Desliza para comparar 2001 y 2024.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
@@ -279,6 +289,14 @@ const en: Textos = {
   scaleTime: (v) => `Tallest column: ${v} vs its average`,
   legTimeNote: (y) => `Year ${y}: each department vs its own average`,
   tipTime: (nombre, v, y) => `${nombre} in ${y}: ${v} vs its average`,
+  cmpH: 'The coast turning green',
+  cmpTexto: (valle, a, b, pct) =>
+    `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (+${pct} %). It is irrigated land won from the desert.`,
+  cmpLbl: 'Compare vegetation in 2001 and 2024',
+  cmpAlt: (valle, anio) => `Vegetation (NDVI) of ${valle} in ${anio}, MODIS satellite image`,
+  cmpDesierto: 'Desert',
+  cmpVerde: 'Dense vegetation',
+  cmpCap: 'Annual NDVI from MODIS MOD13A3 (NASA), 1 km pixels. Drag to compare 2001 and 2024.',
   vistaMapa: 'Map view',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",

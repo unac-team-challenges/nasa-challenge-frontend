@@ -31,3 +31,6 @@ yarn.lock
 
 playwright-report
 test-results
+# Caché de descargas de NASA POWER del script de datos
+scripts/.cache_power/
+__pycache__/

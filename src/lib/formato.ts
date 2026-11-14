@@ -1,4 +1,4 @@
-import type { Variable } from '../data/ejemplo'
+import type { Variable } from '../data/datos'
 import type { Idioma } from '../i18n/textos'
 
 export function num(v: number, decimales: number, idioma: Idioma) {
@@ -6,10 +6,18 @@ export function num(v: number, decimales: number, idioma: Idioma) {
   return idioma === 'es' ? s.replace('.', ',') : s
 }
 
-/** Cambio por década con signo: "+45 mm" o "+0,06". */
+/** Cambio por década con signo: "−44 mm" (lluvia) o "+0,21 °C" (temperatura). */
 export function fmtValor(v: number, variable: Variable, idioma: Idioma) {
   const signo = v > 0 ? '+' : v < 0 ? '−' : ''
-  return variable === 'ndvi' ? signo + num(v, 2, idioma) : signo + Math.round(Math.abs(v)) + ' mm'
+  return variable === 'temperatura'
+    ? signo + num(v, 2, idioma) + ' °C'
+    : signo + Math.round(Math.abs(v)) + ' mm'
+}
+
+/** Porcentaje con signo: "−14 %". */
+export function fmtPct(v: number) {
+  const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+  return signo + Math.round(Math.abs(v)) + ' %'
 }
 
 export function fmtP(p: number | null, idioma: Idioma) {

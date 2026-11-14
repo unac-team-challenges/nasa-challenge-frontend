@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { NOMBRE } from '../data/ejemplo'
+import { NOMBRE, PERIODOS } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { fmtValor } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
@@ -7,7 +7,7 @@ import { EscenaPeru } from '../mapa/escena'
 import { Mapa2D } from '../mapa/Mapa2D'
 import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
-import { colorDireccion } from '../lib/color'
+import { colorDireccion } from '../lib/direccion'
 import { Ficha } from './Ficha'
 import { Leyenda } from './Leyenda'
 
@@ -20,7 +20,7 @@ const boton =
  */
 export function Explorador() {
   const { idioma, variable, sel, sinNino, informeMin, setInformeMin } = useApp()
-  const { conWebgl, modoMapa, setModoMapa } = useApp()
+  const { conWebgl, modoMapa, setModoMapa, periodo } = useApp()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
@@ -48,7 +48,9 @@ export function Explorador() {
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
                 {t.mapH[variable]}
               </h2>
-              <span className="text-[13px] text-muted">{t.mapSub}</span>
+              <span className="text-[13px] text-muted">
+                {t.mapSub(PERIODOS[periodo].year_start, PERIODOS[periodo].year_end)}
+              </span>
             </div>
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">

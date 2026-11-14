@@ -1,13 +1,14 @@
-import { ANIOS_NINO, NOMBRE, serie, type Variable, type Zona } from '../data/ejemplo'
+import { NOMBRE, ninoEn, serie, type Periodo, type Variable, type Zona } from '../data/datos'
 import { TEXTOS, type Idioma } from '../i18n/textos'
 import { fmtValor, num } from '../lib/formato'
 
 interface Props {
   zona: Zona
   variable: Variable
+  periodo: Periodo
   sinNino: boolean
   idioma: Idioma
-  /** Token del color de la tendencia: --up, --down o --green */
+  /** Token del color de la tendencia: --up o --down */
   color: string
 }
 
@@ -19,11 +20,10 @@ function pasoRedondo(rango: number, objetivo: number) {
 }
 
 /**
- * Serie 2000–2025 a escala, portada del prototipo en SVG:
- * puntos por año, línea de tendencia (Sen), banda del rango probable y años de El Niño.
- * (El stack proponía Recharts; este SVG es más liviano y fiel al diseño. Se puede cambiar.)
+ * Serie anual real a escala (SVG, portada del prototipo): puntos por año, línea de
+ * tendencia de Sen, banda del rango probable (IC 95 %) y años de El Niño.
  */
-export function GraficoSerie({ zona: d, variable, sinNino, idioma, color }: Props) {
+export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, color }: Props) {
   const t = TEXTOS[idioma]
   const W = 400
   const H = 214
@@ -31,39 +31,42 @@ export function GraficoSerie({ zona: d, variable, sinNino, idioma, color }: Prop
   const mr = 10
   const mt = 12
   const mb = 28
-  const pts = serie(d.id, variable, sinNino)
+  const pts = serie(d.id, variable, periodo, sinNino)
+  if (pts.length < 2) return null
+  const y0 = pts[0].y
+  const y1 = pts[pts.length - 1].y
+  // Recta de Sen que pasa por la mediana: pivote en el año central con el valor de la tendencia
   const media = pts.reduce((a, p) => a + p.v, 0) / pts.length
-  const recta = (s: number, y: number) => media + (s / 10) * (y - 2012.5)
+  const xc = (y0 + y1) / 2
+  const yc = media
+  const recta = (s: number, y: number) => yc + (s / 10) * (y - xc)
   const vals = pts
     .map((p) => p.v)
-    .concat([
-      recta(d.ci_low, 2000),
-      recta(d.ci_high, 2000),
-      recta(d.ci_low, 2025),
-      recta(d.ci_high, 2025),
-    ])
+    .concat([recta(d.ci_low, y0), recta(d.ci_high, y0), recta(d.ci_low, y1), recta(d.ci_high, y1)])
   let lo = Math.min(...vals)
   let hi = Math.max(...vals)
   if (variable === 'lluvia') lo = Math.max(0, lo)
   const paso = pasoRedondo(hi - lo || 1, 4)
   lo = Math.floor(lo / paso) * paso
   hi = Math.ceil(hi / paso) * paso
-  const X = (y: number) => ml + ((y - 2000) / 25) * (W - ml - mr)
+  const X = (y: number) => ml + ((y - y0) / (y1 - y0)) * (W - ml - mr)
   const Y = (v: number) => mt + ((hi - v) / (hi - lo)) * (H - mt - mb)
   const f = (n: number) => n.toFixed(1)
   const lineas: number[] = []
   for (let v = lo; v <= hi + paso / 2; v += paso) lineas.push(v)
+  const marcas: number[] = []
+  for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += periodo === 'largo' ? 10 : 5) marcas.push(y)
   const banda = (
     [
-      [2000, d.ci_low],
-      [2012.5, null],
-      [2025, d.ci_high],
-      [2025, d.ci_low],
-      [2012.5, null],
-      [2000, d.ci_high],
+      [y0, d.ci_low],
+      [xc, null],
+      [y1, d.ci_high],
+      [y1, d.ci_low],
+      [xc, null],
+      [y0, d.ci_high],
     ] as [number, number | null][]
   )
-    .map(([y, s]) => `${f(X(y))},${f(Y(s == null ? media : recta(s, y)))}`)
+    .map(([y, s]) => `${f(X(y))},${f(Y(s == null ? yc : recta(s, y)))}`)
     .join(' ')
 
   return (
@@ -71,16 +74,16 @@ export function GraficoSerie({ zona: d, variable, sinNino, idioma, color }: Prop
       viewBox={`0 0 ${W} ${H}`}
       className="block h-auto w-full overflow-visible"
       role="img"
-      aria-label={`${NOMBRE[d.id]}: ${fmtValor(d.slope_per_decade, variable, idioma)} ${t.perDecade[variable]}`}
+      aria-label={`${NOMBRE[d.id]}: ${fmtValor(d.slope_per_decade, variable, idioma)} ${t.perDecade}`}
     >
       {variable === 'lluvia' &&
         !sinNino &&
-        ANIOS_NINO.map((y) => (
+        ninoEn(periodo).map((y) => (
           <rect
             key={y}
-            x={f(X(y) - 5)}
+            x={f(X(y) - 4)}
             y={mt}
-            width={10}
+            width={8}
             height={H - mt - mb}
             style={{ fill: 'var(--nino)' }}
           />
@@ -95,11 +98,11 @@ export function GraficoSerie({ zona: d, variable, sinNino, idioma, color }: Prop
             fontSize={11}
             style={{ fill: 'var(--muted)' }}
           >
-            {variable === 'ndvi' ? num(v, 2, idioma) : Math.round(v)}
+            {variable === 'temperatura' ? num(v, paso < 1 ? 1 : 0, idioma) : Math.round(v)}
           </text>
         </g>
       ))}
-      {[2000, 2005, 2010, 2015, 2020, 2025].map((y) => (
+      {marcas.map((y) => (
         <text
           key={y}
           x={f(X(y))}
@@ -119,19 +122,19 @@ export function GraficoSerie({ zona: d, variable, sinNino, idioma, color }: Prop
         strokeWidth={1.2}
       />
       {pts.map((p) => (
-        <circle key={p.y} cx={f(X(p.y))} cy={f(Y(p.v))} r={3} style={{ fill: 'var(--muted)' }} />
+        <circle key={p.y} cx={f(X(p.y))} cy={f(Y(p.v))} r={2.6} style={{ fill: 'var(--muted)' }} />
       ))}
       <line
-        x1={f(X(2000))}
-        y1={f(Y(recta(d.slope_per_decade, 2000)))}
-        x2={f(X(2025))}
-        y2={f(Y(recta(d.slope_per_decade, 2025)))}
+        x1={f(X(y0))}
+        y1={f(Y(recta(d.slope_per_decade, y0)))}
+        x2={f(X(y1))}
+        y2={f(Y(recta(d.slope_per_decade, y1)))}
         style={{ stroke: `var(${color})` }}
         strokeWidth={3.5}
         strokeLinecap="round"
       />
       <text x={ml} y={mt - 2} fontSize={11} style={{ fill: 'var(--muted)' }}>
-        {variable === 'ndvi' ? 'NDVI' : t.unitAxis}
+        {t.unitAxis[variable]}
       </text>
     </svg>
   )

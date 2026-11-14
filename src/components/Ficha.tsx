@@ -1,31 +1,46 @@
 import { useEffect, useRef } from 'react'
-import { NOMBRE, REGION, zonasProbadas, type Variable, type Zona } from '../data/ejemplo'
+import {
+  NOMBRE,
+  ninoEn,
+  PERIODOS,
+  REGION,
+  zonasProbadas,
+  type Periodo,
+  type Variable,
+  type Zona,
+} from '../data/datos'
 import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
-import { colorDireccion } from '../lib/color'
-import { fmtP, fmtValor, mayuscula, num } from '../lib/formato'
+import { colorDireccion } from '../lib/direccion'
+import { fmtP, fmtPct, fmtValor, mayuscula, num } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 import { GraficoSerie } from './GraficoSerie'
 
-const DOI: Record<Variable, [string, string]> = {
-  lluvia: ['https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07', 'GPM IMERG V07'],
-  ndvi: ['https://doi.org/10.5067/MODIS/MOD13A3.061', 'MODIS MOD13A3 V6.1'],
-}
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
 
-function frase(d: Zona, perfil: Perfil, variable: Variable, idioma: Idioma, m: number) {
+function frase(
+  d: Zona,
+  perfil: Perfil,
+  variable: Variable,
+  periodo: Periodo,
+  idioma: Idioma,
+  m: number,
+) {
   const P = FRASES[idioma]
   const z = NOMBRE[d.id]
   const mas = d.slope_per_decade >= 0
+  const { year_start: a, year_end: b } = PERIODOS[periodo]
   if (d.status === 'pocos_datos') return P.few(z)
   const real = d.status === 'real'
   const val = fmtValor(Math.abs(d.slope_per_decade), variable, idioma).replace('+', '')
   switch (perfil) {
     case 'agricultor':
-      return real ? P.agricultorUp(z, P.farmNoun[variable], mas) : P.agricultorCas(z)
+      return real
+        ? P.agricultorUp(z, mas ? P.farmMore[variable] : P.farmLess[variable], a)
+        : P.agricultorCas(z)
     case 'municipalidad':
       return real
-        ? P.municipalidadUp(z, P.noun[variable], val, mas)
+        ? P.municipalidadUp(z, P.noun[variable], val, mas, a, b)
         : P.municipalidadCas(z, mayuscula(P.noun[variable]))
     case 'estudiante':
       return real
@@ -38,29 +53,31 @@ function frase(d: Zona, perfil: Perfil, variable: Variable, idioma: Idioma, m: n
         : P.estudianteCas(fmtP(d.p_value, idioma), fmtP(d.q_value, idioma), m)
     default:
       return real
-        ? P.publicoUp(z, mas ? P.more[variable] : P.less[variable])
+        ? P.publicoUp(z, mas ? P.more[variable] : P.less[variable], a)
         : P.publicoCas(z, P.noun[variable])
   }
 }
 
-/** Zona de contraste para la pista "sube aquí, baja allá". */
-function zonaContraste(d: Zona, variable: Variable) {
-  let id =
-    variable === 'ndvi'
-      ? d.slope_per_decade >= 0
-        ? '15'
-        : '13'
-      : d.slope_per_decade >= 0
-        ? '21'
-        : '20'
-  if (id === d.id)
-    id = variable === 'ndvi' ? (d.id === '15' ? '13' : '15') : d.id === '20' ? '21' : '20'
-  return id
+/**
+ * Zona de contraste para la pista "sube aquí, baja allá": la de tendencia contraria
+ * más fuerte, prefiriendo las que tienen "cambio real".
+ */
+function zonaContraste(d: Zona, zonas: Record<string, Zona>) {
+  const contrarias = Object.values(zonas).filter(
+    (z) =>
+      z.id !== d.id &&
+      z.status !== 'pocos_datos' &&
+      Math.sign(z.slope_per_decade) !== Math.sign(d.slope_per_decade),
+  )
+  if (!contrarias.length) return null
+  const puntaje = (z: Zona) =>
+    (z.status === 'real' ? 1e6 : 0) + Math.abs(z.pct_change_per_decade ?? z.slope_per_decade)
+  return contrarias.sort((x, y) => puntaje(y) - puntaje(x))[0]
 }
 
 /** Ficha-informe de la zona elegida (o la invitación a tocar el mapa). */
 export function Ficha() {
-  const { idioma, variable, perfil, sel, sinNino, setSinNino, seleccionar } = useApp()
+  const { idioma, variable, periodo, perfil, sel, sinNino, setSinNino, seleccionar } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const raiz = useRef<HTMLDivElement>(null)
@@ -88,14 +105,6 @@ export function Ficha() {
           {t.tapH}
         </h2>
         <p className="m-0 text-muted">{t.tapP[variable]}</p>
-        <div>
-          <a
-            href="#expediente-1"
-            className="presionable inline-flex min-h-10 items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm text-fg no-underline hover:border-fg"
-          >
-            {t.emptyCase}
-          </a>
-        </div>
         <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>
       </div>
     )
@@ -106,10 +115,9 @@ export function Ficha() {
   const st = d.status
   const color = st === 'pocos_datos' ? '--muted' : colorDireccion(d.slope_per_decade, variable)
   const lluvia = variable === 'lluvia'
-  const tid = zonaContraste(d, variable)
-  const td = zonas[tid]
-  const bh = d.p_value < 0.05 && (d.q_value ?? 1) >= 0.05
+  const td = zonaContraste(d, zonas)
   const fmt = (v: number) => fmtValor(v, variable, idioma)
+  const aniosNino = ninoEn(periodo).join(', ')
 
   const insignia =
     st === 'real'
@@ -125,7 +133,7 @@ export function Ficha() {
         <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
           {NOMBRE[sel]}
         </h2>
-        <span className="text-[13px] text-muted">{t.src[variable]}</span>
+        <span className="text-[13px] text-muted">{t.src(variable, d.celdas)}</span>
       </div>
 
       <div
@@ -145,11 +153,11 @@ export function Ficha() {
             {t.status[st]}
           </span>
         </div>
-        <p className="m-0 text-base">{frase(d, perfil, variable, idioma, m)}</p>
+        <p className="m-0 text-base">{frase(d, perfil, variable, periodo, idioma, m)}</p>
       </div>
 
       {st === 'pocos_datos' ? (
-        <p className="m-0">{t.fewExpl(d.n_years)}</p>
+        <p className="m-0">{t.fewCeldas(d.celdas)}</p>
       ) : (
         <>
           <div className="flex flex-col gap-0.5">
@@ -159,18 +167,25 @@ export function Ficha() {
             >
               {fmt(d.slope_per_decade)}
             </span>
-            <span className="text-[15px]">{t.perDecade[variable]}</span>
+            <span className="text-[15px]">
+              {lluvia && d.pct_change_per_decade != null
+                ? t.pctDecade(fmtPct(d.pct_change_per_decade))
+                : t.perDecade}
+            </span>
             <span className="text-[13px] text-muted">{t.range(fmt(d.ci_low), fmt(d.ci_high))}</span>
           </div>
           <figure className="m-0 flex flex-col gap-1.5">
             <GraficoSerie
               zona={d}
               variable={variable}
+              periodo={periodo}
               sinNino={sinNino}
               idioma={idioma}
               color={color}
             />
-            <figcaption className="text-xs text-muted">{t.chartCap(lluvia, sinNino)}</figcaption>
+            <figcaption className="text-xs text-muted">
+              {t.chartCap(lluvia, sinNino, aniosNino)}
+            </figcaption>
           </figure>
           {lluvia && (
             <label className="flex cursor-pointer items-center gap-2.5 text-sm">
@@ -186,26 +201,28 @@ export function Ficha() {
         </>
       )}
 
-      <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
-        <h3 className="m-0 text-sm font-semibold">{t.clueH}</h3>
-        <p className="m-0">
-          {t.clue(
-            NOMBRE[tid],
-            t.verb[variable][td.slope_per_decade >= 0 ? 0 : 1],
-            fmt(Math.abs(td.slope_per_decade)).replace('+', ''),
-            t.status[td.status].toLowerCase(),
-          )}
-        </p>
-        <div>
-          <button
-            type="button"
-            className="presionable inline-flex min-h-10 cursor-pointer items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm hover:border-fg"
-            onClick={() => seleccionar(tid)}
-          >
-            {t.clueBtn(NOMBRE[tid])}
-          </button>
+      {td && st !== 'pocos_datos' && (
+        <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
+          <h3 className="m-0 text-sm font-semibold">{t.clueH}</h3>
+          <p className="m-0">
+            {t.clue(
+              NOMBRE[td.id],
+              t.verb[variable][td.slope_per_decade >= 0 ? 0 : 1],
+              fmt(Math.abs(td.slope_per_decade)).replace('+', ''),
+              t.status[td.status].toLowerCase(),
+            )}
+          </p>
+          <div>
+            <button
+              type="button"
+              className="presionable inline-flex min-h-10 cursor-pointer items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm hover:border-fg"
+              onClick={() => seleccionar(td.id)}
+            >
+              {t.clueBtn(NOMBRE[td.id])}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {st !== 'pocos_datos' && (
         <details className="border-t border-line pt-3" open={perfil === 'estudiante'}>
@@ -221,23 +238,31 @@ export function Ficha() {
             <dd className="m-0">{fmtP(d.p_value, idioma)}</dd>
             <dt className="text-muted">q_value</dt>
             <dd className="m-0">{fmtP(d.q_value, idioma)}</dd>
-            <dd className="col-span-full m-0 text-[13px] text-muted">
-              {bh ? t.bhExpl(fmtP(d.q_value, idioma), m) : t.qExpl(m)}
-            </dd>
+            <dd className="col-span-full m-0 text-[13px] text-muted">{t.qExpl(m)}</dd>
+            {d.motivo && (
+              <>
+                <dt className="text-muted">{t.howMotivo}</dt>
+                <dd className="m-0">{d.motivo}</dd>
+              </>
+            )}
             <dt className="text-muted">{t.howN}</dt>
-            <dd className="m-0">{d.n_years}</dd>
+            <dd className="m-0">
+              {d.n_years} ({d.year_start}–{d.year_end})
+            </dd>
+            <dt className="text-muted">{t.howCeldas}</dt>
+            <dd className="m-0">{d.celdas}</dd>
             <dt className="text-muted">{t.howLag}</dt>
-            <dd className="m-0">{num(d.lag1, 2, idioma)}</dd>
+            <dd className="m-0">{d.lag1 == null ? '—' : num(d.lag1, 2, idioma)}</dd>
             <dd className="col-span-full m-0 text-[13px] text-muted">{t.lagExpl}</dd>
             <dt className="text-muted">{t.howSrc}</dt>
             <dd className="m-0">
               <a
-                href={DOI[variable][0]}
+                href="https://power.larc.nasa.gov/"
                 target="_blank"
                 rel="noopener"
                 className="text-accent-text"
               >
-                {DOI[variable][1]}
+                NASA POWER ({variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})
               </a>
             </dd>
           </dl>

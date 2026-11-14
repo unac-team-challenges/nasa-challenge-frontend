@@ -1,5 +1,3 @@
-import type { Variable } from '../data/ejemplo'
-
 /** Lee un token de color del tema (variables CSS de :root). */
 export function cssVar(nombre: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim()
@@ -41,7 +39,3 @@ export function pct(a: number): string {
   return (a > 0 ? '+' : a < 0 ? '−' : '') + s + ' %'
 }
 
-/** Token del color de dirección: azul (o verde en NDVI) si sube, ocre si baja. */
-export function colorDireccion(pendiente: number, variable: Variable) {
-  return pendiente >= 0 ? (variable === 'ndvi' ? '--green' : '--up') : '--down'
-}

@@ -2,8 +2,11 @@
  * Escena 3D del Perú: portada del prototipo v2 (three.js r128) a three.js actual.
  * "La altura es el dato": cada departamento sube o se hunde según slope_per_decade.
  *
- * Es código imperativo a propósito (sin react-three-fiber): conserva los ajustes de
- * rendimiento del prototipo (v13) y lo controla el componente Mapa3D.
+ * Es código imperativo a propósito (sin react-three-fiber) y lo controla el componente Mapa3D.
+ *
+ * Rendimiento: dibuja solo cuando algo cambia (cámara, datos, hover, tema, tamaño). La animación
+ * de fondo (giro, lluvia) va como máximo a 30 cuadros/s, 15 si la ventana no tiene el foco, y se
+ * pausa con la pestaña oculta o el mapa fuera de pantalla. La resolución se adapta sola.
  */
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -18,6 +21,11 @@ export type ModoMapa = 'inicio' | 'explorar'
 
 const PISO = 2.2
 const ALTURA_MAX = 3.2
+/** Escala mínima: con menos, un departamento que baja mucho queda bajo el mar y desaparece. */
+const ESCALA_MIN = 0.12
+/** Cuadros por segundo de la animación de fondo (con foco / sin foco). */
+const FPS_FONDO = 30
+const FPS_SIN_FOCO = 15
 const ELEVA_SEL = 0.35
 const LON0 = -75.0
 const LAT0 = -9.2
@@ -64,7 +72,7 @@ interface DatosMalla {
   h: number
   objetivo: number
   centro: THREE.Vector3
-  contorno: THREE.Group
+  contorno: THREE.LineSegments<THREE.BufferGeometry, THREE.LineDashedMaterial>
 }
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -246,7 +254,24 @@ export class EscenaPeru {
   private particulas: Particulas
   private muestras: [number, number][][] = []
   private v3 = new THREE.Vector3()
-  private perf = { n: 0, suma: 0, ultimo: 0, listo: false }
+  /** Resolución adaptativa: promedio móvil del intervalo entre cuadros dibujados seguidos. */
+  private perf = { media: 0, previo: 0, seguido: false, cambio: 0, pendiente: false }
+  private dpr = 1
+  private dprMax = 1
+  /** Hay que volver a dibujar en el próximo cuadro. */
+  private sucio = true
+  private ultimoCuadro = 0
+  private arrastrando = false
+  private amortiguando = false
+  private moviendo = false
+  /** Último movimiento del puntero; se procesa una vez por cuadro. */
+  private puntero: PointerEvent | null = null
+  /** Colores del tema leídos una vez por cambio de tema (getComputedStyle es caro). */
+  private colores = new Map<string, string>()
+  private porId = new Map<string, Malla>()
+  /** Último transform escrito en cada etiqueta (para no tocar el DOM si no cambió). */
+  private posEtiqueta = new Map<HTMLElement, string>()
+  private elegir: (e: PointerEvent) => string | null
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
   private quitarEventos: () => void
   private contenedor: HTMLElement
@@ -264,7 +289,9 @@ export class EscenaPeru {
 
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     r.outputColorSpace = THREE.LinearSRGBColorSpace
-    r.setPixelRatio(Math.min(devicePixelRatio, 1.5))
+    this.dprMax = Math.min(devicePixelRatio || 1, 1.5)
+    this.dpr = Math.min(this.dprMax, 1.25)
+    r.setPixelRatio(this.dpr)
     r.shadowMap.enabled = true
     r.shadowMap.type = THREE.PCFSoftShadowMap
     r.shadowMap.autoUpdate = false // las sombras se recalculan solo cuando cambian las alturas
@@ -324,24 +351,27 @@ export class EscenaPeru {
       malla.castShadow = true
       malla.receiveShadow = true
       malla.position.z = -PISO
-      const contorno = new THREE.Group()
+      // Un solo LineSegments por departamento (antes: una línea y un material por anillo)
+      const seg: number[] = []
       for (const poly of z.polys)
-        for (const ring of poly) {
-          const pts = ring.map((p) => {
-            const v = proyectar(p)
-            return new THREE.Vector3(v.x, v.y, 1.002)
-          })
-          const linea = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints(pts),
-            new THREE.LineDashedMaterial({ dashSize: 1, gapSize: 0.0001 }),
-          )
-          linea.computeLineDistances()
-          contorno.add(linea)
-        }
+        for (const ring of poly)
+          for (let i = 0; i < ring.length - 1; i++) {
+            const a = proyectar(ring[i])
+            const b = proyectar(ring[i + 1])
+            seg.push(a.x, a.y, 1.002, b.x, b.y, 1.002)
+          }
+      const geoC = new THREE.BufferGeometry()
+      geoC.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3))
+      const contorno = new THREE.LineSegments(
+        geoC,
+        new THREE.LineDashedMaterial({ dashSize: 1, gapSize: 0.0001 }),
+      )
+      contorno.computeLineDistances()
       malla.add(contorno)
       malla.userData = { id: z.id, h: 0.4, objetivo: 0.4, centro: new THREE.Vector3(), contorno }
       this.mapa.add(malla)
       this.mallas.push(malla)
+      this.porId.set(z.id, malla)
     }
     const caja = new THREE.Box3().setFromObject(this.mapa)
     const centro = caja.getCenter(new THREE.Vector3())
@@ -436,6 +466,7 @@ export class EscenaPeru {
     ro.observe(contenedor)
     const io = new IntersectionObserver((es) => {
       this.fueraDePantalla = !es[0].isIntersecting
+      this.sucio = true
     })
     io.observe(contenedor)
     this.observadores.push(ro, io)
@@ -445,23 +476,20 @@ export class EscenaPeru {
     const rayo = new THREE.Raycaster()
     const ptr = new THREE.Vector2()
     let abajo: [number, number] | null = null
-    const elegir = (e: PointerEvent) => {
+    this.elegir = (e: PointerEvent) => {
       const b = r.domElement.getBoundingClientRect()
       ptr.set(((e.clientX - b.left) / b.width) * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1)
       rayo.setFromCamera(ptr, this.camara)
       const h = rayo.intersectObjects(this.mallas, false)[0]
       return h ? (h.object as Malla).userData.id : null
     }
+    // El raycast se hace como mucho una vez por cuadro (el mouse dispara más de 100 eventos/s)
     const mover = (e: PointerEvent) => {
-      const id = elegir(e)
-      if (id === this.hover) return
-      this.hover = id
-      r.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
-      this.pintar()
+      this.puntero = e
     }
     const salir = () => {
-      this.hover = null
-      this.pintar()
+      this.puntero = null
+      this.setHover(null)
     }
     const bajar = (e: PointerEvent) => {
       abajo = [e.clientX, e.clientY]
@@ -471,25 +499,41 @@ export class EscenaPeru {
       const movido = Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1])
       abajo = null
       if (movido < 6 && this.modo === 'explorar') {
-        const id = elegir(e)
+        const id = this.elegir(e)
         if (id) this.alElegir?.(id)
       }
     }
     const alEmpezar = () => {
+      this.arrastrando = true
       this.vuelo = null
       if (this.modo === 'explorar' && this.controles.autoRotate) this.setGiro(false)
+    }
+    const alTerminar = () => {
+      this.arrastrando = false
+    }
+    const alCambiarCamara = () => {
+      this.sucio = true
+    }
+    const alCambiarVisibilidad = () => {
+      this.sucio = true
     }
     r.domElement.addEventListener('pointermove', mover)
     r.domElement.addEventListener('pointerleave', salir)
     r.domElement.addEventListener('pointerdown', bajar)
     r.domElement.addEventListener('pointerup', subir)
     c.addEventListener('start', alEmpezar)
+    c.addEventListener('end', alTerminar)
+    c.addEventListener('change', alCambiarCamara)
+    document.addEventListener('visibilitychange', alCambiarVisibilidad)
     this.quitarEventos = () => {
       r.domElement.removeEventListener('pointermove', mover)
       r.domElement.removeEventListener('pointerleave', salir)
       r.domElement.removeEventListener('pointerdown', bajar)
       r.domElement.removeEventListener('pointerup', subir)
       c.removeEventListener('start', alEmpezar)
+      c.removeEventListener('end', alTerminar)
+      c.removeEventListener('change', alCambiarCamara)
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad)
     }
 
     this.vista(true)
@@ -530,14 +574,15 @@ export class EscenaPeru {
 
   /** Relee los tokens del tema (claro/oscuro) y repinta. */
   aplicarTema() {
-    const bg = new THREE.Color(cssVar('--bg'))
+    this.colores.clear()
+    const bg = new THREE.Color(this.color('--bg'))
     const claro = esTemaClaro()
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     this.escena.background = texturaCielo()
     this.escena.fog = new THREE.Fog(bg, 95, 235)
     this.mar.material.map?.dispose()
     const curvas = new THREE.CanvasTexture(
-      lienzoCurvas(1024, cssVar('--sea'), cssVar('--plane'), claro ? 0.08 : 0.18, 18),
+      lienzoCurvas(1024, this.color('--sea'), this.color('--plane'), claro ? 0.08 : 0.18, 18),
     )
     curvas.wrapS = curvas.wrapT = THREE.RepeatWrapping
     curvas.repeat.set(5, 5)
@@ -553,21 +598,45 @@ export class EscenaPeru {
     this.sol.color.set(claro ? 0xffffff : 0xfff4e0)
     if (this.rayadas) Object.values(this.rayadas).forEach((t) => t.dispose())
     this.rayadas = {
-      up: texturaRayada(cssVar('--map-up')),
-      down: texturaRayada(cssVar('--map-down')),
-      green: texturaRayada(cssVar('--map-green')),
+      up: texturaRayada(this.color('--map-up')),
+      down: texturaRayada(this.color('--map-down')),
+      green: texturaRayada(this.color('--map-green')),
     }
     this.renderer.shadowMap.needsUpdate = true
     this.pintar()
     this.actualizarParticulas()
   }
 
+  /** Token de color del tema, leído una vez por tema. */
+  private color(nombre: string) {
+    let v = this.colores.get(nombre)
+    if (v === undefined) {
+      v = cssVar(nombre)
+      this.colores.set(nombre, v)
+    }
+    return v
+  }
+
+  /** Resalta la zona bajo el puntero tocando solo 2 materiales (antes se repintaban los 25). */
+  private setHover(id: string | null) {
+    if (id === this.hover) return
+    const antes = this.hover ? this.porId.get(this.hover) : undefined
+    antes?.material.emissive.set(0x000000)
+    this.hover = id
+    const m = id ? this.porId.get(id) : undefined
+    m?.material.emissive.set(this.color('--accent')).multiplyScalar(0.18)
+    this.renderer.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
+    this.sucio = true
+  }
+
   setTextoOceano(t: string) {
     this.etiquetaOceano.textContent = t
+    this.sucio = true
   }
 
   setIdioma(idioma: 'es' | 'en') {
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
+    this.sucio = true
   }
 
   /**
@@ -583,7 +652,7 @@ export class EscenaPeru {
     const claro = esTemaClaro()
     P.puntos.material.color.set(
       hexMix(
-        cssVar(calor ? '--map-down' : '--map-up'),
+        this.color(calor ? '--map-down' : '--map-up'),
         claro ? '#1a2a33' : '#ffffff',
         // El calor sube como un brillo casi blanco: sobre columnas ocre, el ocre no se vería
         calor ? (claro ? 0.5 : 0.78) : claro ? 0.25 : 0.5,
@@ -614,6 +683,7 @@ export class EscenaPeru {
     P.geo.setDrawRange(0, P.cuenta)
     for (let i = 0; i < P.cuenta; i++) this.renacer(i, true)
     P.geo.attributes.position.needsUpdate = true
+    this.sucio = true
   }
 
   private renacer(i: number, alAzar: boolean) {
@@ -674,6 +744,7 @@ export class EscenaPeru {
     if (this.controles.autoRotate === v) return
     this.controles.autoRotate = v
     this.alGirar?.(v)
+    this.sucio = true
   }
 
   alternarGiro() {
@@ -693,11 +764,8 @@ export class EscenaPeru {
     for (const m of this.mallas) {
       m.geometry.dispose()
       m.material.dispose()
-      m.userData.contorno.children.forEach((l) => {
-        const linea = l as THREE.Line<THREE.BufferGeometry, THREE.Material>
-        linea.geometry.dispose()
-        linea.material.dispose()
-      })
+      m.userData.contorno.geometry.dispose()
+      m.userData.contorno.material.dispose()
     }
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
@@ -713,42 +781,44 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    const acento = cssVar('--accent')
+    const acento = this.color('--accent')
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
       const mat = m.material
       const clave = claveMapa(d.slope_per_decade, this.variable)
-      mat.map = null
-      mat.transparent = false
-      mat.opacity = 1
-      mat.emissive.set(0x000000)
+      let mapa: THREE.Texture | null = null
+      let transparente = false
+      let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
       if (this.anio && valorAnio != null)
         mat.color.set(colorAnomalia(valorAnio, this.anio.max, this.variable))
-      else if (d.status === 'real') mat.color.set(cssVar(`--map-${clave}`))
+      else if (d.status === 'real') mat.color.set(this.color(`--map-${clave}`))
       else if (d.status === 'posible_casualidad') {
         mat.color.set(0xffffff)
-        mat.map = this.rayadas[clave]
-        mat.transparent = true
-        mat.opacity = 0.82
+        mapa = this.rayadas[clave]
+        transparente = true
+        opacidad = 0.82
       } else {
-        mat.color.set(cssVar('--muted'))
-        mat.transparent = true
-        mat.opacity = 0.16
+        mat.color.set(this.color('--muted'))
+        transparente = true
+        opacidad = 0.16
       }
+      // Recompilar el shader solo si cambia lo que lo define (textura o transparencia)
+      if (!!mat.map !== !!mapa || mat.transparent !== transparente) mat.needsUpdate = true
+      mat.map = mapa
+      mat.transparent = transparente
+      mat.opacity = opacidad
+      mat.emissive.set(0x000000)
       if (m.userData.id === this.hover) mat.emissive.set(acento).multiplyScalar(0.18)
-      mat.needsUpdate = true
       const pocos = d.status === 'pocos_datos'
       const elegida = m.userData.id === this.sel
-      for (const l of m.userData.contorno.children) {
-        const lm = (l as THREE.Line).material as THREE.LineDashedMaterial
-        lm.color.set(elegida ? acento : cssVar(pocos ? '--muted' : '--bg'))
-        lm.dashSize = pocos ? 0.35 : 1
-        lm.gapSize = pocos ? 0.25 : 0.0001
-        lm.needsUpdate = true
-      }
+      const lm = m.userData.contorno.material
+      lm.color.set(elegida ? acento : this.color(pocos ? '--muted' : '--bg'))
+      lm.dashSize = pocos ? 0.35 : 1
+      lm.gapSize = pocos ? 0.25 : 0.0001
     }
+    this.sucio = true
   }
 
   private alturas(instantaneo: boolean) {
@@ -763,13 +833,14 @@ export class EscenaPeru {
           : this.anio && valorAnio != null
             ? Math.max(-1.1, Math.min(1.1, valorAnio / this.anio.max)) * ALTURA_MAX
             : (d.slope_per_decade / max) * ALTURA_MAX
-      m.userData.objetivo = PISO + h
+      m.userData.objetivo = Math.max(ESCALA_MIN, PISO + h)
       if (instantaneo || reducido()) {
         m.userData.h = m.userData.objetivo
         m.scale.z = m.userData.h
       }
     }
     this.renderer.shadowMap.needsUpdate = true
+    this.sucio = true
   }
 
   private texto(el: HTMLElement, id: string) {
@@ -795,6 +866,7 @@ export class EscenaPeru {
     const aparte = !!this.sel && !CLAVE.includes(this.sel)
     this.etiquetaSel.hidden = !aparte
     if (aparte && this.sel) this.texto(this.etiquetaSel, this.sel)
+    this.sucio = true
   }
 
   private formatearAnomalia(a: number) {
@@ -826,7 +898,7 @@ export class EscenaPeru {
   }
 
   private volarA(id: string) {
-    const m = this.mallas.find((x) => x.userData.id === id)
+    const m = this.porId.get(id)
     if (!m) return
     const c = m.userData.centro.clone()
     const k = this.camara.aspect < 1 ? 1.3 : 1
@@ -840,6 +912,7 @@ export class EscenaPeru {
       this.controles.target.copy(tgt)
       this.controles.update()
       this.vuelo = null
+      this.sucio = true
       return
     }
     this.vuelo = {
@@ -860,34 +933,66 @@ export class EscenaPeru {
     this.renderer.setSize(w, h, false)
     this.camara.aspect = w / h
     this.camara.updateProjectionMatrix()
+    this.sucio = true
   }
 
-  /** Red de seguridad: si no llega a ~40 cuadros por segundo, baja la resolución (una vez). */
-  private vigilarRendimiento(t: number) {
+  /**
+   * Resolución adaptativa continua. La versión anterior medía una sola vez y descartaba los
+   * cuadros de más de 250 ms, justo los de un equipo lento, así que nunca bajaba la resolución.
+   */
+  private vigilarRendimiento(t: number, fondo: boolean) {
     const p = this.perf
-    if (p.listo || document.hidden || this.fueraDePantalla) {
-      p.ultimo = 0
-      return
-    }
-    if (p.ultimo) {
-      const dt = t - p.ultimo
-      if (dt < 250) {
-        p.suma += dt
-        p.n++
+    if (p.seguido && p.previo) {
+      const dt = Math.min(1000, t - p.previo)
+      p.media = p.media ? p.media * 0.85 + dt * 0.15 : dt
+      const limite = fondo ? 1000 / FPS_FONDO + 12 : 45
+      if (t - p.cambio > 1000) {
+        let nuevo = this.dpr
+        if (p.media > limite) nuevo = Math.max(0.5, this.dpr * 0.8)
+        else if (p.media < limite * 0.55 && this.dpr < this.dprMax)
+          nuevo = Math.min(this.dprMax, this.dpr * 1.1)
+        if (Math.abs(nuevo - this.dpr) > 0.01) {
+          this.dpr = nuevo
+          p.cambio = t
+          p.pendiente = true // se aplica al empezar el próximo cuadro (si no, parpadea en blanco)
+          p.media = 0
+        }
       }
     }
-    p.ultimo = t
-    if (p.n >= 90) {
-      p.listo = true
-      if (p.suma / p.n > 25) {
-        this.renderer.setPixelRatio(this.renderer.getPixelRatio() > 1 ? 1 : 0.8)
-        this.redimensionar()
-      }
-    }
+    p.seguido = true
+    p.previo = t
   }
 
   private cuadro(t: number) {
-    this.vigilarRendimiento(t)
+    if (this.fueraDePantalla || document.hidden) {
+      this.ultimoCuadro = t
+      this.perf.seguido = false
+      return // no dibujar lo que no se ve
+    }
+    const ocupado =
+      this.sucio ||
+      !!this.vuelo ||
+      this.arrastrando ||
+      this.moviendo ||
+      !!this.puntero ||
+      this.amortiguando
+    const fondo = !reducido() && (this.controles.autoRotate || this.particulas.puntos.visible)
+    if (!ocupado && !fondo) {
+      this.ultimoCuadro = t
+      this.perf.seguido = false
+      return // nada cambió: cero GPU
+    }
+    const fps = document.hasFocus() ? FPS_FONDO : FPS_SIN_FOCO
+    if (!ocupado && t - this.ultimoCuadro < 1000 / fps - 2) return
+    const dt = Math.min(0.1, (t - (this.ultimoCuadro || t)) / 1000)
+    this.ultimoCuadro = t
+    this.sucio = false
+    if (this.perf.pendiente) {
+      this.perf.pendiente = false
+      this.renderer.setPixelRatio(this.dpr)
+      this.redimensionar()
+      this.sucio = false
+    }
     if (this.vuelo) {
       const v = this.vuelo
       const k = Math.min(1, (t - v.inicio) / v.dur)
@@ -900,34 +1005,45 @@ export class EscenaPeru {
     for (const m of this.mallas) {
       const dh = m.userData.objetivo - m.userData.h
       const dz = -PISO + (m.userData.id === this.sel ? ELEVA_SEL : 0) - m.position.z
-      if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) moviendo = true
-      m.userData.h += dh * (this.anio ? 0.07 : 0.12)
-      m.scale.z = m.userData.h
-      m.position.z += dz * 0.2
+      if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) {
+        moviendo = true
+        m.userData.h += dh * (this.anio ? 0.07 : 0.12)
+        m.scale.z = m.userData.h
+        m.position.z += dz * 0.2
+      }
     }
+    this.moviendo = moviendo
     if (moviendo) this.renderer.shadowMap.needsUpdate = true
-    this.controles.update()
-    if (this.fueraDePantalla) return // no dibujar lo que no se ve
+    if (this.puntero) {
+      const id = this.elegir(this.puntero)
+      this.puntero = null
+      this.setHover(id)
+    }
+    this.amortiguando = this.controles.update(dt) && !this.controles.autoRotate
     this.pasoParticulas(t)
     this.renderer.render(this.escena, this.camara)
+    this.vigilarRendimiento(t, !ocupado)
     this.ubicarEtiquetas()
   }
 
   private ubicarEtiqueta(el: HTMLElement, x: number, y: number, z: number, dy = 0) {
     this.v3.set(x, y, z).project(this.camara)
     const v = this.v3
-    if (v.z > 1 || v.x < -1.2 || v.x > 1.2 || v.y < -1.2 || v.y > 1.2) {
-      el.style.visibility = 'hidden'
-      return
-    }
-    el.style.visibility = 'visible'
-    el.style.transform = `translate(${(((v.x + 1) / 2) * this.ancho).toFixed(1)}px, ${(((1 - v.y) / 2) * this.alto + dy).toFixed(1)}px) translate(-50%, -135%)`
+    const fuera = v.z > 1 || v.x < -1.2 || v.x > 1.2 || v.y < -1.2 || v.y > 1.2
+    // Solo se escribe en el DOM si cambió (antes: en cada cuadro, con recálculo de estilos)
+    const tf = fuera
+      ? 'fuera'
+      : `translate(${(((v.x + 1) / 2) * this.ancho).toFixed(0)}px, ${(((1 - v.y) / 2) * this.alto + dy).toFixed(0)}px) translate(-50%, -135%)`
+    if (this.posEtiqueta.get(el) === tf) return
+    this.posEtiqueta.set(el, tf)
+    el.style.visibility = fuera ? 'hidden' : 'visible'
+    if (!fuera) el.style.transform = tf
   }
 
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
-    const malla = (id: string) => this.mallas.find((x) => x.userData.id === id)
+    const malla = (id: string) => this.porId.get(id)
     for (const L of this.etiquetas) {
       if (L.el.hidden !== apretado) L.el.hidden = apretado
       if (apretado) continue

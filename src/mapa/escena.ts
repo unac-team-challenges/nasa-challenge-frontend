@@ -13,6 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
+import { Fauna, type Animal } from './fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -336,7 +337,12 @@ export class EscenaPeru {
   private porId = new Map<string, Malla>()
   /** Último transform escrito en cada etiqueta (para no tocar el DOM si no cambió). */
   private posEtiqueta = new Map<HTMLElement, string>()
-  private elegir: (e: PointerEvent) => string | null
+  /** Qué hay bajo el puntero: un personaje de la fauna o un departamento. */
+  private elegir: (e: PointerEvent) => { animal: Animal } | string | null
+  private fauna: Fauna
+  private animalHover: Animal | null = null
+  private tip: HTMLDivElement
+  private idioma: 'es' | 'en' = 'es'
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
   private quitarEventos: () => void
   private contenedor: HTMLElement
@@ -570,6 +576,25 @@ export class EscenaPeru {
     puntos.frustumCulled = false
     puntos.visible = false
     this.escena.add(puntos)
+
+    // Fauna y gente de cada región, sobre su departamento
+    const idx = new Map(DEPARTAMENTOS.map((z, i) => [z.id, i]))
+    this.fauna = new Fauna({
+      escena: this.escena,
+      muestras: (id) => this.muestras[idx.get(id) ?? 0] ?? [],
+      centro: (id) => this.porId.get(id)?.userData.centro ?? new THREE.Vector3(),
+      tope: (id) => {
+        const m = this.porId.get(id)
+        return m ? m.position.z + m.scale.z : -PISO
+      },
+      aEscena: (lon, lat) => {
+        const v = proyectar([lon, lat])
+        return [v.x + this.mapa.position.x, -v.y + this.mapa.position.z]
+      },
+      nivelMar: -PISO - 0.02,
+    })
+    this.tip = nuevaEtiqueta('tip3d')
+    this.tip.hidden = true
     this.particulas = { geo: geoP, puntos }
 
     const ro = new ResizeObserver(() => this.redimensionar())
@@ -590,6 +615,8 @@ export class EscenaPeru {
       const b = r.domElement.getBoundingClientRect()
       ptr.set(((e.clientX - b.left) / b.width) * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1)
       rayo.setFromCamera(ptr, this.camara)
+      const animal = this.fauna.elegir(rayo.ray)
+      if (animal) return { animal }
       const h = rayo.intersectObjects(this.mallas, false)[0]
       return h ? (h.object as Malla).userData.id : null
     }
@@ -600,6 +627,7 @@ export class EscenaPeru {
     const salir = () => {
       this.puntero = null
       this.setHover(null)
+      this.setAnimal(null)
     }
     const bajar = (e: PointerEvent) => {
       abajo = [e.clientX, e.clientY]
@@ -608,10 +636,12 @@ export class EscenaPeru {
       if (!abajo) return
       const movido = Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1])
       abajo = null
-      if (movido < 6 && this.modo === 'explorar') {
-        const id = this.elegir(e)
-        if (id) this.alElegir?.(id)
-      }
+      if (movido >= 6) return
+      const hit = this.elegir(e)
+      if (hit && typeof hit !== 'string') {
+        this.fauna.saltar(hit.animal)
+        if (this.modo === 'explorar') this.alElegir?.(hit.animal.f.dept)
+      } else if (hit && this.modo === 'explorar') this.alElegir?.(hit)
     }
     const alEmpezar = () => {
       this.arrastrando = true
@@ -749,8 +779,25 @@ export class EscenaPeru {
   }
 
   setIdioma(idioma: 'es' | 'en') {
+    this.idioma = idioma
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.sucio = true
+  }
+
+  /** Personaje bajo el puntero: salta y muestra su dato (como texto, nunca HTML). */
+  private setAnimal(a: Animal | null, x = 0, y = 0) {
+    if (a && a !== this.animalHover) this.fauna.saltar(a)
+    this.animalHover = a
+    if (!a) {
+      this.tip.hidden = true
+      this.renderer.domElement.style.cursor = this.hover && this.modo === 'explorar' ? 'pointer' : ''
+      return
+    }
+    const b = this.contenedor.getBoundingClientRect()
+    this.tip.textContent = this.fauna.texto(a, this.idioma)
+    this.tip.style.transform = `translate(${(x - b.left).toFixed(0)}px, ${(y - b.top).toFixed(0)}px) translate(-50%, calc(-100% - 14px))`
+    this.tip.hidden = false
+    this.renderer.domElement.style.cursor = 'pointer'
   }
 
   /**
@@ -861,6 +908,7 @@ export class EscenaPeru {
       m.userData.contorno.geometry.dispose()
       m.userData.contorno.material.dispose()
     }
+    this.fauna.destruir()
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
     this.mar.geometry.dispose()
@@ -1072,7 +1120,8 @@ export class EscenaPeru {
       this.moviendo ||
       !!this.puntero ||
       this.amortiguando
-    const fondo = !reducido() && (this.controles.autoRotate || this.particulas.puntos.visible)
+    // con la fauna el mapa siempre está vivo, pero a 30 cuadros/s como máximo
+    const fondo = !reducido()
     if (!ocupado && !fondo) {
       this.ultimoCuadro = t
       this.perf.seguido = false
@@ -1110,12 +1159,20 @@ export class EscenaPeru {
     }
     this.moviendo = moviendo
     if (this.puntero) {
-      const id = this.elegir(this.puntero)
+      const e = this.puntero
+      const hit = this.elegir(e)
       this.puntero = null
-      this.setHover(id)
+      if (hit && typeof hit !== 'string') {
+        this.setHover(null)
+        this.setAnimal(hit.animal, e.clientX, e.clientY)
+      } else {
+        this.setAnimal(null)
+        this.setHover(hit)
+      }
     }
     this.amortiguando = this.controles.update(dt) && !this.controles.autoRotate
     this.pasoParticulas(fondo ? dt : 0)
+    this.fauna.paso(fondo ? dt : 0) // con «reducir movimiento» quedan quietos sobre su zona
     if (fondo) this.mar.material.uniforms.uTime.value += dt
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)

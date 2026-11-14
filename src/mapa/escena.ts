@@ -53,16 +53,48 @@ const PAISES = [
 const N_PARTICULAS = 1600
 
 interface Particulas {
-  pos: Float32Array
   geo: THREE.BufferGeometry
-  puntos: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>
-  zona: Int16Array
-  velocidad: Float32Array
-  acumulado: number[]
-  total: number
-  cuenta: number
-  ultimo: number
+  puntos: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>
 }
+
+/**
+ * Lluvia viva y calor que sube, animados en la GPU: cada partícula tiene (x, z) fijos, una
+ * fase, una velocidad y el índice de su departamento. La altura la calcula el shader con el
+ * reloj y la altura actual del departamento (uTope); el CPU solo sube 26 números por cuadro.
+ */
+const PARTICULAS_VS = `
+uniform float uTime, uTam, uEscala, uCalor;
+uniform float uTope[${DEPARTAMENTOS.length}];
+attribute vec3 aSemilla; // x: fase 0..1, y: velocidad, z: departamento
+varying float vA;
+#include <fog_pars_vertex>
+void main() {
+  float tope = uTope[int(aSemilla.z + 0.5)];
+  float h = uCalor > 0.5 ? 2.6 : 9.0;
+  float f = fract(aSemilla.x + uTime * aSemilla.y / h);
+  vec3 p = position;
+  p.y = uCalor > 0.5 ? tope + h * f : tope + h * (1.0 - f);
+  vA = uCalor > 0.5 ? sin(3.14159 * f) : smoothstep(0.0, 0.12, 1.0 - f) * smoothstep(0.0, 0.06, f);
+  vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+  gl_PointSize = uTam * uEscala / -mvPosition.z;
+  #include <fog_vertex>
+}`
+const PARTICULAS_FS = `
+uniform vec3 uColor;
+uniform float uOpacidad, uCalor;
+varying float vA;
+#include <fog_pars_fragment>
+void main() {
+  vec2 q = gl_PointCoord - 0.5;
+  float a = uCalor > 0.5
+    ? 1.0 - smoothstep(0.12, 0.5, length(q))                                                // brillo redondo
+    : (1.0 - smoothstep(0.03, 0.09, abs(q.x))) * (1.0 - smoothstep(0.15, 0.5, abs(q.y)));  // gota alargada
+  a *= vA * uOpacidad;
+  if (a < 0.02) discard;
+  gl_FragColor = vec4(uColor, a);
+  #include <fog_fragment>
+}`
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
@@ -513,26 +545,32 @@ export class EscenaPeru {
       this.muestras.push(out)
     }
     const geoP = new THREE.BufferGeometry()
-    const pos = new Float32Array(N_PARTICULAS * 3)
-    geoP.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    const puntos = new THREE.Points(
-      geoP,
-      new THREE.PointsMaterial({ size: 0.17, transparent: true, opacity: 0.8, depthWrite: false }),
-    )
+    geoP.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N_PARTICULAS * 3), 3))
+    geoP.setAttribute('aSemilla', new THREE.BufferAttribute(new Float32Array(N_PARTICULAS * 3), 3))
+    const matP = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib.fog,
+        {
+          uTime: { value: 0 },
+          uTam: { value: 0.55 },
+          uEscala: { value: 400 },
+          uCalor: { value: 0 },
+          uColor: { value: new THREE.Color() },
+          uOpacidad: { value: 0.85 },
+          uTope: { value: new Float32Array(DEPARTAMENTOS.length) },
+        },
+      ]),
+      vertexShader: PARTICULAS_VS,
+      fragmentShader: PARTICULAS_FS,
+      transparent: true,
+      depthWrite: false,
+      fog: true,
+    })
+    const puntos = new THREE.Points(geoP, matP)
     puntos.frustumCulled = false
     puntos.visible = false
     this.escena.add(puntos)
-    this.particulas = {
-      pos,
-      geo: geoP,
-      puntos,
-      zona: new Int16Array(N_PARTICULAS).fill(-1),
-      velocidad: new Float32Array(N_PARTICULAS),
-      acumulado: [],
-      total: 0,
-      cuenta: 0,
-      ultimo: 0,
-    }
+    this.particulas = { geo: geoP, puntos }
 
     const ro = new ResizeObserver(() => this.redimensionar())
     ro.observe(contenedor)
@@ -724,9 +762,10 @@ export class EscenaPeru {
     const P = this.particulas
     if (!P) return
     const calor = this.variable === 'temperatura'
+    const U = P.puntos.material.uniforms
     // Más claras que las columnas para que se lean encima de ellas
     const claro = esTemaClaro()
-    P.puntos.material.color.set(
+    U.uColor.value.set(
       hexMix(
         this.color(calor ? '--map-down' : '--map-up'),
         claro ? '#1a2a33' : '#ffffff',
@@ -734,13 +773,14 @@ export class EscenaPeru {
         calor ? (claro ? 0.5 : 0.78) : claro ? 0.25 : 0.5,
       ),
     )
-    P.puntos.material.size = calor ? 0.32 : 0.22
+    U.uCalor.value = calor ? 1 : 0
+    U.uTam.value = calor ? 0.32 : 0.55
     const positivas = Object.values(this.zonas)
       .filter((d) => d.status === 'real' && d.slope_per_decade > 0)
       .map((d) => d.slope_per_decade)
     const maxPos = Math.max(0.0001, ...positivas)
     let total = 0
-    P.acumulado = []
+    const acumulado: number[] = []
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       let w = 0
@@ -750,68 +790,46 @@ export class EscenaPeru {
         else if (d.status === 'real' && d.slope_per_decade > 0) w = d.slope_per_decade / maxPos
       }
       total += w
-      P.acumulado.push(total)
+      acumulado.push(total)
     }
-    P.total = total
     const porPeso = calor ? 70 : this.anio ? 260 : 520
-    P.cuenta = Math.min(N_PARTICULAS, Math.round(total * porPeso))
-    P.puntos.visible = !reducido() && P.cuenta > 0
-    P.geo.setDrawRange(0, P.cuenta)
-    for (let i = 0; i < P.cuenta; i++) this.renacer(i, true)
+    const cuenta = Math.min(N_PARTICULAS, Math.round(total * porPeso))
+    // Se reparten una vez por cambio de datos; luego solo se mueven en la GPU
+    const pos = P.geo.attributes.position.array as Float32Array
+    const semilla = P.geo.attributes.aSemilla.array as Float32Array
+    let n = 0
+    for (let i = 0; i < cuenta; i++) {
+      const r = Math.random() * total
+      let k = acumulado.findIndex((c) => c >= r)
+      if (k < 0) k = 0
+      const s = this.muestras[k]
+      if (!s || !s.length) continue
+      const p = s[(Math.random() * s.length) | 0]
+      pos[n * 3] = p[0] + (Math.random() - 0.5) * 0.3
+      pos[n * 3 + 1] = 0
+      pos[n * 3 + 2] = p[1] + (Math.random() - 0.5) * 0.3
+      semilla[n * 3] = Math.random()
+      semilla[n * 3 + 1] = calor ? 0.5 + Math.random() * 0.6 : 6 + Math.random() * 4
+      semilla[n * 3 + 2] = k
+      n++
+    }
+    P.geo.setDrawRange(0, n)
     P.geo.attributes.position.needsUpdate = true
+    P.geo.attributes.aSemilla.needsUpdate = true
+    P.puntos.visible = !reducido() && n > 0
+    this.pasoParticulas(0)
     this.sucio = true
   }
 
-  private renacer(i: number, alAzar: boolean) {
+  /** Por cuadro: el reloj y la altura de cada departamento (nada por partícula). */
+  private pasoParticulas(dt: number) {
     const P = this.particulas
-    const r = Math.random() * P.total
-    let k = P.acumulado.findIndex((c) => c >= r)
-    if (k < 0) k = 0
-    const m = this.mallas[k]
-    const s = this.muestras[k]
-    if (!s || !s.length) {
-      P.zona[i] = -1
-      P.pos[i * 3 + 1] = -99
-      return
-    }
-    const p = s[(Math.random() * s.length) | 0]
-    const tope = m.position.z + m.scale.z
-    const calor = this.variable === 'temperatura'
-    P.zona[i] = k
-    P.pos[i * 3] = p[0] + (Math.random() - 0.5) * 0.3
-    P.pos[i * 3 + 2] = p[1] + (Math.random() - 0.5) * 0.3
-    P.pos[i * 3 + 1] = calor
-      ? tope + (alAzar ? Math.random() * 2.4 : 0)
-      : tope + (alAzar ? 0.4 + Math.random() * 8 : 6 + Math.random() * 3)
-    P.velocidad[i] = calor ? 0.5 + Math.random() * 0.6 : 6 + Math.random() * 4
-  }
-
-  private pasoParticulas(t: number) {
-    const P = this.particulas
-    if (!P.puntos.visible) {
-      P.ultimo = t
-      return
-    }
-    const dt = Math.min(0.05, (t - (P.ultimo || t)) / 1000)
-    P.ultimo = t
-    const calor = this.variable === 'temperatura'
-    for (let i = 0; i < P.cuenta; i++) {
-      const k = P.zona[i]
-      if (k < 0) {
-        this.renacer(i, false)
-        continue
-      }
-      const m = this.mallas[k]
-      const tope = m.position.z + m.scale.z
-      if (calor) {
-        P.pos[i * 3 + 1] += P.velocidad[i] * dt
-        if (P.pos[i * 3 + 1] > tope + 2.6) this.renacer(i, false)
-      } else {
-        P.pos[i * 3 + 1] -= P.velocidad[i] * dt
-        if (P.pos[i * 3 + 1] < tope) this.renacer(i, false)
-      }
-    }
-    P.geo.attributes.position.needsUpdate = true
+    if (!P.puntos.visible) return
+    const U = P.puntos.material.uniforms
+    U.uTime.value += dt
+    const tope = U.uTope.value as Float32Array
+    for (let k = 0; k < this.mallas.length; k++)
+      tope[k] = this.mallas[k].position.z + this.mallas[k].scale.z
   }
 
   /** Activa o pausa el giro automático. */
@@ -1008,6 +1026,9 @@ export class EscenaPeru {
     this.renderer.setSize(w, h, false)
     this.camara.aspect = w / h
     this.camara.updateProjectionMatrix()
+    // tamaño de los puntos en píxeles del búfer, como hace PointsMaterial
+    if (this.particulas)
+      this.particulas.puntos.material.uniforms.uEscala.value = (h * this.renderer.getPixelRatio()) / 2
     this.sucio = true
   }
 
@@ -1094,7 +1115,7 @@ export class EscenaPeru {
       this.setHover(id)
     }
     this.amortiguando = this.controles.update(dt) && !this.controles.autoRotate
-    this.pasoParticulas(t)
+    this.pasoParticulas(fondo ? dt : 0)
     if (fondo) this.mar.material.uniforms.uTime.value += dt
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)

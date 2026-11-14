@@ -10,6 +10,8 @@ interface Props {
   idioma: Idioma
   /** Token del color de la tendencia: --up o --down */
   color: string
+  /** Año de la máquina del tiempo (se marca en el gráfico) */
+  anio?: number | null
 }
 
 function pasoRedondo(rango: number, objetivo: number) {
@@ -23,7 +25,7 @@ function pasoRedondo(rango: number, objetivo: number) {
  * Serie anual real a escala (SVG, portada del prototipo): puntos por año, línea de
  * tendencia de Sen, banda del rango probable (IC 95 %) y años de El Niño.
  */
-export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, color }: Props) {
+export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, color, anio }: Props) {
   const t = TEXTOS[idioma]
   const W = 400
   const H = 214
@@ -124,6 +126,32 @@ export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, colo
       {pts.map((p) => (
         <circle key={p.y} cx={f(X(p.y))} cy={f(Y(p.v))} r={2.6} style={{ fill: 'var(--muted)' }} />
       ))}
+      {anio != null && anio >= y0 && anio <= y1 && (
+        <g>
+          <line
+            x1={f(X(anio))}
+            x2={f(X(anio))}
+            y1={mt}
+            y2={H - mb}
+            style={{ stroke: 'var(--accent)' }}
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
+          />
+          {pts
+            .filter((p) => p.y === anio)
+            .map((p) => (
+              <circle
+                key={p.y}
+                cx={f(X(p.y))}
+                cy={f(Y(p.v))}
+                r={6}
+                fill="none"
+                style={{ stroke: 'var(--accent)' }}
+                strokeWidth={2.5}
+              />
+            ))}
+        </g>
+      )}
       <line
         x1={f(X(y0))}
         y1={f(Y(recta(d.slope_per_decade, y0)))}

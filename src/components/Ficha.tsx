@@ -77,7 +77,8 @@ function zonaContraste(d: Zona, zonas: Record<string, Zona>) {
 
 /** Ficha-informe de la zona elegida (o la invitación a tocar el mapa). */
 export function Ficha() {
-  const { idioma, variable, periodo, perfil, sel, sinNino, setSinNino, seleccionar } = useApp()
+  const { idioma, variable, periodo, perfil, sel, sinNino, setSinNino, seleccionar, anio } =
+    useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const raiz = useRef<HTMLDivElement>(null)
@@ -182,6 +183,7 @@ export function Ficha() {
               sinNino={sinNino}
               idioma={idioma}
               color={color}
+              anio={anio}
             />
             <figcaption className="text-xs text-muted">
               {t.chartCap(lluvia, sinNino, aniosNino)}

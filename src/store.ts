@@ -24,6 +24,11 @@ interface EstadoApp {
   idioma: Idioma
   perfil: Perfil
   variable: Variable
+  /** Máquina del tiempo: año elegido (null = ver la tendencia) */
+  anio: number | null
+  reproduciendo: boolean
+  setAnio: (a: number | null) => void
+  setReproduciendo: (r: boolean) => void
   /** largo = 1981–2024, reciente = 2001–2024 */
   periodo: Periodo
   setPeriodo: (p: Periodo) => void
@@ -53,7 +58,12 @@ export const useApp = create<EstadoApp>((set, get) => ({
   perfil: 'publico',
   variable: 'lluvia',
   periodo: 'largo',
-  setPeriodo: (periodo) => set({ periodo }),
+  // Al cambiar de periodo se vuelve a la tendencia: el año puede quedar fuera del rango
+  setPeriodo: (periodo) => set({ periodo, anio: null, reproduciendo: false }),
+  anio: null,
+  reproduciendo: false,
+  setAnio: (anio) => set(anio == null ? { anio, reproduciendo: false } : { anio }),
+  setReproduciendo: (reproduciendo) => set({ reproduciendo }),
   sinNino: false,
   sel: null,
   informeMin: true,

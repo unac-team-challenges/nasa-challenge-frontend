@@ -193,3 +193,36 @@ export function anomaliasPeru(variable: Variable, periodo: Periodo) {
     filas.push({ y, a: porZona.reduce((s, z) => s + (z[y] ?? 0), 0) / porZona.length })
   return { filas, max: Math.max(...filas.map((f) => Math.abs(f.a))) || 1 }
 }
+
+export interface Anomalias {
+  /** id → año → anomalía (lluvia: fracción del promedio; temperatura: °C) */
+  porId: Record<string, Record<number, number>>
+  /** Escala para alturas y colores (percentil 95 de |anomalía|, para que un año extremo no aplaste al resto) */
+  max: number
+}
+
+const CACHE_ANOM: Partial<Record<string, Anomalias>> = {}
+
+/** Máquina del tiempo: cómo fue cada año en cada departamento frente a su propio promedio. */
+export function anomaliasAnio(variable: Variable, periodo: Periodo): Anomalias {
+  const clave = `${variable}-${periodo}`
+  const guardada = CACHE_ANOM[clave]
+  if (guardada) return guardada
+  const zonas = zonasDe(variable, periodo)
+  const porId: Record<string, Record<number, number>> = {}
+  const todos: number[] = []
+  for (const id of Object.keys(zonas)) {
+    if (zonas[id].status === 'pocos_datos') continue
+    const pts = serie(id, variable, periodo)
+    const media = pts.reduce((a, p) => a + p.v, 0) / pts.length || 1
+    porId[id] = {}
+    for (const p of pts) {
+      const a = variable === 'lluvia' ? (p.v - media) / media : p.v - media
+      porId[id][p.y] = a
+      todos.push(Math.abs(a))
+    }
+  }
+  todos.sort((x, y) => x - y)
+  const max = todos[Math.floor(todos.length * 0.95)] || 1
+  return (CACHE_ANOM[clave] = { porId, max })
+}

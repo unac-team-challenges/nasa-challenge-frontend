@@ -9,6 +9,7 @@ import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
 import { colorDireccion } from '../lib/direccion'
 import { Ficha } from './Ficha'
+import { BarraTiempo } from './BarraTiempo'
 import { Leyenda } from './Leyenda'
 
 const boton =
@@ -20,7 +21,7 @@ const boton =
  */
 export function Explorador() {
   const { idioma, variable, sel, sinNino, informeMin, setInformeMin } = useApp()
-  const { conWebgl, modoMapa, setModoMapa, periodo } = useApp()
+  const { conWebgl, modoMapa, setModoMapa, periodo, anio } = useApp()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
@@ -43,13 +44,15 @@ export function Explorador() {
         <div className="relative h-[62vh] min-h-80 flex-none min-[901px]:h-auto min-[901px]:flex-1">
           {/* En 2D el 3D se desmonta: libera la tarjeta gráfica */}
           {en3d ? <Mapa3D modo="explorar" controlRef={escena} alGirar={setGirando} /> : <Mapa2D />}
-          <div className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5">
+          <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="pointer-events-auto flex flex-wrap items-baseline gap-2.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
                 {t.mapH[variable]}
               </h2>
               <span className="text-[13px] text-muted">
-                {t.mapSub(PERIODOS[periodo].year_start, PERIODOS[periodo].year_end)}
+                {anio == null
+                  ? t.mapSub(PERIODOS[periodo].year_start, PERIODOS[periodo].year_end)
+                  : t.legTimeNote(anio)}
               </span>
             </div>
             {!conWebgl && (
@@ -64,6 +67,7 @@ export function Explorador() {
             )}
           </div>
           <Leyenda />
+          <BarraTiempo />
           <div className="absolute right-4 bottom-3.5 z-[3] flex gap-1.5">
             {conWebgl && (
               <div

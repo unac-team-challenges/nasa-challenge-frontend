@@ -1,8 +1,9 @@
 import { useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { DEPARTAMENTOS, NOMBRE } from '../data/datos'
+import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '../data/datos'
+import { colorAnomalia } from '../lib/color'
 import { TEXTOS } from '../i18n/textos'
 import { claveMapa } from '../lib/direccion'
-import { fmtValor } from '../lib/formato'
+import { fmtAnomalia, fmtValor } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 
@@ -58,13 +59,18 @@ interface Props {
  * Mismo semáforo por forma que el 3D: color pleno, rayado o contorno punteado.
  */
 export function Mapa2D({ interactivo = true }: Props) {
-  const { idioma, variable, sel, seleccionar } = useApp()
+  const { idioma, variable, sel, seleccionar, anio, periodo } = useApp()
+  useApp((s) => s.tema) // los colores del año se leen del tema
+  const an = anio == null ? null : anomaliasAnio(variable, periodo)
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const [tip, setTip] = useState<{ id: string; x: number; y: number } | null>(null)
 
   const etiqueta = (id: string) => {
     const d = zonas[id]
+    const valorAnio = an?.porId[id]?.[anio ?? 0]
+    if (d.status !== 'pocos_datos' && anio != null && valorAnio != null)
+      return t.tipTime(NOMBRE[id], fmtAnomalia(valorAnio, variable, idioma), anio)
     return d.status === 'pocos_datos'
       ? `${NOMBRE[id]}, ${t.status.pocos_datos}`
       : t.tipVal(
@@ -106,7 +112,9 @@ export function Mapa2D({ interactivo = true }: Props) {
           let trazo = 'var(--bg)'
           let grosor = 1.2
           let guiones = ''
-          if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
+          const valorAnio = an?.porId[id]?.[anio ?? 0]
+          if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
+          else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
           if (d.status === 'pocos_datos') {
             relleno = 'transparent'
             trazo = 'var(--muted)'

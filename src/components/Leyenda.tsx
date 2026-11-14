@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { TEXTOS } from '../i18n/textos'
+import { anomaliasAnio } from '../data/datos'
 import { claveMapa } from '../lib/direccion'
-import { fmtValor } from '../lib/formato'
+import { fmtAnomalia, fmtValor } from '../lib/formato'
 import { useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 
@@ -15,7 +16,8 @@ export function Leyenda() {
   // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
   const sube = `var(--map-${claveMapa(1, variable)})`
   const baja = `var(--map-${claveMapa(-1, variable)})`
-  const cols = t.legCols[variable]
+  const { anio, periodo } = useApp()
+  const cols = anio == null ? t.legCols[variable] : t.legColsT
   const maxima = Math.max(
     ...Object.values(zonas)
       .filter((d) => d.status !== 'pocos_datos')
@@ -90,28 +92,40 @@ export function Leyenda() {
           {rotulo(280, cols[2])}
         </svg>
         <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className={muestra} style={{ background: sube }} />
-            {t.texReal}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className={muestra}
-              style={{
-                background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
-                border: `1px solid ${sube}`,
-                opacity: 0.85,
-              }}
-            />
-            {t.texCas}
-          </span>
+          {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
+          {anio == null && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className={muestra} style={{ background: sube }} />
+                {t.texReal}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={muestra}
+                  style={{
+                    background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                    border: `1px solid ${sube}`,
+                    opacity: 0.85,
+                  }}
+                />
+                {t.texCas}
+              </span>
+            </>
+          )}
           <span className="flex items-center gap-1.5">
             <span className={`${muestra} border-2 border-dashed border-muted`} />
             {t.texFew}
           </span>
         </div>
         <p className="m-0 mt-1 text-xs text-fg">
-          {t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))}
+          {anio == null
+            ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
+            : t.scaleTime(
+                fmtAnomalia(anomaliasAnio(variable, periodo).max, variable, idioma).replace(
+                  '+',
+                  '',
+                ),
+              )}
         </p>
         <p className="m-0 text-xs text-muted">{t.varDef[variable]}</p>
       </details>

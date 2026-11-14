@@ -8,7 +8,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
-import { cssVar, esTemaClaro, hexMix } from '../lib/color'
+import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
@@ -209,6 +209,8 @@ export class EscenaPeru {
   private variable: Variable = 'lluvia'
   private hover: string | null = null
   private sel: string | null = null
+  /** Máquina del tiempo: anomalía de cada zona en el año elegido (null = tendencia) */
+  private anio: { valores: Record<string, number>; max: number } | null = null
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
   private ancho = 1
@@ -409,6 +411,17 @@ export class EscenaPeru {
     this.textosEtiquetas()
   }
 
+  /**
+   * Máquina del tiempo: cada zona sube o se hunde según cómo fue ese año frente a su
+   * promedio. Las columnas se mueven suave porque las alturas se interpolan en cada cuadro.
+   */
+  setAnio(anio: { valores: Record<string, number>; max: number } | null) {
+    this.anio = anio
+    this.pintar()
+    this.alturas(false)
+    this.textosEtiquetas()
+  }
+
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
   seleccionar(id: string | null, volar: boolean) {
     const antes = this.sel
@@ -509,7 +522,10 @@ export class EscenaPeru {
       mat.transparent = false
       mat.opacity = 1
       mat.emissive.set(0x000000)
-      if (d.status === 'real') mat.color.set(cssVar(`--map-${clave}`))
+      const valorAnio = this.anio?.valores[m.userData.id]
+      if (this.anio && valorAnio != null)
+        mat.color.set(colorAnomalia(valorAnio, this.anio.max, this.variable))
+      else if (d.status === 'real') mat.color.set(cssVar(`--map-${clave}`))
       else if (d.status === 'posible_casualidad') {
         mat.color.set(0xffffff)
         mat.map = this.rayadas[clave]
@@ -539,7 +555,13 @@ export class EscenaPeru {
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
-      const h = d.status === 'pocos_datos' ? 0.05 : (d.slope_per_decade / max) * ALTURA_MAX
+      const valorAnio = this.anio?.valores[m.userData.id]
+      const h =
+        d.status === 'pocos_datos'
+          ? 0.05
+          : this.anio && valorAnio != null
+            ? Math.max(-1.1, Math.min(1.1, valorAnio / this.anio.max)) * ALTURA_MAX
+            : (d.slope_per_decade / max) * ALTURA_MAX
       m.userData.objetivo = PISO + h
       if (instantaneo || reducido()) {
         m.userData.h = m.userData.objetivo
@@ -552,7 +574,13 @@ export class EscenaPeru {
   private texto(el: HTMLElement, id: string) {
     const d = this.zonas[id]
     if (!d) return
-    const v = d.status === 'pocos_datos' ? '—' : this.formatear(d.slope_per_decade)
+    const valorAnio = this.anio?.valores[id]
+    const v =
+      d.status === 'pocos_datos'
+        ? '—'
+        : this.anio && valorAnio != null
+          ? this.formatearAnomalia(valorAnio)
+          : this.formatear(d.slope_per_decade)
     const small = document.createElement('small')
     small.textContent = v
     el.replaceChildren(NOMBRE[id], small)
@@ -566,6 +594,13 @@ export class EscenaPeru {
     const aparte = !!this.sel && !CLAVE.includes(this.sel)
     this.etiquetaSel.hidden = !aparte
     if (aparte && this.sel) this.texto(this.etiquetaSel, this.sel)
+  }
+
+  private formatearAnomalia(a: number) {
+    const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    return this.variable === 'temperatura'
+      ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
+      : signo + Math.round(Math.abs(a) * 100) + ' %'
   }
 
   private formatear(v: number) {
@@ -665,7 +700,7 @@ export class EscenaPeru {
       const dh = m.userData.objetivo - m.userData.h
       const dz = -PISO + (m.userData.id === this.sel ? ELEVA_SEL : 0) - m.position.z
       if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) moviendo = true
-      m.userData.h += dh * 0.12
+      m.userData.h += dh * (this.anio ? 0.07 : 0.12)
       m.scale.z = m.userData.h
       m.position.z += dz * 0.2
     }

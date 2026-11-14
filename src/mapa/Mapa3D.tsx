@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { TEXTOS } from '../i18n/textos'
 import { useZonas } from '../lib/useZonas'
+import { anomaliasAnio } from '../data/datos'
 import { useApp } from '../store'
 import { EscenaPeru, type ModoMapa } from './escena'
 import { Mapa2D } from './Mapa2D'
@@ -18,7 +19,7 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, variable, tema, sel, conWebgl } = useApp()
+  const { idioma, variable, tema, sel, conWebgl, anio, periodo } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const alGirarRef = useRef(alGirar)
@@ -66,6 +67,20 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   useEffect(() => {
     escena.current?.aplicarTema()
   }, [tema])
+
+  // Máquina del tiempo
+  useEffect(() => {
+    if (anio == null) {
+      escena.current?.setAnio(null)
+      return
+    }
+    const an = anomaliasAnio(variable, periodo)
+    const valores: Record<string, number> = {}
+    for (const [id, porAnio] of Object.entries(an.porId))
+      if (porAnio[anio] != null) valores[id] = porAnio[anio]
+    escena.current?.setAnio({ valores, max: an.max })
+    // tema: los colores del año se releen del tema
+  }, [anio, variable, periodo, tema])
 
   useEffect(() => {
     escena.current?.setTextoOceano(t.ocean)

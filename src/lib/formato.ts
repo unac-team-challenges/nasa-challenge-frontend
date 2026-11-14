@@ -27,3 +27,11 @@ export function fmtP(p: number | null, idioma: Idioma) {
 }
 
 export const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** Anomalía de un año: "+35 %" (lluvia) o "+0,4 °C" (temperatura). */
+export function fmtAnomalia(a: number, variable: Variable, idioma: Idioma) {
+  const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+  return variable === 'temperatura'
+    ? signo + num(a, 1, idioma) + ' °C'
+    : signo + Math.round(Math.abs(a) * 100) + ' %'
+}

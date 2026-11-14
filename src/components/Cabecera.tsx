@@ -1,4 +1,4 @@
-import type { Periodo, Variable } from '../data/datos'
+import type { Variable } from '../data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '../i18n/textos'
 import { useApp } from '../store'
 
@@ -9,10 +9,8 @@ import { useApp } from '../store'
  */
 export function Cabecera() {
   const { idioma, setIdioma, alternarTema, variable, setVariable, perfil, setPerfil } = useApp()
-  const { periodo, setPeriodo } = useApp()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
-  const periodos = Object.entries(t.periodos) as [Periodo, string][]
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4.5 gap-y-2.5 border-b border-line bg-panel px-4 py-2.5">
       <a
@@ -51,25 +49,6 @@ export function Cabecera() {
               onClick={() => setVariable(v)}
               className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm ${
                 variable === v ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
-              }`}
-            >
-              {nombre}
-            </button>
-          ))}
-        </div>
-        <div
-          className="inline-flex flex-none overflow-hidden rounded-s border border-line-2"
-          role="group"
-          aria-label={t.periodoLbl}
-        >
-          {periodos.map(([p, nombre]) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={periodo === p}
-              onClick={() => setPeriodo(p)}
-              className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm whitespace-nowrap ${
-                periodo === p ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
               }`}
             >
               {nombre}

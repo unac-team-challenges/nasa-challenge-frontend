@@ -1,3 +1,6 @@
+import type { Variable } from '../data/datos'
+import { claveMapa } from './direccion'
+
 /** Lee un token de color del tema (variables CSS de :root). */
 export function cssVar(nombre: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim()
@@ -26,11 +29,14 @@ export function esTemaClaro(): boolean {
   return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 128
 }
 
-/** Color de una anomalía: azul (o verde en NDVI) si sube, ocre si baja; nunca menos de 40 % de color. */
-export function colorAnomalia(a: number, max: number, ndvi = false): string {
-  const sube = a >= 0
-  const fuerte = cssVar(sube ? (ndvi ? '--map-green' : '--map-up') : '--map-down')
-  const suave = cssVar(sube ? (ndvi ? '--green-soft' : '--up-soft') : '--down-soft')
+/**
+ * Color de una anomalía según la dirección del dato (lluvia: azul = más; temperatura: ocre = más calor).
+ * Nunca menos de 40 % de color, para que no quede casi blanco.
+ */
+export function colorAnomalia(a: number, max: number, variable: Variable = 'lluvia'): string {
+  const clave = claveMapa(a, variable)
+  const fuerte = cssVar(`--map-${clave}`)
+  const suave = cssVar(`--${clave}-soft`)
   return hexMix(suave, fuerte, 0.4 + 0.6 * Math.min(1, Math.abs(a) / max))
 }
 

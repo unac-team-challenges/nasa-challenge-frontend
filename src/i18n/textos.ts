@@ -56,6 +56,10 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
+  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
+  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
+  calorNota:
+    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -276,6 +280,10 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
+  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
+  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
+  calorNota:
+    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

@@ -14,13 +14,13 @@
         "tags": [
           "api"
         ],
-        "summary": "T2M anual de cada celda de NASA POWER (~0,5° × 0,625°) dentro de Perú, para el mapa de calor.\nSolo existe para `temperatura`.",
+        "summary": "Valor anual de cada celda dentro de Perú, para el mapa de color: temperatura (`t2m`, °C) y lluvia\n(`valor`, mm/año) de NASA POWER (~0,5° × 0,625°), y vegetación (`valor`, NDVI de MODIS, 0,25°).\n`lluvia_imerg` no tiene malla.",
         "operationId": "celdas",
         "parameters": [
           {
             "name": "variable",
             "in": "query",
-            "description": "Obligatoria; solo temperatura",
+            "description": "Obligatoria: lluvia, temperatura o vegetacion",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/Variable"
@@ -289,10 +289,10 @@
       },
       "Celda": {
         "type": "object",
+        "description": "Una celda trae `t2m` (temperatura) o `valor` (lluvia y vegetación), nunca los dos.",
         "required": [
           "lat",
-          "lon",
-          "t2m"
+          "lon"
         ],
         "properties": {
           "lat": {
@@ -305,7 +305,10 @@
             "format": "double"
           },
           "t2m": {
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": [
                 "number",
@@ -313,7 +316,21 @@
               ],
               "format": "double"
             },
-            "description": "Media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el año no está completo."
+            "description": "Solo temperatura: media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el\naño no está completo."
+          },
+          "valor": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "description": "Lluvia (mm/año) y vegetación (NDVI): un valor por año de `anio_inicio` a `anio_fin`; null si\nfalta el año."
           }
         },
         "additionalProperties": false
@@ -332,7 +349,7 @@
       },
       "Malla": {
         "type": "object",
-        "description": "`data/celdas/temperatura.json`, tal cual lo deja `pipeline/power.py`.",
+        "description": "`data/celdas/{variable}.json`, tal cual lo dejan `pipeline/power.py` y `pipeline/vegetacion_malla.py`.",
         "required": [
           "fuente",
           "unidad",
@@ -375,8 +392,16 @@
             "type": "string",
             "example": "MERRA-2 vía NASA POWER (T2M)"
           },
+          "nota": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cómo leer la malla (solo vegetación: el NDVI se satura en la selva)."
+          },
           "unidad": {
             "type": "string",
+            "description": "`°C` (temperatura), `mm/año` (lluvia) o `NDVI` (vegetación).",
             "example": "°C"
           }
         },
@@ -501,7 +526,8 @@
         "enum": [
           "lluvia",
           "temperatura",
-          "lluvia_imerg"
+          "lluvia_imerg",
+          "vegetacion"
         ]
       },
       "VariableInfo": {

@@ -61,7 +61,7 @@ export function prepararCalor(m: Malla, paradas = PARADAS_CALOR): Calor {
     pix[i] = Math.round((latMax - c.lat) / dlat) * w + Math.round((c.lon - lonMin) / dlon)
     let suma = 0
     let k = 0
-    c.t2m.forEach((t, j) => {
+    ;(c.t2m ?? c.valor ?? []).forEach((t, j) => {
       if (t == null || j >= anios) return
       serie[i * anios + j] = t
       suma += t

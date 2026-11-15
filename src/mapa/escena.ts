@@ -137,11 +137,25 @@ const proyectar = ([lon, lat]: number[]) =>
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
 const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+/** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×11). */
+const RELIEVE = 1.3
+/** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
+const DPR_RELIEVE = 0.7
 const SUELO_VS = `
+uniform sampler2D uMundo, uMundo2, uPeru;
+uniform vec4 uCaja, uCajaPeru;
+uniform float uRelieve;
 varying vec3 vW;
 #include <fog_pars_vertex>
 void main() {
   vec4 w = modelMatrix * vec4(position, 1.0);
+  // Relieve real de los vecinos (SRTM): sube solo la tierra, nunca dentro del Perú (ahí están las columnas)
+  vec2 uv = (w.xz - uCaja.xy) / uCaja.zw;
+  if (uRelieve > 0.0 && all(greaterThan(uv, vec2(0.0))) && all(lessThan(uv, vec2(1.0)))) {
+    float tierra = smoothstep(0.5, 0.62, texture2D(uMundo, uv).g);
+    float peru = texture2D(uPeru, (w.xz - uCajaPeru.xy) / uCajaPeru.zw).g;
+    w.y += texture2D(uMundo2, uv).r * tierra * (1.0 - smoothstep(0.02, 0.3, peru)) * uRelieve;
+  }
   vW = w.xyz;
   vec4 mvPosition = viewMatrix * w;
   gl_Position = projectionMatrix * mvPosition;
@@ -151,7 +165,7 @@ const SUELO_FS = `
 uniform float uTime;
 uniform sampler2D uMundo, uMundo2, uPeru;
 uniform vec4 uCaja, uCajaPeru;
-uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uAgua, uFrontera;
+uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uNieve, uAgua, uFrontera;
 varying vec3 vW;
 #include <fog_pars_fragment>
 void main() {
@@ -168,7 +182,10 @@ void main() {
   mar += ola * 0.012 * (1.0 - lejos);
   float banda = smoothstep(0.1, 0.36, cerca) * (1.0 - smoothstep(0.4, 0.47, cerca));
   mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)));
-  vec3 suelo = mix(uTierraBaja, uTierraAlta, 0.35 + 0.65 * smoothstep(0.45, 0.9, t.r));
+  // Color por altitud (t2.r = elevación / 6000 m), nieve sobre ~4800 m y sombreado real del relieve (t.r)
+  vec3 suelo = mix(uTierraBaja, uTierraAlta, smoothstep(0.02, 0.7, t2.r));
+  suelo = mix(suelo, uNieve, smoothstep(0.8, 0.92, t2.r));
+  suelo *= 0.7 + 0.55 * t.r;
   suelo = mix(suelo, uAgua, t2.g * 0.55);
   suelo = mix(suelo, uFrontera, t2.b * 0.45);
   vec3 col = mix(mar, suelo, tierra);
@@ -233,9 +250,11 @@ function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number
   const tierra = new Float32Array(S * S)
   for (let i = 0; i < S * S; i++) tierra[i] = img[i * 4] / 255
   const ancho = desenfocar(tierra, S, 6)
+  const fino = desenfocar(tierra, S, 1) // máscara del relieve: dentro del Perú no sube
   const out = new Uint8Array(S * S * 4)
   for (let i = 0; i < S * S; i++) {
     out[i * 4] = ancho[i] * 255
+    out[i * 4 + 1] = fino[i] * 255
     out[i * 4 + 3] = 255
   }
   const tx = new THREE.DataTexture(out, S, S, THREE.RGBAFormat)
@@ -335,6 +354,8 @@ export class EscenaPeru {
   private hemi = new THREE.HemisphereLight(0xdbeaf3, 0x14202b, 0.8 * LUZ)
   private sol = new THREE.DirectionalLight(0xfff4e0, 0.8 * LUZ)
   private mar: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
+  /** Malla densa solo sobre la caja de la textura: ahí sube el relieve. */
+  private relieve: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
   private texturas: THREE.Texture[] = []
   private mapa = new THREE.Group()
   private mallas: Malla[] = []
@@ -506,6 +527,8 @@ export class EscenaPeru {
           uSombra: u(new THREE.Color()),
           uTierraBaja: u(new THREE.Color()),
           uTierraAlta: u(new THREE.Color()),
+          uNieve: u(new THREE.Color()),
+          uRelieve: u(RELIEVE),
           uAgua: u(new THREE.Color()),
           uFrontera: u(new THREE.Color()),
         },
@@ -537,8 +560,17 @@ export class EscenaPeru {
     this.mar = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matSuelo)
     this.mar.rotation.x = -Math.PI / 2
     this.mar.position.y = -PISO - 0.02
-    this.mar.renderOrder = 1
+    this.mar.renderOrder = 2
     this.escena.add(this.mar)
+    // Relieve: mismo material, malla densa solo en la caja. Va 1 cm encima del mar y se dibuja
+    // antes, así el plano grande no vuelve a pintar esos píxeles (la prueba de profundidad los descarta).
+    const seg = celular() ? 128 : 192
+    this.relieve = new THREE.Mesh(new THREE.PlaneGeometry(cx1 - cx0, cz1 - cz0, seg, seg), matSuelo)
+    this.relieve.rotation.x = -Math.PI / 2
+    this.relieve.position.set((cx0 + cx1) / 2, this.mar.position.y + 0.01, (cz0 + cz1) / 2)
+    this.relieve.renderOrder = 1
+    this.relieve.frustumCulled = false // la caja de la geometría es plana; el relieve sube en el shader
+    this.escena.add(this.relieve)
 
     // Etiquetas flotantes (capa HTML encima del lienzo; texto, nunca HTML)
     capaEtiquetas.replaceChildren()
@@ -792,6 +824,7 @@ export class EscenaPeru {
     U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
     U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
     U.uTierraAlta.value.set(hexMix(fondo, claro ? '#ffffff' : fg, claro ? 0.6 : 0.32))
+    U.uNieve.value.set(claro ? '#ffffff' : hexMix(fondo, fg, 0.7))
     U.uAgua.value.set(hexMix(mar, claro ? fg : this.color('--accent-soft'), claro ? 0.25 : 0.35))
     U.uFrontera.value.set(hexMix(fondo, fg, claro ? 0.55 : 0.45))
     U.fogColor.value.copy(bg)
@@ -1049,6 +1082,7 @@ export class EscenaPeru {
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
     this.mar.geometry.dispose()
+    this.relieve.geometry.dispose()
     this.mar.material.dispose()
     this.texturas.forEach((t) => t.dispose())
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
@@ -1229,6 +1263,8 @@ export class EscenaPeru {
           this.dpr = nuevo
           p.cambio = t
           p.pendiente = true // se aplica al empezar el próximo cuadro (si no, parpadea en blanco)
+          // Equipo lento: sin malla de relieve (el mar plano sigue con el color y el sombreado)
+          this.relieve.visible = nuevo >= DPR_RELIEVE
           p.media = 0
         }
       }

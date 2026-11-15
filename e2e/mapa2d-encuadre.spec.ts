@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 /** Abre el explorador con el mapa en 2D y espera a que dibuje las zonas. */
 async function abrir2D(page: Page) {

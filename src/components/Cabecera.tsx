@@ -17,7 +17,6 @@ import { useRuta } from '@/hooks/ruta'
 import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
 import { useBusqueda, type Busqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { MenuMetodologia } from '@/components/MenuMetodologia'
 import { Button } from '@/components/ui/button'
 
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
@@ -53,7 +52,7 @@ export function Cabecera() {
   const idioma = useApp((s) => s.idioma)
   const alternarTema = useApp((s) => s.alternarTema)
   const enInicio = useRuta() === 'inicio'
-  // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
+  // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=es, #37)
   const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
     useBusqueda()
   const t = TEXTOS[idioma]
@@ -149,7 +148,7 @@ export function Cabecera() {
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
-        {/* Como Metodología. Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
+        {/* Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
             el logo también lleva al inicio) */}
         <Button
           asChild
@@ -165,7 +164,6 @@ export function Cabecera() {
             )}
           </Link>
         </Button>
-        <MenuMetodologia />
         <span className="hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (

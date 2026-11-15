@@ -10,7 +10,7 @@ import {
 } from '../data/datos'
 import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
 import { colorDireccion } from '../lib/direccion'
-import { fmtP, fmtPct, fmtValor, mayuscula, num } from '../lib/formato'
+import { fmtP, fmtPct, fmtValor, num } from '../lib/formato'
 import { useDetalle, useVista, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 import { AntesDespues } from './AntesDespues'
@@ -29,20 +29,15 @@ function frase(
   const P = FRASES[idioma]
   const z = NOMBRE[d.id]
   const mas = d.slope_per_decade >= 0
-  const { year_start: a, year_end: b } = rango
+  const { year_start: a } = rango
   if (d.status === 'pocos_datos') return P.few(z)
   const real = d.status === 'real'
-  const val = fmtValor(Math.abs(d.slope_per_decade), variable, idioma).replace('+', '')
   switch (perfil) {
     case 'agricultor':
       return real
         ? P.agricultorUp(z, mas ? P.farmMore[variable] : P.farmLess[variable], a)
         : P.agricultorCas(z)
-    case 'municipalidad':
-      return real
-        ? P.municipalidadUp(z, P.noun[variable], val, mas, a, b)
-        : P.municipalidadCas(z, mayuscula(P.noun[variable]))
-    case 'estudiante':
+    default:
       return real
         ? P.estudianteUp(
             fmtP(d.p_value, idioma),
@@ -51,10 +46,6 @@ function frase(
             fmtValor(d.slope_per_decade, variable, idioma),
           )
         : P.estudianteCas(fmtP(d.p_value, idioma), fmtP(d.q_value, idioma), m)
-    default:
-      return real
-        ? P.publicoUp(z, mas ? P.more[variable] : P.less[variable], a)
-        : P.publicoCas(z, P.noun[variable])
   }
 }
 

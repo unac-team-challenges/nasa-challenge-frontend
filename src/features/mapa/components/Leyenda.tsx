@@ -190,103 +190,113 @@ export function Leyenda() {
             contenidoVegetacion
           ) : (
             <>
-          {/* En celular el título del mapa va en una línea; lo que se pinta se explica aquí */}
-          <p className="m-0 mt-1 text-xs font-semibold text-fg min-[901px]:hidden">
-            {anio == null ? t.mapSub : t.mapSubAnio}
-          </p>
-          <p className="m-0 text-xs text-muted min-[901px]:hidden">
-            {t.timeHelp(rango.year_end - rango.year_start + 1)}
-          </p>
-          <svg
-            viewBox="0 0 330 118"
-            className="mt-1.5 block h-auto w-full max-w-[250px]"
-            role="img"
-            aria-label={cols.map((c) => c.join(': ')).join('. ')}
-          >
-            <line
-              x1={4}
-              y1={56}
-              x2={326}
-              y2={56}
-              style={{ stroke: 'var(--muted)' }}
-              strokeDasharray="4 4"
-            />
-            {columna(36, 16, 56, sube)}
-            {columna(146, 52, 56, 'var(--muted)')}
-            {columna(256, 70, 84, baja)}
-            <text x={322} y={51} textAnchor="end" fontSize={9.5} style={{ fill: 'var(--muted)' }}>
-              {t.noChange}
-            </text>
-            {rotulo(60, cols[0])}
-            {rotulo(170, cols[1])}
-            {rotulo(280, cols[2])}
-          </svg>
-          <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
-            {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
-            {anio == null && (
-              <>
-                <span className="flex items-center gap-1.5">
-                  <span className={muestra} style={{ background: lleno }} />
-                  {t.texReal}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className={muestra}
-                    style={{
-                      background: conCalor
-                        ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${calor ? rampa(calor.paradas) : sube}`
-                        : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
-                      border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
-                      opacity: 0.85,
-                    }}
-                  />
-                  {t.texCas}
-                </span>
-              </>
-            )}
-            <span className="flex items-center gap-1.5">
-              <span className={`${muestra} border-2 border-dashed border-muted`} />
-              {t.texFew}
-            </span>
-          </div>
-          {calor && conCalor && (
-            <div className="mt-1.5 grid gap-0.5 text-xs">
-              <span className="text-fg">
-                {anio == null
-                  ? t.calorMedia(t.calorCosa[variable], calor.anio0, calor.anio0 + calor.anios - 1)
-                  : t.calorAnio(t.calorCosa[variable], anio)}
-              </span>
-              <span
-                className="h-2.5 rounded-[3px] border border-line"
-                style={{ background: rampa(calor.paradas) }}
-                aria-hidden
-              />
-              <span className="flex justify-between text-muted">
-                <span>
-                  {Math.round(calor.min)} {calor.unidad}
-                </span>
-                <span>
-                  {Math.round(calor.max)} {calor.unidad}
-                </span>
-              </span>
-              <span className="text-muted">{t.calorNota[variable]}</span>
-            </div>
-          )}
-          <p className="m-0 mt-1 text-xs text-fg">
-            {anio == null
-              ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
-              : t.scaleTime(
-                  fmtAnomalia(
-                    anomaliasAnio(variable, periodo, rango).max,
-                    variable,
-                    idioma,
-                  ).replace('+', ''),
+              {/* En celular el título del mapa va en una línea; lo que se pinta se explica aquí */}
+              <p className="m-0 mt-1 text-xs font-semibold text-fg min-[901px]:hidden">
+                {anio == null ? t.mapSub : t.mapSubAnio}
+              </p>
+              <p className="m-0 text-xs text-muted min-[901px]:hidden">
+                {t.timeHelp(rango.year_end - rango.year_start + 1)}
+              </p>
+              <svg
+                viewBox="0 0 330 118"
+                className="mt-1.5 block h-auto w-full max-w-[250px]"
+                role="img"
+                aria-label={cols.map((c) => c.join(': ')).join('. ')}
+              >
+                <line
+                  x1={4}
+                  y1={56}
+                  x2={326}
+                  y2={56}
+                  style={{ stroke: 'var(--muted)' }}
+                  strokeDasharray="4 4"
+                />
+                {columna(36, 16, 56, sube)}
+                {columna(146, 52, 56, 'var(--muted)')}
+                {columna(256, 70, 84, baja)}
+                <text
+                  x={322}
+                  y={51}
+                  textAnchor="end"
+                  fontSize={9.5}
+                  style={{ fill: 'var(--muted)' }}
+                >
+                  {t.noChange}
+                </text>
+                {rotulo(60, cols[0])}
+                {rotulo(170, cols[1])}
+                {rotulo(280, cols[2])}
+              </svg>
+              <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
+                {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
+                {anio == null && (
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <span className={muestra} style={{ background: lleno }} />
+                      {t.texReal}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={muestra}
+                        style={{
+                          background: conCalor
+                            ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${calor ? rampa(calor.paradas) : sube}`
+                            : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                          border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
+                          opacity: 0.85,
+                        }}
+                      />
+                      {t.texCas}
+                    </span>
+                  </>
                 )}
-          </p>
-          <p className="m-0 text-xs text-muted">
-            {/* La máquina del tiempo usa la copia local */}
-            {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
-          </p>
+                <span className="flex items-center gap-1.5">
+                  <span className={`${muestra} border-2 border-dashed border-muted`} />
+                  {t.texFew}
+                </span>
+              </div>
+              {calor && conCalor && (
+                <div className="mt-1.5 grid gap-0.5 text-xs">
+                  <span className="text-fg">
+                    {anio == null
+                      ? t.calorMedia(
+                          t.calorCosa[variable],
+                          calor.anio0,
+                          calor.anio0 + calor.anios - 1,
+                        )
+                      : t.calorAnio(t.calorCosa[variable], anio)}
+                  </span>
+                  <span
+                    className="h-2.5 rounded-[3px] border border-line"
+                    style={{ background: rampa(calor.paradas) }}
+                    aria-hidden
+                  />
+                  <span className="flex justify-between text-muted">
+                    <span>
+                      {Math.round(calor.min)} {calor.unidad}
+                    </span>
+                    <span>
+                      {Math.round(calor.max)} {calor.unidad}
+                    </span>
+                  </span>
+                  <span className="text-muted">{t.calorNota[variable]}</span>
+                </div>
+              )}
+              <p className="m-0 mt-1 text-xs text-fg">
+                {anio == null
+                  ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
+                  : t.scaleTime(
+                      fmtAnomalia(
+                        anomaliasAnio(variable, periodo, rango).max,
+                        variable,
+                        idioma,
+                      ).replace('+', ''),
+                    )}
+              </p>
+              <p className="m-0 text-xs text-muted">
+                {/* La máquina del tiempo usa la copia local */}
+                {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+              </p>
             </>
           )}
         </details>

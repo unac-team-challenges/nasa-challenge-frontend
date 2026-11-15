@@ -1,6 +1,6 @@
 # ARQUITECTURE.md
 
-Arquitectura de carpetas del frontend (`src/`). Basada en [bulletproof-react](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md), adaptada a este proyecto. **Estado: objetivo.** La migración se hace con `docs/superpowers/plans/2026-11-14-migracion-arquitectura.md`.
+Arquitectura de carpetas del frontend (`src/`). Basada en [bulletproof-react](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md), adaptada a este proyecto. **Estado: implementada** en la rama `refactor/arquitectura` (pendiente de rebase sobre las ramas de features). La migración siguió `docs/superpowers/plans/2026-11-14-migracion-arquitectura.md`; lo que se rompió o se desvió y cómo hacer el rebase está en `docs/migracion-roturas.md`.
 
 ## 1. Idea en una línea
 
@@ -93,7 +93,7 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 - Cada feature no puede importar `@/app/**` ni las otras features (la lista se arma leyendo `src/features/`, así una feature nueva queda protegida sola).
 - `testing/` y `main.tsx` están exentos de la dirección de dependencias (montan el router real).
 
-`pnpm lint` falla si alguien rompe una regla. Imports dinámicos (`lazy(() => import(...))`) también se revisan; el plan lo verifica con una violación de prueba.
+`pnpm lint` falla si alguien rompe una regla. Imports dinámicos (`lazy(() => import(...))`) también se revisan; la guarda se probó con violaciones temporales durante la migración.
 
 ## 6. Qué cambia respecto a hoy
 
@@ -116,6 +116,8 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 | `lib/color.ts`, `direccion.ts`, `formato.ts`, `webgl.ts` | `utils/` |
 | `test/` | `testing/` |
 | Imports `./x` y `../x` | `@/x` |
+
+Nota: `app/rutas/Inicio.tsx` y `Portada({ mapa })` son de esta rama; al rebasar sobre `feat/mapa-hover-relieve` (un único mapa 3D de fondo en `App.tsx`) pueden desaparecer. Ver `docs/migracion-roturas.md`.
 
 **Se quedan igual:** `main.tsx`, `index.css`, `shadcn.css`, `api/`, `i18n/`, `data/datos.ts` y los json, `components/{ui,Cabecera,Errores,Esperas}`, `lib/busqueda.ts`, `lib/utils.ts` (shadcn lo exige en `@/lib/utils`), `e2e/`.
 

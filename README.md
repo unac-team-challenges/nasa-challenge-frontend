@@ -26,18 +26,18 @@ Arquitectura: ver `ARQUITECTURE.md`
 
 ## Stack
 
-| Parte                    | Librería                                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base                     | React 19 + Vite 8 + TypeScript                                                                                                                |
-| Mapa                     | **three.js** (3D) con respaldo 2D en SVG. Reemplaza a Leaflet: ver `15-decision-mapa-threejs-14nov.md` en el Drive                            |
-| Estilos y componentes    | Tailwind CSS v4 (`@tailwindcss/vite`) + **shadcn/ui** (`Button`, `Alert` y `Skeleton` en `src/components/ui`, estilo new-york) + lucide-react |
-| Calidad                  | **ESLint** (typescript-eslint, react-hooks) + Prettier + Vitest + **Testing Library** (jsdom) + Playwright                                    |
-| Datos del servidor       | TanStack Query + openapi-fetch (`src/api`), con la copia local como plan B                                                                    |
-| Rutas y enlaces          | **TanStack Router** (`src/app/router.tsx`) + **Zod** (`src/lib/busqueda.ts`): ver «Rutas y enlaces»                                           |
+| Parte                    | Librería                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base                     | React 19 + Vite 8 + TypeScript                                                                                                                    |
+| Mapa                     | **three.js** (3D) con respaldo 2D en SVG. Reemplaza a Leaflet: ver `15-decision-mapa-threejs-14nov.md` en el Drive                                |
+| Estilos y componentes    | Tailwind CSS v4 (`@tailwindcss/vite`) + **shadcn/ui** (`Button`, `Alert` y `Skeleton` en `src/components/ui`, estilo new-york) + lucide-react     |
+| Calidad                  | **ESLint** (typescript-eslint, react-hooks) + Prettier + Vitest + **Testing Library** (jsdom) + Playwright                                        |
+| Datos del servidor       | TanStack Query + openapi-fetch (`src/api`), con la copia local como plan B                                                                        |
+| Rutas y enlaces          | **TanStack Router** (`src/app/router.tsx`) + **Zod** (`src/lib/busqueda.ts`): ver «Rutas y enlaces»                                               |
 | Estado global            | Zustand (`src/stores/app.ts`): idioma, tema, fuente de datos, vista 3D/2D, informe abierto, Play y «sin El Niño». Lo que se comparte va en la URL |
-| Gráficos                 | SVG propio (`GraficoSerie`) para la serie de la ficha                                                                                         |
-| Antes y después (Caso 2) | react-compare-slider                                                                                                                          |
-| Letra "Carta"            | Newsreader + Public Sans (`@fontsource-variable`, incluidas en el build: funcionan sin internet)                                              |
+| Gráficos                 | SVG propio (`GraficoSerie`) para la serie de la ficha                                                                                             |
+| Antes y después (Caso 2) | react-compare-slider                                                                                                                              |
+| Letra "Carta"            | Newsreader + Public Sans (`@fontsource-variable`, incluidas en el build: funcionan sin internet)                                                  |
 
 shadcn/ui se agrega por componente: `pnpm dlx shadcn@latest add <componente>` (si el CLI no encuentra `pnpm`, ponlo en el `PATH`; y quita el paquete `cn` que a veces agrega por error: la utilidad ya está en `src/lib/utils.ts`). Sus colores apuntan a nuestros tokens en `src/shadcn.css` (`accent` sigue siendo el cochinilla del proyecto). `Button` tiene las variantes del proyecto: `default` (acción), `outline` (herramienta), `toggle` (opción de un grupo, con `aria-pressed`) y `ghost`.
 

@@ -418,10 +418,14 @@ export function Mapa2D({ interactivo = true }: Props) {
           }}
         />
         <svg
-          viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`}
+          // El SVG ocupa toda la caja; el encuadre en el área libre va en el viewBox (mismos oX, oY, s del resto)
+          viewBox={
+            s > 0
+              ? `${VB.x - oX / s} ${VB.y - oY / s} ${tam.w / s} ${tam.h / s}`
+              : `${VB.x} ${VB.y} ${VB.w} ${VB.h}`
+          }
           preserveAspectRatio="xMidYMid meet"
-          className="absolute inset-x-0 w-full overflow-visible"
-          style={{ top: m.arriba, height: tam.h ? libre : '100%' }}
+          className="absolute inset-0 h-full w-full overflow-visible"
           role="group"
           aria-label={t.mapa2dAria}
         >
@@ -512,6 +516,26 @@ export function Mapa2D({ interactivo = true }: Props) {
             />
           )}
 
+          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de las zonas.
+              Va DEBAJO de las zonas: así solo gana en el mar y fuera de la frontera, y no le quita terreno a las vecinas grandes. */}
+          {aToque.map(({ id, d: ruta, trazo }) => (
+            <path
+              key={id}
+              d={ruta}
+              aria-hidden
+              data-toque={id}
+              vectorEffect="non-scaling-stroke"
+              style={{
+                fill: 'none',
+                stroke: 'transparent',
+                strokeWidth: trazo,
+                strokeLinejoin: 'round',
+                pointerEvents: 'stroke',
+              }}
+              onClick={() => seleccionar(id, true)}
+            />
+          ))}
+
           {orden.map(({ id, d: ruta }) => {
             const d = zonas[id]
             const clave = claveMapa(d.slope_per_decade, variable)
@@ -592,25 +616,6 @@ export function Mapa2D({ interactivo = true }: Props) {
               />
             )
           })}
-
-          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de arriba. */}
-          {aToque.map(({ id, d: ruta, trazo }) => (
-            <path
-              key={id}
-              d={ruta}
-              aria-hidden
-              data-toque={id}
-              vectorEffect="non-scaling-stroke"
-              style={{
-                fill: 'none',
-                stroke: 'transparent',
-                strokeWidth: trazo,
-                strokeLinejoin: 'round',
-                pointerEvents: 'stroke',
-              }}
-              onClick={() => seleccionar(id, true)}
-            />
-          ))}
         </svg>
       </div>
 

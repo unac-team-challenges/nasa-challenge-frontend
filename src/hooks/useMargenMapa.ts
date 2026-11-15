@@ -14,6 +14,9 @@ export function useMargenMapa<T extends HTMLElement>() {
     if (!caja) return
     let paneles: Element[] = []
     const medir = () => {
+      // Con algo desplegado (la leyenda abierta) es una hoja que la persona abrió a propósito:
+      // se conserva la última medida, para que el mapa no se mueva al abrirla
+      if (caja.querySelector('details[open]')) return
       const m = margenMapa(
         caja.getBoundingClientRect(),
         paneles.map((p) => p.getBoundingClientRect()),
@@ -26,10 +29,7 @@ export function useMargenMapa<T extends HTMLElement>() {
     const observar = () => {
       ro.disconnect()
       ro.observe(caja)
-      // Un panel con algo desplegado (la leyenda abierta) es una hoja que el usuario abrió: no encoge el mapa
-      paneles = [...caja.querySelectorAll('[data-cubre-mapa]')].filter(
-        (p) => !p.querySelector('details[open]'),
-      )
+      paneles = [...caja.querySelectorAll('[data-cubre-mapa]')]
       paneles.forEach((p) => ro.observe(p))
       medir()
     }

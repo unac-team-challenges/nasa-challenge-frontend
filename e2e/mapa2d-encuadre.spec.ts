@@ -3,10 +3,14 @@ import { expect, test, type Page } from '@playwright/test'
 /** Abre el explorador con el mapa en 2D y espera a que dibuje las zonas. */
 async function abrir2D(page: Page) {
   await page.goto('/explorar')
+  // En celular los controles del mapa están detrás del botón «⋯»
+  if (page.viewportSize()!.width <= 900)
+    await page.getByRole('button', { name: 'Controles del mapa' }).click()
   await page
     .getByRole('group', { name: 'Vista del mapa' })
     .getByRole('button', { name: '2D' })
     .click()
+  await page.keyboard.press('Escape') // cierra el menú, si estaba abierto
   await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).waitFor()
   await page.waitForTimeout(400) // el margen se mide con ResizeObserver, un cuadro después
 }
@@ -32,30 +36,27 @@ const medir = (page: Page) =>
 test.describe('celular (390 × 844)', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 
-  test('ningún panel tapa el Perú; con la ayuda del modo abierta solo lo roza', async ({
-    page,
-  }) => {
+  test('ningún panel tapa el Perú', async ({ page }) => {
     await abrir2D(page)
-    // Cuánto se mete el panel más metido en el Perú (px de alto): 0 = no lo toca
-    const solape = async () => {
-      const { peru, paneles } = await medir(page)
-      expect(paneles.length).toBeGreaterThan(0)
-      return Math.max(
-        0,
-        ...paneles
-          .filter((p) => p.left < peru.right && p.right > peru.left)
-          .map((p) => Math.min(p.bottom, peru.bottom) - Math.max(p.top, peru.top)),
+    const { peru, paneles } = await medir(page)
+    expect(paneles.length).toBeGreaterThan(0)
+    for (const p of paneles) {
+      const seCruzan =
+        p.left < peru.right && p.right > peru.left && p.top < peru.bottom && p.bottom > peru.top
+      expect(seCruzan, `panel ${JSON.stringify(p)} sobre el Perú ${JSON.stringify(peru)}`).toBe(
+        false,
       )
     }
-    // Con la ayuda abierta hay un aviso más: el tope del 55 % del alto impide evitarlo del todo
-    expect(await solape()).toBeLessThanOrEqual(40)
+  })
 
-    await page
-      .getByRole('button', { name: /cerrar/i })
-      .first()
-      .click()
+  test('con la leyenda abierta el mapa no se encoge', async ({ page }) => {
+    await abrir2D(page)
+    const antes = await medir(page)
+    await page.locator('details', { hasText: 'Cómo leer el mapa' }).locator('summary').click()
     await page.waitForTimeout(400)
-    expect(await solape()).toBe(0)
+    const despues = await medir(page)
+    expect(Math.round(despues.peru.top)).toBe(Math.round(antes.peru.top))
+    expect(Math.round(despues.peru.bottom)).toBe(Math.round(antes.peru.bottom))
   })
 
   test('elegir una zona sigue acercando el mapa a ella', async ({ page }) => {

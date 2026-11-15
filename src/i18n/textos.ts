@@ -314,15 +314,6 @@ export const ORDEN_PERFILES: Perfil[] = ['agricultor', 'estudiante']
 /** Frase simple de la ficha según el perfil (solo cambian los textos, no los datos). */
 export const FRASES = {
   es: {
-    noun: { lluvia: 'la lluvia', temperatura: 'la temperatura' } as PorVariable<string>,
-    more: {
-      lluvia: 'llueve cada vez más',
-      temperatura: 'hace cada vez más calor',
-    } as PorVariable<string>,
-    less: {
-      lluvia: 'llueve cada vez menos',
-      temperatura: 'hace cada vez más frío',
-    } as PorVariable<string>,
     farmMore: { lluvia: 'más lluvia', temperatura: 'más calor' } as PorVariable<string>,
     farmLess: { lluvia: 'menos lluvia', temperatura: 'menos calor' } as PorVariable<string>,
     agricultorUp: (z: string, x: string, desde: number) =>
@@ -336,15 +327,6 @@ export const FRASES = {
     few: (z: string) => `En ${z} hay muy pocas celdas con datos. No sacamos conclusiones.`,
   },
   en: {
-    noun: { lluvia: 'rainfall', temperatura: 'temperature' } as PorVariable<string>,
-    more: {
-      lluvia: 'it rains more and more',
-      temperatura: 'it is getting warmer',
-    } as PorVariable<string>,
-    less: {
-      lluvia: 'it rains less and less',
-      temperatura: 'it is getting cooler',
-    } as PorVariable<string>,
     farmMore: { lluvia: 'more rain', temperatura: 'more heat' } as PorVariable<string>,
     farmLess: { lluvia: 'less rain', temperatura: 'less heat' } as PorVariable<string>,
     agricultorUp: (z: string, x: string, desde: number) =>

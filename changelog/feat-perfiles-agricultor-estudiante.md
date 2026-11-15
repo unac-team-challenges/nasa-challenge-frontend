@@ -16,6 +16,7 @@ Prepara el prototipo para la consulta con los mentores de UI/UX, con dos decisio
 - `src/components/Ficha.tsx`: la frase de la ficha solo tiene esos dos casos.
 - `src/components/Portada.tsx`: dos tarjetas de perfil, sin franjas. Se borra `FranjasPeru.tsx`, que solo se usaba ahí.
 - Las franjas siguen en la máquina del tiempo, como riel de la barra.
+- `FRASES`: se quitan `noun`, `more` y `less`, que solo usaban las frases de los perfiles eliminados.
 
 ## Pendiente
 

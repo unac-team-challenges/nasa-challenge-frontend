@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach } from 'vitest'
 
 // jsdom no trae matchMedia, scrollTo, Element.animate ni ResizeObserver (la app los usa al montar)
@@ -17,5 +17,10 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 }
+
+// findBy*/waitFor esperan 1 s por defecto: la primera pantalla que carga en frío (chunks lazy) tarda más
+// con la máquina cargada y la prueba fallaba a veces. Solo se espera más cuando algo tarda; si todo
+// va bien, no se nota.
+configure({ asyncUtilTimeout: 5000 })
 
 afterEach(cleanup)

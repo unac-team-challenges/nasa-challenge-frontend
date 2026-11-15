@@ -107,7 +107,7 @@ export interface components {
         };
         /** @description Tendencia lineal del periodo `year_start`–`year_end`, ya calculada por el pipeline. */
         Stats: {
-            /** @description Cuidado al interpretar la tendencia: siempre en lluvia (IMERG 2014) y si `lag1 > 0.5`. */
+            /** @description Cuidado al interpretar la tendencia: siempre en `lluvia_imerg` (salto de 2014) y si `lag1 > 0.5`. */
             aviso?: string | null;
             /** Format: double */
             ci_high: number;
@@ -160,7 +160,7 @@ export interface components {
          */
         Status: "real" | "posible_casualidad" | "pocos_datos";
         /** @enum {string} */
-        Variable: "lluvia" | "temperatura";
+        Variable: "lluvia" | "temperatura" | "lluvia_imerg";
         /** @description `GET /api/variables`: una entrada de `data/variables.json`, tal cual. */
         VariableInfo: {
             /** Format: int32 */

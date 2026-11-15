@@ -12,9 +12,10 @@ import { FRASES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtP, fmtPct, fmtValor, num } from '@/utils/formato'
-import { useDetalle, useVista, useZonas } from '@/hooks/useZonas'
+import { useDetalle, useSegundaFuente, useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { AntesDespues } from '@/features/ficha/components/AntesDespues'
+import { DosFuentes } from '@/features/ficha/components/DosFuentes'
 import { ErrorSerie } from '@/components/Errores'
 import { GraficoSkeleton } from '@/components/Esperas'
 import { Button } from '@/components/ui/button'
@@ -82,6 +83,7 @@ export function Ficha() {
   const zonas = useZonas()
   const { api, rango, fuente } = useVista()
   const { serie: pts, nota, estado, reintentar } = useDetalle(sel)
+  const imerg = useSegundaFuente()
   const raiz = useRef<HTMLDivElement>(null)
 
   // Fundido de 220 ms al cambiar de zona (v18), no al cambiar otros datos
@@ -211,6 +213,10 @@ export function Ficha() {
             </label>
           )}
         </>
+      )}
+
+      {lluvia && imerg?.[sel] && (
+        <DosFuentes power={d} imerg={imerg[sel]} idioma={idioma} perfil={perfil} />
       )}
 
       <AntesDespues departamento={sel} />

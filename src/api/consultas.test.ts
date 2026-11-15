@@ -217,3 +217,52 @@ describe('vegetacionDeApi (Caso 2)', () => {
     expect(await (await cargar()).vegetacionDeApi()).toBeNull()
   })
 })
+
+describe('imergDeApi (segunda fuente de lluvia)', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  /** Simula /api/variables (unidad de lluvia_imerg) y /api/zonas; anota qué variable se pidió. */
+  const simularImerg = (unidad: string, pedidas: string[] = []) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (req: Request) => {
+        const url = new URL(req.url)
+        if (url.pathname === '/api/variables')
+          return json([
+            { id: 'lluvia_imerg', unidad, fuente: 'GPM IMERG v07 (NASA)', descripcion: '' },
+          ])
+        pedidas.push(url.searchParams.get('variable') ?? '')
+        return json(ids.map(zonaConStats))
+      }),
+    )
+
+  it('pide lluvia_imerg y pasa de mm/día a mm/año según la unidad de /api/variables', async () => {
+    const pedidas: string[] = []
+    simularImerg('mm/día', pedidas)
+    const { imergDeApi } = await cargar()
+    const imerg = await imergDeApi()
+    expect(pedidas).toEqual(['lluvia_imerg'])
+    expect(Object.keys(imerg!)).toHaveLength(25)
+    expect(imerg!['21'].slope_per_decade).toBeCloseTo(36.5)
+    expect(imerg!['21'].status).toBe('real')
+  })
+
+  it('si la unidad ya no es por día, no multiplica', async () => {
+    simularImerg('mm/año')
+    const { imergDeApi } = await cargar()
+    expect((await imergDeApi())!['21'].slope_per_decade).toBeCloseTo(0.1)
+  })
+
+  it('si la API no la tiene (backend viejo) devuelve null y la ficha usa la copia local', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'variable no existe' }, 400)),
+    )
+    const { imergDeApi } = await cargar()
+    expect(await imergDeApi()).toBeNull()
+  })
+})

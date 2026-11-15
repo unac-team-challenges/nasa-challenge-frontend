@@ -25,9 +25,10 @@ interface StatsApi {
   aviso?: string | null
 }
 
-/** La lluvia puede llegar en mm/día (GPM IMERG en el backend); la interfaz usa mm/año. */
-function factorUnidad(variable: Variable, unidad?: string) {
-  return variable === 'lluvia' && unidad && /d[ií]a/i.test(unidad) ? 365 : 1
+/** La lluvia (POWER o IMERG) llega en mm/día; la interfaz usa mm/año. */
+function factorUnidad(variable: Variable | 'lluvia_imerg', unidad?: string) {
+  const lluvia = variable === 'lluvia' || variable === 'lluvia_imerg'
+  return lluvia && unidad && /d[ií]a/i.test(unidad) ? 365 : 1
 }
 
 function tieneStats(x: unknown): x is { stats: StatsApi } {
@@ -162,6 +163,46 @@ export async function vegetacionDeApi(): Promise<Record<string, ValleApi> | null
         }
     }
     return Object.keys(valles).length ? valles : null
+  } catch {
+    return null
+  }
+}
+
+/** Tendencia de una zona en la segunda fuente de lluvia (GPM IMERG), ya en mm/año. */
+export interface TendenciaImerg {
+  slope_per_decade: number
+  ci_low: number
+  ci_high: number
+  status: Estado
+  n_years: number
+}
+
+/**
+ * La lluvia de IMERG desde la API (`lluvia_imerg`, segunda fuente para comparar con POWER),
+ * o null si la API no la tiene (backend viejo) o falla. La unidad sale de /api/variables.
+ */
+export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | null> {
+  if (!hayApi) return null
+  try {
+    const [r, vars] = await Promise.all([
+      api.GET('/api/zonas', { params: { query: { variable: 'lluvia_imerg' } } }),
+      api.GET('/api/variables'),
+    ])
+    const lista = r.data as unknown[] | undefined
+    if (!lista || lista.length !== 25 || !lista.every(tieneStats)) return null
+    const f = factorUnidad('lluvia_imerg', vars.data?.find((v) => v.id === 'lluvia_imerg')?.unidad)
+    return Object.fromEntries(
+      (lista as { id: string; stats: StatsApi }[]).map(({ id, stats: s }) => [
+        id,
+        {
+          slope_per_decade: s.slope_per_decade * f,
+          ci_low: s.ci_low * f,
+          ci_high: s.ci_high * f,
+          status: s.status,
+          n_years: s.n_years,
+        },
+      ]),
+    )
   } catch {
     return null
   }

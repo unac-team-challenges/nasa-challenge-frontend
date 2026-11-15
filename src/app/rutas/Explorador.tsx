@@ -9,6 +9,7 @@ import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
+import { AyudaModo } from '@/features/tiempo/components/AyudaModo'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
@@ -132,12 +133,16 @@ export function Explorador() {
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
-                {t.mapH[variable]}
+                {t.mapH[variable]} ·{' '}
+                {anio == null
+                  ? t.mapModoTendencia(rango.year_start, rango.year_end)
+                  : t.mapModoAnio(anio)}
               </h2>
               <span className="text-[13px] text-muted">
-                {anio == null ? t.mapSub(rango.year_start, rango.year_end) : t.legTimeNote(anio)}
+                {anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
+            <AyudaModo />
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}

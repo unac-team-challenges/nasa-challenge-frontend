@@ -489,6 +489,11 @@ h3 {
   /* el suelo (canvas) y el SVG se agrandan en la tarjeta gráfica, sin volver a pintarse */
   will-change: transform;
 }
+/* Mientras los dedos mueven el mapa, sin animación: tiene que seguirlos al instante */
+.zoom2d.gestando,
+.lbl2d.gestando {
+  transition: none;
+}
 /* Etiquetas del 2D: se deslizan con el zoom (las del 3D las mueve la escena cada cuadro) */
 .lbl2d {
   transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);

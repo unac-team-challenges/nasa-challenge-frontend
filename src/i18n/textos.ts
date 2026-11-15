@@ -422,6 +422,8 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
     oso: ['Oso de anteojos · Cajamarca', 'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.'],
     cocodrilo: ['Cocodrilo americano · Tumbes', 'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.'],
     caballo: ['Caballo peruano de paso · Lima', 'Su andar suave, el «paso llano», es patrimonio cultural de la nación.'],
+    shipibo: ['Mujer shipibo-konibo · Ucayali', 'Pueblo amazónico del río Ucayali. Sus diseños kené, pintados y bordados, son Patrimonio Cultural de la Nación desde 2008.'],
+    danzante: ['Danzante de tijeras · Huancavelica', 'El danzaq baila al ritmo de unas tijeras de metal. La UNESCO la declaró Patrimonio Cultural Inmaterial de la Humanidad en 2010.'],
   },
   en: {
     alpaca: ['Alpaca · Puno', 'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.'],
@@ -441,5 +443,7 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
     oso: ['Spectacled bear · Cajamarca', "South America's only bear; its pale face markings differ in every individual."],
     cocodrilo: ['American crocodile · Tumbes', "Peru's only crocodile lives in Tumbes' mangroves and rivers."],
     caballo: ['Peruvian Paso horse · Lima', "Its smooth gait, the 'paso llano', is part of Peru's national heritage."],
+    shipibo: ['Shipibo-Konibo woman · Ucayali', 'An Amazonian people of the Ucayali River. Their kené designs, painted and embroidered, have been National Cultural Heritage of Peru since 2008.'],
+    danzante: ['Scissors dancer · Huancavelica', 'The danzaq dances to the beat of metal scissors. UNESCO listed it as Intangible Cultural Heritage of Humanity in 2010.'],
   },
 }

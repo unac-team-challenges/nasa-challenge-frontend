@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
-import { esUbigeo, useBusqueda } from '@/lib/busqueda'
+import { esUbigeo, useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
@@ -22,9 +22,11 @@ export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, tema, conWebgl, periodo } = useApp()
+  const { idioma, tema, conWebgl } = useApp()
+  const periodo = usePeriodo()
   const busqueda = useBusqueda()
-  const { variable, sel, anio } = busqueda
+  const { variable, sel, vegetacion } = busqueda
+  const anio = useAnio()
   // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
   const busquedaRef = useRef(busqueda)
   useEffect(() => {
@@ -53,6 +55,7 @@ export function Mapa3D({ modo }: Props) {
     const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
     e.setCalor(calor)
+    e.setVegetacion(busquedaRef.current.vegetacion)
     if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
     useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
     const sistema = matchMedia('(prefers-color-scheme: dark)')
@@ -76,6 +79,11 @@ export function Mapa3D({ modo }: Props) {
   useEffect(() => {
     escena.current?.setDatos(zonas, variable)
   }, [zonas, variable])
+
+  // Modo Vegetación: los 5 recuadros medidos sobre los departamentos atenuados
+  useEffect(() => {
+    escena.current?.setVegetacion(vegetacion)
+  }, [vegetacion])
 
   useEffect(() => {
     escena.current?.setCalor(calor)

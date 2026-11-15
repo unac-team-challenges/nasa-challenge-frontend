@@ -8,12 +8,14 @@
       name="description"
       content="Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde 2001, y si el cambio es real o casualidad."
     />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!-- Con sizes="any" Chrome elige el .ico y no el SVG (que sí cambia con el tema oscuro): el .ico va
+         con su tamaño real y el SVG, al final, para los navegadores que lo entienden -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <!-- Tema: el color de la barra del navegador sigue al tema claro (Garúa) u oscuro (Humboldt) -->
-    <meta name="theme-color" content="#dce2e3" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f1c26" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#d6c3a5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#201c19" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
 
     <!-- Redes y mensajería (los rastreadores no ejecutan JS: aquí va la versión en español).

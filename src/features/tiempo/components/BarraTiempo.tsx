@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { anomaliasPeru } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { colorAnomalia } from '@/utils/color'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia } from '@/utils/formato'
 import { useRango } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -18,8 +18,10 @@ const PASO_MS = 850
  * el desplazamiento de la página). Las franjas del Perú son el riel; encima va el deslizador.
  */
 export function BarraTiempo() {
-  const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
-  const { variable, anio, setAnio } = useBusqueda()
+  const { idioma, reproduciendo, setReproduciendo } = useApp()
+  const periodo = usePeriodo()
+  const { variable, setAnio } = useBusqueda()
+  const anio = useAnio()
   // El Play lee el año y la función más recientes sin reiniciar su reloj
   const vivo = useRef({ anio, setAnio })
   useEffect(() => {
@@ -76,7 +78,7 @@ export function BarraTiempo() {
       <div
         role="group"
         aria-label={t.timeModeAria}
-        className="order-1 flex flex-none overflow-hidden rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
+        className="order-1 flex flex-none rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
       >
         <Button
           variant="toggle"
@@ -84,7 +86,7 @@ export function BarraTiempo() {
           aria-pressed={!porAnio}
           onClick={() => setAnio(null)}
           title={t.timeTrendTitle(a, b)}
-          className="min-h-8 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-l-s px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-t-s min-[901px]:rounded-bl-none min-[901px]:px-1"
         >
           {t.timeTrend}
         </Button>
@@ -94,7 +96,7 @@ export function BarraTiempo() {
           aria-pressed={porAnio}
           onClick={() => setAnio(b)}
           title={t.timeByYearTitle}
-          className="min-h-8 border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-r-s border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-tr-none min-[901px]:rounded-b-s min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
         >
           {t.timeByYear}
         </Button>
@@ -123,11 +125,8 @@ export function BarraTiempo() {
                     <button
                       key={fila.y}
                       type="button"
-                      className="min-h-0 min-w-0 flex-1 cursor-pointer border-0 p-0"
-                      style={{
-                        background: colorAnomalia(fila.a, max, variable),
-                        boxShadow: anio === fila.y ? 'inset 0 0 0 2px var(--fg)' : undefined,
-                      }}
+                      className="franja min-h-0 min-w-0 flex-1 cursor-pointer border-0 p-0"
+                      style={{ backgroundColor: colorAnomalia(fila.a, max, variable) }}
                       title={etiqueta}
                       aria-label={etiqueta}
                       aria-current={anio === fila.y}
@@ -153,7 +152,7 @@ export function BarraTiempo() {
                   setReproduciendo(false)
                   setAnio(Number(e.target.value))
                 }}
-                className="deslizador-riel absolute inset-0 m-0 size-full cursor-pointer min-[901px]:static min-[901px]:h-auto min-[901px]:w-5 min-[901px]:accent-accent min-[901px]:[direction:rtl] min-[901px]:[writing-mode:vertical-lr]"
+                className="deslizador-riel absolute inset-0 m-0 size-full cursor-pointer min-[901px]:static min-[901px]:h-auto min-[901px]:w-5 min-[901px]:self-stretch min-[901px]:accent-accent min-[901px]:[direction:rtl] min-[901px]:[writing-mode:vertical-lr]"
               />
             </div>
             <span className="order-3 text-xs text-muted min-[901px]:order-1">{b}</span>

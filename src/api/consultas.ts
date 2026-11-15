@@ -14,6 +14,7 @@ interface StatsApi {
   slope_per_decade: number
   ci_low: number
   ci_high: number
+  intercept?: number | null
   p_value?: number | null
   q_value?: number | null
   lag1?: number | null
@@ -54,6 +55,7 @@ function aZona(id: string, celdas: number | undefined, s: StatsApi, factor: numb
     slope_per_decade: s.slope_per_decade * factor,
     ci_low: s.ci_low * factor,
     ci_high: s.ci_high * factor,
+    intercept: s.intercept != null ? s.intercept * factor : null,
     pct_change_per_decade: s.pct_change_per_decade ?? null,
     p_value: s.p_value ?? null,
     q_value: s.q_value ?? null,
@@ -265,10 +267,12 @@ export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | nul
 export type Malla = components['schemas']['Malla']
 
 /** Malla de temperatura desde la API, o null sin API, con error o vacía (se usa la copia local). */
-export async function celdasDeApi(): Promise<Malla | null> {
+export async function celdasDeApi(
+  variable: 'temperatura' | 'vegetacion' = 'temperatura',
+): Promise<Malla | null> {
   if (!hayApi) return null
   try {
-    const r = await api.GET('/api/celdas', { params: { query: { variable: 'temperatura' } } })
+    const r = await api.GET('/api/celdas', { params: { query: { variable } } })
     return r.data?.celdas.length ? r.data : null
   } catch {
     return null

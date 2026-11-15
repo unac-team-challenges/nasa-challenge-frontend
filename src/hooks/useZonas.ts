@@ -18,7 +18,7 @@ import {
   type Zona,
 } from '@/data/datos'
 import { useApp, type Fuente } from '@/stores/app'
-import { useBusqueda } from '@/lib/busqueda'
+import { useBusqueda, usePeriodo, useSinNino } from '@/lib/busqueda'
 import type { Ruta } from '@/hooks/ruta'
 
 /** Las dos variables de la API, pedidas una sola vez al abrir la web. */
@@ -62,8 +62,8 @@ export function useDecidirFuente(ruta: Ruta) {
 export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fuente: string } {
   const elegida = useBusqueda().variable
   const variable = v ?? elegida
-  const periodo = useApp((s) => s.periodo)
-  const sinNino = useApp((s) => s.sinNino)
+  const periodo = usePeriodo()
+  const sinNino = useSinNino()
   const decidida = useApp((s) => s.fuente)
   const { data } = useDatosApi()
   const api =
@@ -81,8 +81,8 @@ export function useRango(v?: Variable): Rango {
 /** Estadística por zona de la variable elegida: API si está completa; si no, copia local. */
 export function useZonas(): Record<string, Zona> {
   const { variable } = useBusqueda()
-  const periodo = useApp((s) => s.periodo)
-  const sinNino = useApp((s) => s.sinNino)
+  const periodo = usePeriodo()
+  const sinNino = useSinNino()
   const { api } = useVista()
   const local = useMemo(() => zonasDe(variable, periodo, sinNino), [variable, periodo, sinNino])
   return api?.zonas ?? local
@@ -100,15 +100,14 @@ export function useDetalle(id: string | null): {
   reintentar: () => void
 } {
   const { variable } = useBusqueda()
-  const sinNino = useApp((s) => s.sinNino)
+  const sinNino = useSinNino()
   const { api, rango } = useVista()
   const { data, refetch } = useQuery({
     queryKey: ['detalle', variable, id],
     queryFn: () => detalleDeApi(id!, variable),
     enabled: !!api && !!id,
     staleTime: Infinity,
-    // al cambiar de variable en la misma zona se ve el gráfico anterior, no el esqueleto
-    placeholderData: (previo, consulta) => (consulta?.queryKey[2] === id ? previo : undefined),
+    // Sin placeholderData: al cambiar de variable la serie anterior (otra unidad) no se reutiliza.
   })
   const local = useMemo(
     () => (id ? serie(id, variable, rango, sinNino) : null),
@@ -130,8 +129,8 @@ export function useDetalle(id: string | null): {
  */
 export function useSegundaFuente(): Record<string, TendenciaImerg> | null {
   const decidida = useApp((s) => s.fuente)
-  const sinNino = useApp((s) => s.sinNino)
-  const periodo = useApp((s) => s.periodo)
+  const sinNino = useSinNino()
+  const periodo = usePeriodo()
   const { api } = useVista('lluvia')
   const { data } = useQuery({
     queryKey: ['imerg'],

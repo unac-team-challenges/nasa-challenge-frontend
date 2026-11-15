@@ -11,21 +11,21 @@
  * Pendiente: las paletas Andes, Amazonía y Nazca.
  */
 :root {
-  --bg: #dce2e3;
-  --panel: #ebefef;
-  --panel-2: #e1e7e8;
-  --line: #c5ced1;
-  --line-2: #a9b6bc;
-  --fg: #1a2a33;
-  --muted: #4b5e68;
-  --up: #2367a6;
-  --up-soft: #b4cbe0;
-  --down: #94582a;
-  --down-soft: #d9c0a2;
-  --green: #2f7550;
+  --bg: #d6c3a5;
+  --panel: #e6d7bf;
+  --panel-2: #ddcbb0;
+  --line: #c4ad8c;
+  --line-2: #9c8463;
+  --fg: #2a1f17;
+  --muted: #5a4636;
+  --up: #1f5287;
+  --up-soft: #c6d6e6;
+  --down: #713f15;
+  --down-soft: #e4cdb0;
+  --green: #20553a;
   --green-soft: #b3d2bf;
-  --map-up: #5e95c8;
-  --map-down: #c49061;
+  --map-up: #2f6fa8;
+  --map-down: #a5652a;
   --map-green: #5fa07c;
   /* Mapa de calor (temperatura): azul (frío) → neutro → amarillo → naranja → rojo, igual en claro y oscuro */
   --frio-2: #2a64ad;
@@ -44,41 +44,47 @@
   --lluvia-4: #2a56b5;
   --lluvia-5: #3a2f98;
   --lluvia-6: #6c2a8c;
+  /* Mapa de vegetación (NDVI): ocre del desierto → paja → verde claro → verde → selva, igual en claro y oscuro */
+  --veg-0: #c8a978;
+  --veg-1: #e3d58c;
+  --veg-2: #a8cf73;
+  --veg-3: #4f9a4c;
+  --veg-4: #1f5e34;
   --accent: #a8285a;
-  --accent-text: #a8285a;
+  --accent-text: #8e1f4b;
   --accent-fg: #ffffff;
   --accent-soft: #eed8e1;
   --sea: #a9c3d3; /* azul suave: en claro, el mar no se confunde con la tierra */
-  --plane: #4b5e68;
-  --shadow: rgba(26, 42, 51, 0.1);
+  --plane: #5a4636;
+  --shadow: rgba(42, 31, 23, 0.14);
   --nino: #ebdfbe;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0f1c26;
-    --panel: #172833;
-    --panel-2: #1c303c;
-    --line: #2a3f4d;
-    --line-2: #3b5363;
-    --fg: #e7eef0;
-    --muted: #9fb2bc;
-    --up: #4fa3e0;
-    --up-soft: #2c5a78;
-    --down: #d9a05b;
-    --down-soft: #6e5537;
+    --bg: #201c19;
+    --panel: #2a2521;
+    --panel-2: #322c27;
+    --line: #3d3530;
+    --line-2: #574d44;
+    --fg: #f1ebe4;
+    --muted: #b6aa9d;
+    --up: #7fb0dc;
+    --up-soft: #22405a;
+    --down: #dba066;
+    --down-soft: #4f3a24;
     --green: #5bc08a;
     --green-soft: #2e5a44;
-    --map-up: #4fa3e0;
-    --map-down: #d9a05b;
+    --map-up: #3f86c0;
+    --map-down: #b87a3a;
     --map-green: #5bc08a;
     --accent: #e0457b;
     --accent-text: #f2789f;
-    --accent-fg: #0f1c26;
+    --accent-fg: #120d0b;
     --accent-soft: #3a2030;
     --sea: #0b161e;
-    --plane: #e7eef0;
+    --plane: #f1ebe4;
     --shadow: rgba(0, 0, 0, 0.35);
     --nino: #3a3420;
     color-scheme: dark;
@@ -86,28 +92,28 @@
 }
 
 :root[data-theme='dark'] {
-  --bg: #0f1c26;
-  --panel: #172833;
-  --panel-2: #1c303c;
-  --line: #2a3f4d;
-  --line-2: #3b5363;
-  --fg: #e7eef0;
-  --muted: #9fb2bc;
-  --up: #4fa3e0;
-  --up-soft: #2c5a78;
-  --down: #d9a05b;
-  --down-soft: #6e5537;
+  --bg: #201c19;
+  --panel: #2a2521;
+  --panel-2: #322c27;
+  --line: #3d3530;
+  --line-2: #574d44;
+  --fg: #f1ebe4;
+  --muted: #b6aa9d;
+  --up: #7fb0dc;
+  --up-soft: #22405a;
+  --down: #dba066;
+  --down-soft: #4f3a24;
   --green: #5bc08a;
   --green-soft: #2e5a44;
-  --map-up: #4fa3e0;
-  --map-down: #d9a05b;
+  --map-up: #3f86c0;
+  --map-down: #b87a3a;
   --map-green: #5bc08a;
   --accent: #e0457b;
   --accent-text: #f2789f;
-  --accent-fg: #0f1c26;
+  --accent-fg: #120d0b;
   --accent-soft: #3a2030;
   --sea: #0b161e;
-  --plane: #e7eef0;
+  --plane: #f1ebe4;
   --shadow: rgba(0, 0, 0, 0.35);
   --nino: #3a3420;
   color-scheme: dark;
@@ -384,6 +390,18 @@ h3 {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+/* Área de toque de 44 px (guía de Apple) sin agrandar el control: en celular, un borde invisible lo
+   hace tocable en 44 px. Solo crece en el eje donde el control mide menos; un control de 44 px o más
+   no cambia. El elemento debe estar posicionado (relative o absolute). */
+@media (max-width: 900px) {
+  .toque44::after {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
+}
+
 /* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
 @keyframes entrada {
   from {
@@ -483,6 +501,26 @@ h3 {
   }
 }
 
+/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
+   departamentos para no competir con el dato del mapa */
+.lbl3d.veg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px 1px 5px;
+}
+.lbl3d.veg::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* --veg: color de la tendencia del lugar (lo pone el mapa) */
+  background: var(--veg, var(--map-green));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--veg, var(--map-green)) 35%, transparent);
+}
+
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;
@@ -553,5 +591,33 @@ h3 {
     border-radius: 4px;
     border: 2px solid var(--panel);
     background: var(--accent);
+  }
+}
+
+/* Franjas de la máquina del tiempo: volumen sutil (cilindro) sobre el color del año, solo CSS.
+   Celular: riel horizontal, la luz viene de arriba. Escritorio: riel vertical, de la izquierda. */
+.franja {
+  background-image: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.12),
+    transparent 55%,
+    rgb(0 0 0 / 0.14)
+  );
+}
+.franja[aria-current='true'] {
+  box-shadow:
+    inset 0 0 0 2px var(--fg),
+    0 0 8px var(--fg);
+  position: relative;
+  z-index: 1;
+}
+@media (min-width: 901px) {
+  .franja {
+    background-image: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.12),
+      transparent 55%,
+      rgb(0 0 0 / 0.14)
+    );
   }
 }

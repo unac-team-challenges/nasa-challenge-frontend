@@ -1,16 +1,21 @@
 import { Link } from '@tanstack/react-router'
+import { useRef } from 'react'
 import {
-  ChevronDown,
   CloudRain,
+  GraduationCap,
+  House,
+  Leaf,
   Moon,
+  Sprout,
   Sun,
   Thermometer,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
-import { useBusqueda } from '@/lib/busqueda'
+import { useRuta } from '@/hooks/ruta'
+import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
+import { useBusqueda, type Busqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { MenuMetodologia } from '@/components/MenuMetodologia'
 import { Button } from '@/components/ui/button'
@@ -18,6 +23,11 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+}
+
+const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
+  agricultor: Sprout,
+  estudiante: GraduationCap,
 }
 
 const IDIOMAS = [
@@ -31,6 +41,8 @@ const riel =
 /** Bajo 420 px solo queda "Detective" y bajo 360 px solo el logo: el nombre sigue en el aria-label */
 const resto = 'font-display font-semibold max-[419px]:hidden'
 const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed:shadow-sm'
+/** Al inicio viajan las opciones del mapa y el idioma (no el año ni la zona) */
+const aInicio = (p: Busqueda) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })
 
 /**
  * Barra superior: marca, variable, perfil, metodología, idioma y tema.
@@ -40,16 +52,25 @@ export function Cabecera() {
   // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
   const idioma = useApp((s) => s.idioma)
   const alternarTema = useApp((s) => s.alternarTema)
+  const enInicio = useRuta() === 'inicio'
   // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
-  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
+  const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
+    useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
+  // En celular la cabecera se esconde al bajar por la página y vuelve al subir (más sitio para leer)
+  const barra = useRef<HTMLElement>(null)
+  const oculta = useOcultarAlBajar(barra, '(max-width: 900px)')
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]">
+    <header
+      ref={barra}
+      data-oculta={oculta}
+      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md max-[900px]:transition-transform max-[900px]:duration-200 max-[900px]:data-[oculta=true]:-translate-y-full max-[900px]:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+    >
       <Link
         to="/"
-        search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}
+        search={aInicio}
         className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
         aria-label={t.inicio}
       >
@@ -73,7 +94,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
+      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
         <div className={riel} role="group" aria-label={t.variableLbl}>
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
@@ -83,7 +104,7 @@ export function Cabecera() {
                 variant="toggle"
                 size="sm"
                 className={opcion}
-                aria-pressed={variable === v}
+                aria-pressed={!vegetacion && variable === v}
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
@@ -91,35 +112,59 @@ export function Cabecera() {
               </Button>
             )
           })}
-        </div>
-        <label className="sr-only" htmlFor="perfil">
-          {t.perfilLbl}
-        </label>
-        <div className={`${riel} relative`}>
-          <UserRound
-            className="pointer-events-none absolute left-3 size-4 text-muted"
-            aria-hidden="true"
-          />
-          <select
-            id="perfil"
-            value={perfil}
-            onChange={(e) => setPerfil(e.target.value as Perfil)}
-            className="min-h-9 cursor-pointer appearance-none rounded-[8px] border-0 bg-transparent pr-8 pl-9 text-sm font-medium hover:bg-panel"
+          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos */}
+          <Button
+            variant="toggle"
+            size="sm"
+            className={opcion}
+            aria-pressed={vegetacion}
+            title={t.vegetacionBtn}
+            onClick={() => setVegetacion()}
           >
-            {ORDEN_PERFILES.map((p) => (
-              <option key={p} value={p}>
-                {t.perfiles[p][0]}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 size-4 text-muted"
-            aria-hidden="true"
-          />
+            <Leaf className="size-4" aria-hidden="true" />
+            {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
+            <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
+          </Button>
+        </div>
+        <div className={riel} role="group" aria-label={t.perfilLbl}>
+          {ORDEN_PERFILES.map((p) => {
+            const Icono = ICONO_PERFIL[p]
+            return (
+              <Button
+                key={p}
+                variant="toggle"
+                size="sm"
+                className={opcion}
+                aria-pressed={perfil === p}
+                title={`${t.perfiles[p][0]}: ${t.perfiles[p][1]}`}
+                onClick={() => setPerfil(p)}
+              >
+                <Icono className="size-4" aria-hidden="true" />
+                {/* En celular solo el ícono: con texto, el segundo botón quedaba fuera de la tira */}
+                <span className="max-[479px]:sr-only">{t.perfiles[p][0]}</span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
+        {/* Como Metodología. Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
+            el logo también lleva al inicio) */}
+        <Button
+          asChild
+          variant="ghost"
+          data-activa={enInicio || undefined}
+          className="relative rounded-m px-2 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text sm:px-3 sm:max-[780px]:hidden"
+        >
+          <Link to="/" search={aInicio} aria-current={enInicio ? 'page' : undefined}>
+            <House className="size-4.5" aria-hidden="true" />
+            <span className="max-[899px]:sr-only">{t.inicioCorto}</span>
+            {enInicio && (
+              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
+            )}
+          </Link>
+        </Button>
         <MenuMetodologia />
         <span className="hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>

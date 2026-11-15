@@ -99,7 +99,11 @@ export function Portada() {
               </Link>
             </Button>
             <span className="text-[13px] text-muted">{t.fuenteReal(fuente)}</span>
-            <Link to="/metodologia" className="text-[13px] text-accent-text">
+            <Link
+              to="/metodologia"
+              search={(p) => ({ lang: p.lang })}
+              className="text-[13px] text-accent-text"
+            >
               {t.metodologiaEnlace}
             </Link>
           </div>

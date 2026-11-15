@@ -401,11 +401,11 @@ export function Mapa2D({ interactivo = true }: Props) {
                       tabIndex: 0,
                       'aria-label': etiqueta(id),
                       'aria-pressed': id === sel,
-                      onClick: () => seleccionar(id),
+                      onClick: () => seleccionar(id, true),
                       onKeyDown: (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          seleccionar(id)
+                          seleccionar(id, true)
                         }
                       },
                       // Con el dedo no hay «pasar por encima»: la ficha flotante tapaba el mapa y

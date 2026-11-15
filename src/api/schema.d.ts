@@ -4,6 +4,27 @@
  */
 
 export interface paths {
+    "/api/cobertura-arboles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobertura de árboles (MODIS MOD44B) de recuadros de selva, donde el NDVI se satura: cada zona con
+         *     su serie anual (`arboles_pct`, `area_bosque_km2`), su tendencia y su `unidad_geografica`
+         *     (un recuadro, **no** el promedio del departamento).
+         */
+        get: operations["cobertura"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/variables": {
         parameters: {
             query?: never;
@@ -80,6 +101,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Medidas de un año (MOD44B es un producto anual). */
+        AnioCobertura: {
+            /** Format: int32 */
+            anio: number;
+            /**
+             * Format: double
+             * @description Cobertura de árboles media del recuadro, en % (0–100).
+             */
+            arboles_pct: number;
+            /**
+             * Format: double
+             * @description Área con cobertura de árboles mayor o igual que `umbral_bosque_pct`, en km².
+             */
+            area_bosque_km2: number;
+        };
         /** @description Medidas de un año completo (12 meses válidos). */
         AnioVegetacion: {
             /** Format: int32 */
@@ -190,6 +226,42 @@ export interface components {
             nota?: string | null;
             stats: components["schemas"]["Stats"];
         };
+        /** @description `GET /api/cobertura-arboles`: una zona (recuadro de selva) con su serie anual y su tendencia. */
+        ZonaCobertura: {
+            /** @description `[oeste, sur, este, norte]` en grados. */
+            bbox: number[];
+            /** @description Departamento donde está el recuadro. */
+            departamento: string;
+            fuente: string;
+            /** @description Identificador del recuadro, p. ej. "la-pampa". */
+            id: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            nombre: string;
+            /**
+             * Format: int32
+             * @description Píxeles MODIS (~250 m) de tierra del recuadro.
+             */
+            pixeles: number;
+            /** @description Un punto por año, de menor a mayor (como `serie` de `/api/zonas/{id}`). */
+            serie: components["schemas"]["AnioCobertura"][];
+            stats: components["schemas"]["Stats"];
+            /** @description Sobre qué campo de `serie` se calcula `stats` (hoy, "arboles_pct"). */
+            tendencia_de: string;
+            /** @description P. ej. "selva con minería de oro". */
+            tipo: string;
+            /** @description Ubigeo del departamento, como texto ("01"–"25"). */
+            ubigeo: string;
+            /**
+             * Format: double
+             * @description % de cobertura de árboles desde el que un píxel cuenta como bosque.
+             */
+            umbral_bosque_pct: number;
+            /** @description Qué área se promedia: un recuadro, **no** el departamento. La ficha debe mostrarlo. */
+            unidad_geografica: string;
+        };
         /**
          * @description `GET /api/zonas/{id}`: los campos de `Zona` (con su `stats`) más la serie anual del mismo periodo.
          *     Campos explícitos y no `flatten`: `Zona` lleva `additionalProperties: false` (por `deny_unknown_fields`)
@@ -257,6 +329,25 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    cobertura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaCobertura"][];
+                };
+            };
+        };
+    };
     variables: {
         parameters: {
             query?: never;

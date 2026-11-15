@@ -4,7 +4,7 @@ import { TEXTOS } from '../i18n/textos'
 import { colorAnomalia } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useRango, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 import { CAJA_SUELO, pintarSuelo2D } from './suelo2d'
 
@@ -134,7 +134,8 @@ interface Props {
 export function Mapa2D({ interactivo = true }: Props) {
   const { idioma, variable, sel, seleccionar, anio, periodo } = useApp()
   const tema = useApp((s) => s.tema) // el suelo y los colores del año se leen del tema
-  const an = anio == null ? null : anomaliasAnio(variable, periodo)
+  const rango = useRango()
+  const an = anio == null ? null : anomaliasAnio(variable, periodo, rango)
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const [tip, setTip] = useState<{ id: string; x: number; y: number } | null>(null)
@@ -210,6 +211,7 @@ export function Mapa2D({ interactivo = true }: Props) {
       {/* Suelo real: mar con profundidad y espuma, relieve, ríos, fronteras y sombra del Perú */}
       <canvas
         ref={lienzo}
+        data-suelo2d
         aria-hidden
         className="absolute transition-opacity duration-300"
         style={{

@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
-import { NOMBRE, PERIODOS } from '../data/datos'
+import { NOMBRE } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { fmtValor } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useRango, useZonas } from '../lib/useZonas'
 import { EscenaPeru } from '../mapa/escena'
 import { Mapa2D } from '../mapa/Mapa2D'
 import { Mapa3D } from '../mapa/Mapa3D'
@@ -21,10 +21,11 @@ const boton =
  */
 export function Explorador() {
   const { idioma, variable, sel, sinNino, informeMin, setInformeMin } = useApp()
-  const { conWebgl, modoMapa, setModoMapa, periodo, anio } = useApp()
+  const { conWebgl, modoMapa, setModoMapa, anio } = useApp()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
+  const rango = useRango()
   const escena = useRef<EscenaPeru | null>(null)
   const [girando, setGirando] = useState(true)
   const d = sel ? zonas[sel] : null
@@ -50,9 +51,7 @@ export function Explorador() {
                 {t.mapH[variable]}
               </h2>
               <span className="text-[13px] text-muted">
-                {anio == null
-                  ? t.mapSub(PERIODOS[periodo].year_start, PERIODOS[periodo].year_end)
-                  : t.legTimeNote(anio)}
+                {anio == null ? t.mapSub(rango.year_start, rango.year_end) : t.legTimeNote(anio)}
               </span>
             </div>
             {!conWebgl && (

@@ -29,7 +29,7 @@ export function AyudaModo() {
     }
   }
   return (
-    <p className="pointer-events-auto m-0 flex max-w-136 items-start gap-2 rounded-m border border-accent bg-accent-soft py-1.5 pr-1.5 pl-3 text-[13px] text-fg">
+    <p className="pointer-events-auto m-0 hidden max-w-136 items-start gap-2 rounded-m border border-accent bg-accent-soft py-1.5 pr-1.5 pl-3 text-[13px] text-fg min-[901px]:flex">
       <span className="py-1">{t.timeHelp(b - a + 1)}</span>
       <button
         type="button"

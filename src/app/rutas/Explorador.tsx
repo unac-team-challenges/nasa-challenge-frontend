@@ -13,6 +13,7 @@ import { AyudaModo } from '@/features/tiempo/components/AyudaModo'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
+import { Popover } from 'radix-ui'
 import { Button } from '@/components/ui/button'
 
 const boton = 'bg-panel/92'
@@ -102,6 +103,68 @@ export function Explorador() {
     '--tapa': informeMin ? `${FRANJA}px` : 'var(--ancho-informe)',
   } as CSSProperties
 
+  // Los controles del mapa, en un solo lugar: en escritorio van a la vista y en celular, en el menú «⋯»
+  const controles = (
+    <>
+      {conWebgl && (
+        <div
+          className="inline-flex overflow-hidden rounded-s border border-line-2 bg-panel/92"
+          role="group"
+          aria-label={t.vistaMapa}
+        >
+          {(['3d', '2d'] as const).map((m) => (
+            <Button
+              key={m}
+              variant="toggle"
+              size="sm"
+              aria-pressed={modoMapa === m}
+              onClick={() => setModoMapa(m)}
+            >
+              {m.toUpperCase()}
+            </Button>
+          ))}
+        </div>
+      )}
+      <Button
+        size="icon"
+        className={boton}
+        disabled={!en3d}
+        aria-pressed={girando}
+        aria-label={girando ? t.spinOn : t.spinOff}
+        title={girando ? t.spinOn : t.spinOff}
+        onClick={() => escenaActiva.current?.alternarGiro()}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Button>
+      <Button
+        size="icon"
+        className={boton}
+        aria-label={t.recenter}
+        title={t.recenter}
+        onClick={volverAlInicio}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+          <path
+            d="M12 2v4M12 18v4M2 12h4M18 12h4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </Button>
+    </>
+  )
+
   return (
     <section
       aria-label={t.explorador}
@@ -133,13 +196,13 @@ export function Explorador() {
         <div className="entrada-suave">
           <div className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
-              <h2 className="m-0 font-display text-xl font-[650] tracking-display">
+              <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
                 {t.mapH[variable]} ·{' '}
                 {anio == null
                   ? t.mapModoTendencia(rango.year_start, rango.year_end)
                   : t.mapModoAnio(anio)}
               </h2>
-              <span className="text-[13px] text-muted">
+              <span className="hidden text-[13px] text-muted min-[901px]:inline">
                 {anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
@@ -159,64 +222,40 @@ export function Explorador() {
             <Leyenda />
             <BarraTiempo />
           </div>
-          <div className="pointer-events-auto absolute right-4 bottom-[86px] z-[3] flex flex-col items-end gap-1.5 min-[901px]:bottom-3.5 min-[901px]:flex-row">
-            {conWebgl && (
-              <div
-                className="inline-flex overflow-hidden rounded-s border border-line-2 bg-panel/92"
-                role="group"
-                aria-label={t.vistaMapa}
-              >
-                {(['3d', '2d'] as const).map((m) => (
-                  <Button
-                    key={m}
-                    variant="toggle"
-                    size="sm"
-                    aria-pressed={modoMapa === m}
-                    onClick={() => setModoMapa(m)}
-                  >
-                    {m.toUpperCase()}
-                  </Button>
-                ))}
-              </div>
-            )}
-            <Button
-              size="icon"
-              className={boton}
-              disabled={!en3d}
-              aria-pressed={girando}
-              aria-label={girando ? t.spinOn : t.spinOff}
-              title={girando ? t.spinOn : t.spinOff}
-              onClick={() => escenaActiva.current?.alternarGiro()}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Button>
-            <Button
-              size="icon"
-              className={boton}
-              aria-label={t.recenter}
-              title={t.recenter}
-              onClick={volverAlInicio}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" fill="currentColor" />
-                <path
-                  d="M12 2v4M12 18v4M2 12h4M18 12h4"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </Button>
+          {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
+          <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex">
+            {controles}
           </div>
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <Button
+                size="icon"
+                className={`${boton} pointer-events-auto absolute right-4 z-[3] min-[901px]:hidden ${
+                  anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
+                }`}
+                aria-label={t.mapaControles}
+                title={t.mapaControles}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="5" cy="12" r="1.8" fill="currentColor" />
+                  <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+                  <circle cx="19" cy="12" r="1.8" fill="currentColor" />
+                </svg>
+              </Button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                side="top"
+                align="end"
+                sideOffset={8}
+                collisionPadding={16}
+                aria-label={t.mapaControles}
+                className="z-[60] flex gap-1.5 rounded-m border border-line bg-panel p-1.5 shadow-[0_8px_24px_var(--shadow)]"
+              >
+                {controles}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
         </div>
       </div>
 

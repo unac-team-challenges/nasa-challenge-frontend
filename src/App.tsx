@@ -3,11 +3,13 @@ import { Cabecera } from './components/Cabecera'
 import { Explorador } from './components/Explorador'
 import { Portada } from './components/Portada'
 import { useRuta } from './lib/ruta'
+import { useDecidirFuente } from './lib/useZonas'
 import { useApp } from './store'
 
 export default function App() {
   const idioma = useApp((s) => s.idioma)
   const ruta = useRuta()
+  useDecidirFuente(ruta)
   useEffect(() => {
     document.documentElement.lang = idioma
   }, [idioma])

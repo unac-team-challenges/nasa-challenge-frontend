@@ -17,15 +17,15 @@ const es = {
   variables: { lluvia: 'Lluvia', temperatura: 'Temperatura' } as PorVariable<string>,
   periodos: { largo: 'Desde 1981', reciente: 'Desde 2001' } as Record<Periodo, string>,
   heroH: '¿Qué está cambiando en tu zona del Perú?',
-  heroLead:
-    'Datos de la NASA de 1981 a 2024. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.',
+  heroLead: (a: number, b: number) =>
+    `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
   whoH: '¿Quién eres? Así te lo explicamos',
   perfiles: {
     agricultor: ['Agricultor', 'Lluvia y años secos, en palabras de campo'],
     estudiante: ['Estudiante', 'Con el detalle de cómo se calcula'],
   } satisfies Record<Perfil, [string, string]>,
   exploreBtn: 'Explorar el mapa',
-  fuenteReal: 'Datos de NASA POWER (MERRA-2), 25 departamentos',
+  fuenteReal: (fuente: string) => `Datos de ${fuente}, 25 departamentos`,
   heroCap: (a: number, b: number) =>
     `Arrastra para girar el Perú. Altura: cambio de la lluvia por década, ${a}–${b}.`,
   ocean: 'Océano Pacífico',
@@ -54,9 +54,11 @@ const es = {
   texFew: 'Contorno: pocos datos',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
-    lluvia: 'Lluvia: milímetros al año, promedio de las celdas del departamento (NASA POWER).',
-    temperatura: 'Temperatura del aire a 2 m: °C, promedio anual del departamento (NASA POWER).',
-  } as PorVariable<string>,
+    lluvia: (fuente: string) =>
+      `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
+    temperatura: (fuente: string) =>
+      `Temperatura del aire a 2 m: °C, promedio anual del departamento (${fuente}).`,
+  } as PorVariable<(fuente: string) => string>,
   spinOn: 'Pausar giro',
   spinOff: 'Girar el mapa',
   recenter: 'Volver a la vista inicial',
@@ -66,10 +68,13 @@ const es = {
   // Ficha
   kind: (r: Region) => `Departamento de la ${r}`,
   unitAxis: { lluvia: 'mm/año', temperatura: '°C' } as PorVariable<string>,
-  src: (variable: Variable, celdas: number) =>
+  /** local: copia de NASA POWER, con celdas de ~50 km; con la API, el tamaño depende de su fuente */
+  src: (variable: Variable, celdas: number, fuente: string, local: boolean) =>
     celdas === 0
-      ? 'NASA POWER (MERRA-2): ninguna celda de ~50 km cae dentro del departamento'
-      : `NASA POWER (MERRA-2), ${variable === 'lluvia' ? 'lluvia' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'} de ~50 km`,
+      ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
+      : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? ' de ~50 km' : ''}`,
+  /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
+  notaFija: null as string | null,
   status: {
     real: 'Cambio real',
     posible_casualidad: 'Posible casualidad',
@@ -78,10 +83,10 @@ const es = {
   perDecade: 'por década',
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
-  fewCeldas: (n: number) =>
+  fewCeldas: (n: number, fuente: string, local: boolean) =>
     n === 0
-      ? 'Ninguna celda de NASA POWER (de unos 50 km) cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.'
-      : `Solo ${n} ${n === 1 ? 'celda' : 'celdas'} de NASA POWER (de unos 50 km) ${n === 1 ? 'cae' : 'caen'} en este departamento. Necesitamos al menos 4 para medir una tendencia confiable, así que no sacamos conclusiones.`,
+      ? `Ninguna celda de ${fuente}${local ? ' (de unos 50 km)' : ''} cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.`
+      : `Solo ${n} ${n === 1 ? 'celda' : 'celdas'} de ${fuente}${local ? ' (de unos 50 km)' : ''} ${n === 1 ? 'cae' : 'caen'} en este departamento. Necesitamos al menos 4 para medir una tendencia confiable, así que no sacamos conclusiones.`,
   chartCap: (lluvia: boolean, sinNino: boolean, anios: string) =>
     'Puntos: valor de cada año. Línea gruesa: tendencia (pendiente de Sen). Zona sombreada: rango probable.' +
     (lluvia
@@ -105,10 +110,13 @@ const es = {
   howSlope: 'Pendiente',
   howSlopeV: (v: string) => `Sen, ${v} por década`,
   howN: 'Años con datos',
-  howCeldas: 'Celdas de POWER',
+  howCeldas: 'Celdas',
   howLag: 'Autocorrelación (lag1)',
   howMotivo: 'Por qué no es «cambio real»',
   howSrc: 'Fuente',
+  howDatos: 'Datos servidos por',
+  datosApi: 'la API del proyecto',
+  datosLocal: 'la copia local del proyecto (la API no respondió o aún no trae tendencias)',
   lagExpl:
     'Mide cuánto se parece un año al siguiente. Si es alta, la prueba lo corrige para no exagerar la tendencia.',
   qExpl: (m: number) =>
@@ -165,15 +173,15 @@ const en: Textos = {
   variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
   periodos: { largo: 'Since 1981', reciente: 'Since 2001' },
   heroH: 'What is changing in your part of Peru?',
-  heroLead:
-    'NASA data from 1981 to 2024. On the map, each department rises where it rains more and sinks where it rains less.',
+  heroLead: (a, b) =>
+    `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
   whoH: "Who are you? We'll explain it your way",
   perfiles: {
     agricultor: ['Farmer', 'Rain and dry years, in plain words'],
     estudiante: ['Student', 'With the details of how it is calculated'],
   },
   exploreBtn: 'Explore the map',
-  fuenteReal: 'NASA POWER (MERRA-2) data, 25 departments',
+  fuenteReal: (fuente) => `${fuente} data, 25 departments`,
   heroCap: (a, b) => `Drag to turn Peru. Height: rainfall change per decade, ${a}–${b}.`,
   ocean: 'Pacific Ocean',
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
@@ -199,8 +207,9 @@ const en: Textos = {
   texFew: 'Outline: not enough data',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
-    lluvia: 'Rainfall: millimetres per year, average of the department cells (NASA POWER).',
-    temperatura: 'Air temperature at 2 m: °C, department annual average (NASA POWER).',
+    lluvia: (fuente) =>
+      `Rainfall: millimetres per year, average of the department cells (${fuente}).`,
+    temperatura: (fuente) => `Air temperature at 2 m: °C, department annual average (${fuente}).`,
   },
   spinOn: 'Pause rotation',
   spinOff: 'Rotate the map',
@@ -211,10 +220,11 @@ const en: Textos = {
   kind: (r) =>
     `${({ costa: 'Coastal', sierra: 'Highland', selva: 'Rainforest' } as Record<Region, string>)[r]} department`,
   unitAxis: { lluvia: 'mm/yr', temperatura: '°C' },
-  src: (variable, celdas) =>
+  src: (variable, celdas, fuente, local) =>
     celdas === 0
-      ? 'NASA POWER (MERRA-2): no ~50 km cell falls inside the department'
-      : `NASA POWER (MERRA-2), annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ~50 km ${celdas === 1 ? 'cell' : 'cells'}`,
+      ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
+      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+  notaFija: 'Average of very few or shared grid cells: low-confidence data',
   status: {
     real: 'Real change',
     posible_casualidad: 'Possibly chance',
@@ -223,10 +233,10 @@ const en: Textos = {
   perDecade: 'per decade',
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
-  fewCeldas: (n) =>
+  fewCeldas: (n, fuente, local) =>
     n === 0
-      ? 'No NASA POWER cell (about 50 km wide) falls inside this department, so it has no series of its own. We draw no conclusion.'
-      : `Only ${n} NASA POWER ${n === 1 ? 'cell' : 'cells'} (about 50 km wide) ${n === 1 ? 'falls' : 'fall'} in this department. We need at least 4 to measure a reliable trend, so we draw no conclusion.`,
+      ? `No ${fuente} cell${local ? ' (about 50 km wide)' : ''} falls inside this department, so it has no series of its own. We draw no conclusion.`
+      : `Only ${n} ${fuente} ${n === 1 ? 'cell' : 'cells'}${local ? ' (about 50 km wide)' : ''} ${n === 1 ? 'falls' : 'fall'} in this department. We need at least 4 to measure a reliable trend, so we draw no conclusion.`,
   chartCap: (lluvia, sinNino, anios) =>
     "Dots: each year's value. Thick line: trend (Sen's slope). Shaded area: likely range." +
     (lluvia
@@ -250,10 +260,13 @@ const en: Textos = {
   howSlope: 'Slope',
   howSlopeV: (v) => `Sen, ${v} per decade`,
   howN: 'Years with data',
-  howCeldas: 'POWER cells',
+  howCeldas: 'Grid cells',
   howLag: 'Autocorrelation (lag1)',
   howMotivo: 'Why it is not a real change',
   howSrc: 'Source',
+  howDatos: 'Data served by',
+  datosApi: 'the project API',
+  datosLocal: "the project's local copy (the API did not answer or has no trends yet)",
   lagExpl:
     'How much one year resembles the next. When it is high, the test corrects for it so the trend is not overstated.',
   qExpl: (m) =>

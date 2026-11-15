@@ -1,5 +1,5 @@
-import { PERIODOS } from '../data/datos'
 import { ORDEN_PERFILES, TEXTOS } from '../i18n/textos'
+import { useVista } from '../lib/useZonas'
 import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
 
@@ -7,6 +7,9 @@ import { useApp } from '../store'
 export function Portada() {
   const { idioma, setPerfil, conWebgl } = useApp()
   const t = TEXTOS[idioma]
+  // La portada habla de la lluvia: sus años y su fuente
+  const { rango, fuente } = useVista('lluvia')
+  const { year_start: a, year_end: b } = rango
   return (
     <section aria-labelledby="home-h" className="flex flex-1 flex-col">
       <div className="grid flex-1 grid-cols-1 items-stretch gap-6 px-4 py-6 min-[901px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -17,7 +20,7 @@ export function Portada() {
           >
             {t.heroH}
           </h1>
-          <p className="m-0 max-w-120 text-lg text-muted">{t.heroLead}</p>
+          <p className="m-0 max-w-120 text-lg text-muted">{t.heroLead(a, b)}</p>
           <div className="flex flex-col gap-2.5">
             <h2 className="m-0 text-[15px] font-semibold">{t.whoH}</h2>
             <div className="grid grid-cols-1 gap-2 min-[521px]:grid-cols-2">
@@ -47,7 +50,7 @@ export function Portada() {
             >
               {t.exploreBtn}
             </a>
-            <span className="text-[13px] text-muted">{t.fuenteReal}</span>
+            <span className="text-[13px] text-muted">{t.fuenteReal(fuente)}</span>
           </div>
         </div>
         <div className="relative order-first min-h-100 overflow-hidden rounded-l border border-line min-[901px]:order-none min-[901px]:min-h-105">
@@ -55,7 +58,7 @@ export function Portada() {
           {/* "Arrastra para girar" solo tiene sentido en 3D */}
           {conWebgl && (
             <p className="pointer-events-none absolute right-4 bottom-3.5 left-4 z-[2] m-0 text-[13px] text-muted">
-              {t.heroCap(PERIODOS.largo.year_start, PERIODOS.largo.year_end)}
+              {t.heroCap(a, b)}
             </p>
           )}
         </div>

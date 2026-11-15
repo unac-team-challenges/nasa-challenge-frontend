@@ -2,17 +2,16 @@ import { useEffect, useRef } from 'react'
 import {
   NOMBRE,
   ninoEn,
-  PERIODOS,
   REGION,
   zonasProbadas,
-  type Periodo,
+  type Rango,
   type Variable,
   type Zona,
 } from '../data/datos'
 import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
 import { colorDireccion } from '../lib/direccion'
 import { fmtP, fmtPct, fmtValor, num } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useDetalle, useVista, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 import { AntesDespues } from './AntesDespues'
 import { GraficoSerie } from './GraficoSerie'
@@ -23,14 +22,14 @@ function frase(
   d: Zona,
   perfil: Perfil,
   variable: Variable,
-  periodo: Periodo,
+  rango: Rango,
   idioma: Idioma,
   m: number,
 ) {
   const P = FRASES[idioma]
   const z = NOMBRE[d.id]
   const mas = d.slope_per_decade >= 0
-  const { year_start: a } = PERIODOS[periodo]
+  const { year_start: a } = rango
   if (d.status === 'pocos_datos') return P.few(z)
   const real = d.status === 'real'
   switch (perfil) {
@@ -69,10 +68,11 @@ function zonaContraste(d: Zona, zonas: Record<string, Zona>) {
 
 /** Ficha-informe de la zona elegida (o la invitación a tocar el mapa). */
 export function Ficha() {
-  const { idioma, variable, periodo, perfil, sel, sinNino, setSinNino, seleccionar, anio } =
-    useApp()
+  const { idioma, variable, perfil, sel, sinNino, setSinNino, seleccionar, anio } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
+  const { api, rango, fuente } = useVista()
+  const { serie: pts, nota } = useDetalle(sel)
   const raiz = useRef<HTMLDivElement>(null)
 
   // Fundido de 220 ms al cambiar de zona (v18), no al cambiar otros datos
@@ -110,7 +110,7 @@ export function Ficha() {
   const lluvia = variable === 'lluvia'
   const td = zonaContraste(d, zonas)
   const fmt = (v: number) => fmtValor(v, variable, idioma)
-  const aniosNino = ninoEn(periodo).join(', ')
+  const aniosNino = ninoEn(rango).join(', ')
 
   const insignia =
     st === 'real'
@@ -126,7 +126,8 @@ export function Ficha() {
         <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
           {NOMBRE[sel]}
         </h2>
-        <span className="text-[13px] text-muted">{t.src(variable, d.celdas)}</span>
+        <span className="text-[13px] text-muted">{t.src(variable, d.celdas, fuente, !api)}</span>
+        {nota && <span className="text-[13px] text-muted">{t.notaFija ?? nota}</span>}
       </div>
 
       <div
@@ -146,11 +147,11 @@ export function Ficha() {
             {t.status[st]}
           </span>
         </div>
-        <p className="m-0 text-base">{frase(d, perfil, variable, periodo, idioma, m)}</p>
+        <p className="m-0 text-base">{frase(d, perfil, variable, rango, idioma, m)}</p>
       </div>
 
       {st === 'pocos_datos' ? (
-        <p className="m-0">{t.fewCeldas(d.celdas)}</p>
+        <p className="m-0">{t.fewCeldas(d.celdas, fuente, !api)}</p>
       ) : (
         <>
           <div className="flex flex-col gap-0.5">
@@ -171,7 +172,7 @@ export function Ficha() {
             <GraficoSerie
               zona={d}
               variable={variable}
-              periodo={periodo}
+              pts={pts}
               sinNino={sinNino}
               idioma={idioma}
               color={color}
@@ -250,16 +251,22 @@ export function Ficha() {
             <dt className="text-muted">{t.howLag}</dt>
             <dd className="m-0">{d.lag1 == null ? '—' : num(d.lag1, 2, idioma)}</dd>
             <dd className="col-span-full m-0 text-[13px] text-muted">{t.lagExpl}</dd>
+            <dt className="text-muted">{t.howDatos}</dt>
+            <dd className="m-0">{api ? t.datosApi : t.datosLocal}</dd>
             <dt className="text-muted">{t.howSrc}</dt>
             <dd className="m-0">
-              <a
-                href="https://power.larc.nasa.gov/"
-                target="_blank"
-                rel="noopener"
-                className="text-accent-text"
-              >
-                NASA POWER ({variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})
-              </a>
+              {api ? (
+                api.fuente
+              ) : (
+                <a
+                  href="https://power.larc.nasa.gov/"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-accent-text"
+                >
+                  NASA POWER ({variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})
+                </a>
+              )}
             </dd>
           </dl>
         </details>

@@ -18,6 +18,8 @@ function temaDelSistema(): Tema {
 }
 
 export type ModoVista = '3d' | '2d'
+/** De dónde salen los datos de la sesión: la API del backend o la copia local de respaldo. */
+export type Fuente = 'api' | 'local'
 const GL = hayWebgl()
 
 interface EstadoApp {
@@ -44,6 +46,9 @@ interface EstadoApp {
   conWebgl: boolean
   modoMapa: ModoVista
   setModoMapa: (m: ModoVista) => void
+  /** Se decide una sola vez por sesión (null = aún no): así el mapa no salta de una fuente a otra */
+  fuente: Fuente | null
+  fijarFuente: (f: Fuente) => void
   setIdioma: (i: Idioma) => void
   setPerfil: (p: Perfil) => void
   setVariable: (v: Variable) => void
@@ -73,6 +78,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   modoMapa: GL ? '3d' : '2d',
   // Sin WebGL, el 2D es la única vista posible
   setModoMapa: (modoMapa) => set({ modoMapa: GL ? modoMapa : '2d' }),
+  fuente: null,
+  fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
   setIdioma: (idioma) => set({ idioma }),
   setPerfil: (perfil) => set({ perfil }),
   setVariable: (variable) => set({ variable, sinNino: false }),

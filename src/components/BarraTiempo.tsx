@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { anomaliasPeru, PERIODOS } from '../data/datos'
+import { anomaliasPeru } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { colorAnomalia } from '../lib/color'
 import { fmtAnomalia } from '../lib/formato'
+import { useRango } from '../lib/useZonas'
 import { useApp } from '../store'
 
 /** Milisegundos por año al reproducir. Las columnas se interpolan entre años: el avance se ve suave. */
@@ -19,8 +20,14 @@ export function BarraTiempo() {
   const { idioma, variable, periodo, anio, setAnio, reproduciendo, setReproduciendo } = useApp()
   useApp((s) => s.tema) // los colores de las franjas se leen del tema
   const t = TEXTOS[idioma]
-  const { year_start: a, year_end: b } = PERIODOS[periodo]
-  const { filas, max } = anomaliasPeru(variable, periodo)
+  const rango = useRango()
+  const { year_start: a, year_end: b } = rango
+  const { filas, max } = anomaliasPeru(variable, periodo, rango)
+
+  // Al cambiar de variable o de El Niño cambia el rango: el año elegido se ajusta para no quedar fuera
+  useEffect(() => {
+    if (anio != null && (anio < a || anio > b)) setAnio(Math.min(Math.max(anio, a), b))
+  }, [anio, a, b, setAnio])
 
   // Play: avanza un año cada PASO_MS y se detiene al llegar al final
   useEffect(() => {

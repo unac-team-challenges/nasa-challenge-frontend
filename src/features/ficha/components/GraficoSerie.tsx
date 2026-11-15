@@ -45,9 +45,15 @@ export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, a
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y
   const temp = variable === 'temperatura'
-  const valor = (v: number) => (temp ? `${num(v, 1, idioma)} °C` : `${Math.round(v)} mm`)
+  const veg = variable === 'vegetacion'
+  const valor = (v: number) =>
+    veg ? `${num(v, 2, idioma)} NDVI` : temp ? `${num(v, 1, idioma)} °C` : `${Math.round(v)} mm`
   const residuo = (v: number) =>
-    temp ? `${numConSigno(v, 1, idioma)} °C` : `${numConSigno(v, 0, idioma)} mm`
+    veg
+      ? `${numConSigno(v, 3, idioma)} NDVI`
+      : temp
+        ? `${numConSigno(v, 1, idioma)} °C`
+        : `${numConSigno(v, 0, idioma)} mm`
   const nino = variable === 'lluvia' && !sinNino ? ninoEn({ year_start: y0, year_end: y1 }) : []
   const etiquetados = iniciosDeRacha(nino)
   const anim = animacion()
@@ -91,7 +97,7 @@ export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, a
               domain={
                 variable === 'lluvia' ? [(m: number) => Math.max(0, m), 'auto'] : ['auto', 'auto']
               }
-              tickFormatter={(v: number) => numConSigno(v, temp ? 1 : 0, idioma)}
+              tickFormatter={(v: number) => numConSigno(v, veg ? 3 : temp ? 1 : 0, idioma)}
             />
             <Area
               dataKey="banda"

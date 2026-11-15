@@ -7,9 +7,10 @@ export type Tema = 'claro' | 'oscuro'
 
 function idiomaInicial(): Idioma {
   try {
-    return new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'es'
+    // Inglés por defecto; ?lang=es abre en español
+    return new URLSearchParams(location.search).get('lang') === 'es' ? 'es' : 'en'
   } catch {
-    return 'es'
+    return 'en'
   }
 }
 

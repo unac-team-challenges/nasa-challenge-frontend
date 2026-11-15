@@ -1,20 +1,26 @@
+import { Sprout } from 'lucide-react'
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
 import { Aviso } from '@/features/ficha/components/Aviso'
 import { Selva } from '@/features/ficha/components/Selva'
 import { VALLES } from '@/features/ficha/data/caso2'
 import { useVegetacion } from '@/hooks/useVegetacion'
-import { TEXTOS } from '@/i18n/textos'
+import { TEXTOS, type Perfil } from '@/i18n/textos'
+import { CAUSA_VERDE } from '@/features/ficha/data/causas'
+import { FuentesCitadas } from '@/features/ficha/components/FuentesCitadas'
 import { useApp } from '@/stores/app'
 
 const etiqueta =
   'pointer-events-none absolute top-2 z-10 rounded-full bg-[rgba(15,28,38,0.72)] px-2 py-0.5 text-xs text-white'
 
 /**
- * Caso 2 (antes y después): NDVI real de MODIS de un valle irrigado, 2001 frente a 2024,
- * con un deslizador. Aparece en la ficha de los departamentos que tienen un valle analizado.
+ * Caso 2 (antes y después): NDVI real de MODIS, 2001 frente a 2024, con un deslizador. Aparece en
+ * la ficha de los departamentos que tienen un recuadro analizado.
+ * Donde el aumento está documentado como riego (La Libertad, Ica; ver CAUSA_VERDE) es el ejemplo
+ * de «No todo cambio es el clima»: el verde creció por el riego, no por la lluvia, con su fuente.
+ * Donde no (Olmos mezcla riego y bosque seco, y pesa El Niño), solo da las cifras y su aviso.
  * En la selva, donde el NDVI se satura, muestra en su lugar los árboles (MOD44B, <Selva>).
  */
-export function AntesDespues({ departamento }: { departamento: string }) {
+export function AntesDespues({ departamento, perfil }: { departamento: string; perfil: Perfil }) {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
   const local = VALLES[departamento]
@@ -28,12 +34,40 @@ export function AntesDespues({ departamento }: { departamento: string }) {
   // En español manda el aviso de la API; en inglés (o sin API), la copia traducida
   const aviso = idioma === 'es' && api ? api.aviso : local.aviso?.[idioma]
   const pct = Math.round(((v.areaDespues - v.areaAntes) / v.areaAntes) * 100)
+  // Solo donde el riego está documentado se dice «no es la lluvia, es el riego»
+  const riego = !!CAUSA_VERDE[departamento]
   const src = (anio: number) => `${import.meta.env.BASE_URL}caso2/${v.imagen}_${anio}.png`
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
-      <h3 className="m-0 text-sm font-semibold">{t.cmpH}</h3>
-      <p className="m-0">{t.cmpTexto(v.nombre, v.areaAntes, v.areaDespues, pct)}</p>
+    <section
+      aria-labelledby="verde-h"
+      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
+    >
+      {riego ? (
+        <>
+          <div className="flex flex-col gap-0.5">
+            <h3 id="verde-h" className="m-0 flex items-center gap-1.5 text-sm font-semibold">
+              <Sprout className="size-4 text-green" aria-hidden="true" />
+              {t.verdeH}
+            </h3>
+            <span className="text-xs text-muted">{t.verdeSub}</span>
+          </div>
+          <p className="m-0 font-semibold">
+            {perfil === 'agricultor'
+              ? t.verdeCampo(v.nombre, v.areaAntes, v.areaDespues)
+              : t.verdeEst(v.nombre, v.areaAntes, v.areaDespues, pct)}
+          </p>
+          {t.verdeCausa[departamento] && <p className="m-0">{t.verdeCausa[departamento]}</p>}
+        </>
+      ) : (
+        <>
+          <h3 id="verde-h" className="m-0 text-sm font-semibold">
+            {t.verdeSub}
+          </h3>
+          <p className="m-0">{t.verdeNeutro(v.nombre, v.areaAntes, v.areaDespues, pct)}</p>
+        </>
+      )}
+      {/* El aviso del recuadro va siempre a la vista, en los dos perfiles (Olmos: pesa El Niño) */}
       <Aviso texto={aviso} idioma={idioma} />
       <div className="relative overflow-hidden rounded-m border border-line bg-panel-2">
         <ReactCompareSlider
@@ -69,7 +103,13 @@ export function AntesDespues({ departamento }: { departamento: string }) {
         <span>{t.cmpVerde}</span>
       </div>
       <p className="m-0 text-xs text-muted">{t.cmpCap}</p>
-      <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
-    </div>
+      {perfil === 'estudiante' && (
+        <>
+          <p className="m-0 text-xs text-muted">{t.cmpUmbral}</p>
+          <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
+        </>
+      )}
+      {riego && <FuentesCitadas ids={CAUSA_VERDE[departamento]} perfil={perfil} />}
+    </section>
   )
 }

@@ -26,6 +26,11 @@ export function fmtP(p: number | null, idioma: Idioma) {
   return num(p, 3, idioma)
 }
 
+/** Número con su signo menos tipográfico (los ejes de los gráficos): "−0,6". */
+export function numConSigno(v: number, decimales: number, idioma: Idioma) {
+  return (v < 0 && Math.abs(v) >= 0.5 * 10 ** -decimales ? '−' : '') + num(v, decimales, idioma)
+}
+
 export const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** Anomalía de un año: "+35 %" (lluvia) o "+0,4 °C" (temperatura). */

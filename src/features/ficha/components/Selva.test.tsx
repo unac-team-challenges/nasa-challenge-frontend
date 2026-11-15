@@ -2,13 +2,14 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { AntesDespues } from '@/features/ficha/components/AntesDespues'
+import type { Perfil } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
 /** Sin VITE_API_URL en los tests: se ve la copia local (caso2.ts y selva.ts). */
-const ver = (departamento: string) =>
+const ver = (departamento: string, perfil: Perfil = 'estudiante') =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <AntesDespues departamento={departamento} />
+      <AntesDespues departamento={departamento} perfil={perfil} />
     </QueryClientProvider>,
   )
 
@@ -27,8 +28,28 @@ describe('Caso 2 y selva en la ficha (copia local)', () => {
 
   it('Chavimochic (13) no lleva aviso', () => {
     ver('13')
-    expect(screen.getByText(/Chavimochic/)).toBeVisible()
+    expect(screen.getAllByText(/Chavimochic/)[0]).toBeVisible()
     expect(screen.queryByText(/Léelo con cuidado/)).toBeNull()
+  })
+
+  it('Chavimochic e Ica: «No todo cambio es el clima», el verde es riego y lleva fuente', () => {
+    for (const dep of ['13', '11']) {
+      const { unmount } = ver(dep, 'agricultor')
+      expect(screen.getByRole('heading', { name: 'No todo cambio es el clima' })).toBeVisible()
+      expect(screen.getByText(/No es por la lluvia: es por el riego/)).toBeVisible()
+      expect(screen.getByText(/^Fuente:/)).toBeVisible()
+      unmount()
+    }
+  })
+
+  it('Olmos (14) no atribuye el verde al riego: mezcla bosque seco y pesa El Niño', () => {
+    for (const perfil of ['agricultor', 'estudiante'] as const) {
+      const { unmount } = ver('14', perfil)
+      expect(screen.queryByRole('heading', { name: 'No todo cambio es el clima' })).toBeNull()
+      expect(screen.queryByText(/es por el riego/)).toBeNull()
+      expect(screen.getByText(/El Niño \(2015–2017 y 2023\)/)).toBeVisible()
+      unmount()
+    }
   })
 
   it('Madre de Dios (17): La Pampa pierde árboles, con el aviso del quiebre de 2009', () => {

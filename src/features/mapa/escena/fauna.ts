@@ -11,7 +11,7 @@ import { FAUNA_TEXTOS, type Idioma } from '@/i18n/textos'
 
 type Prim = 'B' | 'S' | 'C' | 'Y'
 /** [primitiva, color, posición, escala, rotación?] */
-type Pieza = [Prim, string, number[], number[], number[]?]
+export type Pieza = [Prim, string, number[], number[], number[]?]
 type Movimiento = 'walk' | 'fly' | 'swim' | 'glide' | 'jump' | 'perch' | 'dance'
 interface Ficha {
   especie: string
@@ -36,14 +36,14 @@ const MEDIO = Math.PI / 2
 /**
  * Une primitivas en una sola geometría con color por vértice. Cada primitiva conserva sus
  * normales: esferas, conos y cilindros se ven redondos (antes eran icosaedros facetados) y las
- * cajas mantienen sus caras planas.
+ * cajas mantienen sus caras planas. `bajo`: pocas caras (low-poly), para los miles de árboles del bosque.
  */
-function construir(piezas: Pieza[]) {
+export function construir(piezas: Pieza[], bajo = false) {
   const P: Record<Prim, THREE.BufferGeometry> = {
     B: new THREE.BoxGeometry(1, 1, 1),
-    S: new THREE.IcosahedronGeometry(0.5, 2),
-    C: new THREE.ConeGeometry(0.5, 1, 12),
-    Y: new THREE.CylinderGeometry(0.5, 0.5, 1, 14),
+    S: new THREE.IcosahedronGeometry(0.5, bajo ? 0 : 2),
+    C: new THREE.ConeGeometry(0.5, 1, bajo ? 6 : 12),
+    Y: new THREE.CylinderGeometry(0.5, 0.5, 1, bajo ? 5 : 14),
   }
   const pos: number[] = []
   const nor: number[] = []

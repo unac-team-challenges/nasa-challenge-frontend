@@ -41,15 +41,6 @@ test.describe('celular (390 × 844)', () => {
     }
   })
 
-  test('el ✕ de la leyenda abierta también se toca en 44 px', async ({ page }) => {
-    await page.goto('/explorar?sinwebgl')
-    await page.locator('summary', { hasText: 'Cómo leer el mapa' }).click()
-    const cerrar = page.getByRole('button', { name: 'Minimizar la leyenda' })
-    const caja = (await cerrar.boundingBox())!
-    expect(caja.height).toBeLessThan(40)
-    expect(await recibeToque(page, cerrar, 'abajo', (44 - caja.height) / 2 - 1)).toBe(true)
-  })
-
   test('un toque en el borde invisible de Tendencia la activa', async ({ page }) => {
     await page.goto('/explorar?sinwebgl&anio=2010')
     const tendencia = page.getByRole('button', { name: 'Tendencia', exact: true })

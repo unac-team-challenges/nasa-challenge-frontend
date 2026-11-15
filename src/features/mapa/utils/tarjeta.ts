@@ -46,3 +46,35 @@ export function datosTarjeta(
           : '') + `q = ${fmtP(d.q_value, idioma)} · ${d.n_years} ${t.anios}`,
   }
 }
+
+/** Ficha del modo Vegetación: el NDVI medio del departamento y qué tan verde es. */
+export function datosTarjetaVeg(
+  id: string,
+  ndvi: number,
+  celdas: number,
+  anios: [number, number],
+  idioma: Idioma,
+  altitud: number,
+  /** Celdas en costa, sierra y selva */
+  regiones: number[],
+) {
+  const t = TEXTOS[idioma]
+  const total = regiones.reduce((a, b) => a + b, 0) || 1
+  const partes = regiones
+    .map((n, r) => [n / total, t.regionNombre[r]] as const)
+    .filter(([f]) => f >= 0.05)
+    .sort((a, b) => b[0] - a[0])
+    .map(([f, nombre]) => `${nombre} ${Math.round(f * 100)} %`)
+  const nivel = ndvi < 0.15 ? 0 : ndvi < 0.3 ? 1 : ndvi < 0.5 ? 2 : ndvi < 0.7 ? 3 : 4
+  return {
+    nombre: NOMBRE[id],
+    valor: idioma === 'es' ? ndvi.toFixed(2).replace('.', ',') : ndvi.toFixed(2),
+    unidad: t.ndviMedio,
+    estado: t.ndviNivel[nivel],
+    datos: { estado: 'real', clave: 'green' },
+    ic: null,
+    meta:
+      `${partes.join(' · ')} · ${t.altitudMedia(Math.round(altitud / 10) * 10)}\n` +
+      t.vegTarjetaMeta(anios[0], anios[1], celdas),
+  }
+}

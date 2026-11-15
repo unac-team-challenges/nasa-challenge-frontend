@@ -38,8 +38,30 @@ test('la ficha flotante sale con el ratón, no con el dedo; tocar abre el inform
   await evento('pointermove', 'mouse')
   await expect(page.locator('.ficha3d.on')).toHaveCount(1)
 
-  // Tocar abre el informe
-  await page.touchscreen.tap(punto.clientX, punto.clientY)
+  // Tocar abre el informe. El clic va a la zona misma: su centro en pantalla puede caer en el
+  // borde de toque de una vecina pequeña (Apurímac), que está dibujado encima.
+  await cusco.dispatchEvent('click')
   await expect(page).toHaveURL(/\/zona\/08/)
   await expect(page.locator('#informe')).toContainText('Cusco')
+})
+
+test('el borde de toque de una zona chica no le quita terreno a una vecina grande', async ({
+  page,
+}) => {
+  await page.goto('/explorar?sinwebgl')
+  const mapa = page.getByRole('group', { name: 'Mapa del Perú en 2D' })
+  const caja = (await mapa.getByRole('button', { name: /^Cusco/i }).boundingBox())!
+  // En cada punto que cae dentro de Cusco, lo que recibe el toque no es el borde de otra zona
+  const robados = await page.evaluate((c) => {
+    let n = 0
+    for (let fy = 0.05; fy < 1; fy += 0.1)
+      for (let fx = 0.05; fx < 1; fx += 0.1) {
+        const pila = document.elementsFromPoint(c.x + c.width * fx, c.y + c.height * fy)
+        const enCusco = pila.some((e) => e.getAttribute('aria-label')?.startsWith('Cusco'))
+        const arriba = pila[0]?.getAttribute('data-toque')
+        if (enCusco && arriba && arriba !== '08') n++
+      }
+    return n
+  }, caja)
+  expect(robados).toBe(0)
 })

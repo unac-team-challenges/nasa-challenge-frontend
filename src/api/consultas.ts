@@ -140,6 +140,8 @@ export interface ValleApi {
   areaAntes: number
   areaDespues: number
   sen: number
+  /** `stats.aviso` (p. ej. Olmos: caja movida y peso de El Niño), en español; null si no tiene */
+  aviso: string | null
 }
 
 /**
@@ -160,9 +162,59 @@ export async function vegetacionDeApi(): Promise<Record<string, ValleApi> | null
           areaAntes: Math.round(antes.area_verde_km2),
           areaDespues: Math.round(despues.area_verde_km2),
           sen: z.stats.slope_per_decade,
+          aviso: z.stats.aviso ?? null,
         }
     }
     return Object.keys(valles).length ? valles : null
+  } catch {
+    return null
+  }
+}
+
+/** Árboles de un recuadro de selva según `/api/cobertura-arboles` (MODIS MOD44B), 2001 frente a 2024. */
+export interface SelvaApi {
+  /** % del suelo cubierto por árboles */
+  pctAntes: number
+  pctDespues: number
+  /** km² con 30 % o más de árboles (bosque) */
+  bosqueAntes: number
+  bosqueDespues: number
+  /** Tendencia del % de árboles, en puntos por década, con su rango probable */
+  sen: number
+  ciLow: number
+  ciHigh: number
+  status: Estado
+  /** `stats.aviso` (p. ej. el quiebre de 2009 en La Pampa), en español; null si no tiene */
+  aviso: string | null
+}
+
+/**
+ * Cobertura de árboles de la selva desde la API, por ubigeo del departamento ("17", "16").
+ * Un recuadro sin 2001 o 2024 en su `serie`, o sin tendencia completa, no entra: queda la copia de selva.ts.
+ */
+export async function coberturaDeApi(): Promise<Record<string, SelvaApi> | null> {
+  if (!hayApi) return null
+  try {
+    const r = await api.GET('/api/cobertura-arboles')
+    if (!r.data) return null
+    const selva: Record<string, SelvaApi> = {}
+    for (const z of r.data) {
+      const antes = z.serie.find((p) => p.anio === 2001)
+      const despues = z.serie.find((p) => p.anio === 2024)
+      if (antes && despues && tieneStats(z))
+        selva[z.ubigeo] = {
+          pctAntes: antes.arboles_pct,
+          pctDespues: despues.arboles_pct,
+          bosqueAntes: Math.round(antes.area_bosque_km2),
+          bosqueDespues: Math.round(despues.area_bosque_km2),
+          sen: z.stats.slope_per_decade,
+          ciLow: z.stats.ci_low,
+          ciHigh: z.stats.ci_high,
+          status: z.stats.status,
+          aviso: z.stats.aviso ?? null,
+        }
+    }
+    return Object.keys(selva).length ? selva : null
   } catch {
     return null
   }

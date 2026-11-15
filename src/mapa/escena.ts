@@ -196,6 +196,30 @@ void main() {
   #include <fog_fragment>
 }`
 
+/**
+ * Sombra de contacto en las paredes de cada columna: más oscuras junto al suelo, como una maqueta
+ * con oclusión ambiental. Se calcula en el mismo shader (sin pasadas extra ni SSAO). La distancia
+ * es en unidades del mundo, así que una columna alta y una baja se oscurecen igual cerca del piso.
+ */
+function conSombraDeContacto(mat: THREE.MeshStandardMaterial) {
+  const decl = '#include <common>\nvarying float vAlto, vPared;'
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', decl).replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+  vPared = 1.0 - abs(normal.z); // tapas: normal ±z en el espacio de la extrusión
+  vAlto = (modelMatrix * vec4(position, 1.0)).y - (modelMatrix * vec4(position.xy, 0.0, 1.0)).y;`,
+    )
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', decl).replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>
+  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);`,
+    )
+  }
+  mat.customProgramCacheKey = () => 'columna-sombra-contacto'
+  return mat
+}
+
 /** Desenfoque de caja separable, 3 pasadas (≈ gaussiano). */
 function desenfocar(src: Float32Array, S: number, r: number) {
   const a = Float32Array.from(src)
@@ -456,7 +480,7 @@ export class EscenaPeru {
       const geom = new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false })
       const malla = new THREE.Mesh(
         geom,
-        new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 }),
+        conSombraDeContacto(new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 })),
       ) as unknown as Malla
       malla.position.z = -PISO
       // Un solo LineSegments por departamento (antes: una línea y un material por anillo)

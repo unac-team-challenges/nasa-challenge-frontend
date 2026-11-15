@@ -4,7 +4,6 @@ import { Explorador } from './components/Explorador'
 import { Portada } from './components/Portada'
 import { useRuta } from './lib/ruta'
 import { useDecidirFuente } from './lib/useZonas'
-import { Mapa2D } from './mapa/Mapa2D'
 import { Mapa3D } from './mapa/Mapa3D'
 import { useApp } from './store'
 import { ALTO_MAPA_CELULAR } from './lib/disposicion'
@@ -33,7 +32,8 @@ export default function App() {
         <div
           className={`absolute inset-x-0 top-0 z-0 overflow-hidden ${ALTO_MAPA_CELULAR} min-[901px]:inset-0 min-[901px]:h-auto`}
         >
-          {en2d ? <Mapa2D /> : <Mapa3D modo={ruta} />}
+          {/* En 2D el mapa lo dibuja el explorador, en la zona que no tapa el informe */}
+          {!en2d && <Mapa3D modo={ruta} />}
         </div>
         {ruta === 'explorar' ? <Explorador /> : <Portada />}
       </main>

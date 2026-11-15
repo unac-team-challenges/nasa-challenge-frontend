@@ -440,3 +440,24 @@ h3 {
   letter-spacing: 0.08em;
   opacity: 0.5;
 }
+
+/* Mapa 2D: colores y bordes cambian suave; la zona bajo el puntero se levanta con una sombra,
+   y el zoom a la zona elegida se desliza (Mapa2D.zoomA) */
+.zona2d {
+  transition:
+    fill 0.4s ease,
+    stroke 0.2s ease,
+    filter 0.25s ease;
+}
+.zona2d.encima {
+  filter: drop-shadow(0 0.08px 0.18px var(--shadow)) brightness(1.08);
+}
+.zoom2d {
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .zona2d,
+  .zoom2d {
+    transition: none;
+  }
+}

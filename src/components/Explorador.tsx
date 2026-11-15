@@ -5,6 +5,7 @@ import { ALTO_MAPA_CELULAR } from '../lib/disposicion'
 import { fmtValor } from '../lib/formato'
 import { useRango, useZonas } from '../lib/useZonas'
 import { escenaActiva } from '../mapa/escena'
+import { Mapa2D } from '../mapa/Mapa2D'
 import { useApp } from '../store'
 import { colorDireccion } from '../lib/direccion'
 import { Ficha } from './Ficha'
@@ -106,6 +107,11 @@ export function Explorador() {
               <p className="presentacion-nombre">{NOMBRE[intro.id]}</p>
               <p className="presentacion-sub">{t.introDepto[REGION[intro.id]]}</p>
             </div>
+          </div>
+        )}
+        {conWebgl && !en3d && (
+          <div className="pointer-events-auto absolute inset-0">
+            <Mapa2D />
           </div>
         )}
         <div className="entrada-suave">

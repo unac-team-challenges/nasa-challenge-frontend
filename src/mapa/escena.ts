@@ -13,8 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
-import { fmtAnomalia, fmtP, fmtValor } from '../lib/formato'
-import { TEXTOS } from '../i18n/textos'
+import { datosTarjeta } from '../lib/tarjeta'
 import { Fauna, type Animal } from './fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
@@ -958,42 +957,23 @@ export class EscenaPeru {
     const d = this.hover ? this.zonas[this.hover] : undefined
     T.raiz.classList.toggle('on', !!d)
     if (!d || !this.hover) return
-    const t = TEXTOS[this.idioma]
-    const v = this.variable
-    const valorAnio = this.anio?.valores[this.hover]
-    const enAnio = !!this.anio && valorAnio != null
+    const c = datosTarjeta(d, this.variable, this.idioma, this.anio?.valores[this.hover])
     const fuerte = document.createElement('strong')
     const chico = document.createElement('small')
-    if (d.status === 'pocos_datos') fuerte.textContent = '—'
-    else if (enAnio) {
-      fuerte.textContent = fmtAnomalia(valorAnio, v, this.idioma)
-      chico.textContent = t.vsPromedio
-    } else {
-      fuerte.textContent = fmtValor(d.slope_per_decade, v, this.idioma)
-      chico.textContent = t.perDecade
-    }
-    T.nombre.textContent = NOMBRE[this.hover]
+    fuerte.textContent = c.valor
+    chico.textContent = c.unidad
+    T.nombre.textContent = c.nombre
     T.valor.replaceChildren(fuerte, chico)
-    T.estado.textContent = t.status[d.status]
-    T.raiz.dataset.estado = d.status
-    T.raiz.dataset.clave = claveMapa(d.slope_per_decade, v)
-    // Rango probable frente al cero: si la barra cruza la línea del medio, puede ser casualidad
-    const conIc = !enAnio && d.status !== 'pocos_datos'
-    T.ic.hidden = !conIc
-    if (conIc) {
-      const m =
-        Math.max(Math.abs(d.ci_low), Math.abs(d.ci_high), Math.abs(d.slope_per_decade)) * 1.15 || 1
-      const x = (val: number) => 50 + (val / m) * 50
-      T.rango.style.left = x(d.ci_low).toFixed(1) + '%'
-      T.rango.style.width = (x(d.ci_high) - x(d.ci_low)).toFixed(1) + '%'
-      T.punto.style.left = x(d.slope_per_decade).toFixed(1) + '%'
+    T.estado.textContent = c.estado
+    T.raiz.dataset.estado = c.datos.estado
+    T.raiz.dataset.clave = c.datos.clave
+    T.ic.hidden = !c.ic
+    if (c.ic) {
+      T.rango.style.left = c.ic.left
+      T.rango.style.width = c.ic.width
+      T.punto.style.left = c.ic.punto
     }
-    T.meta.textContent =
-      d.status === 'pocos_datos'
-        ? `${d.n_years} ${t.anios}`
-        : (conIc
-            ? `${t.ic95}: ${fmtValor(d.ci_low, v, this.idioma)} … ${fmtValor(d.ci_high, v, this.idioma)}\n`
-            : '') + `q = ${fmtP(d.q_value, this.idioma)} · ${d.n_years} ${t.anios}`
+    T.meta.textContent = c.meta
     T.ancho = T.raiz.offsetWidth
     T.alto = T.raiz.offsetHeight
     this.posEtiqueta.delete(T.raiz)

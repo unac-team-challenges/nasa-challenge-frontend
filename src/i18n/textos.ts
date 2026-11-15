@@ -1,5 +1,6 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
 import type { Estado, Region, Variable } from '@/data/datos'
+import { avisoZonaEn } from '@/i18n/avisoZona'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -85,7 +86,7 @@ const es = {
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
-  avisoFijo: null as ((variable: Variable, lag1: number | null) => string) | null,
+  avisoFijo: null as ((variable: Variable, lag1: number | null, motivo: string) => string) | null,
   status: {
     real: 'Cambio real',
     posible_casualidad: 'Posible casualidad',
@@ -309,8 +310,9 @@ const en: Textos = {
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
-  avisoFijo: (_variable, lag1) =>
+  avisoFijo: (_variable, lag1, motivo) =>
     [
+      avisoZonaEn(motivo),
       lag1 != null &&
         lag1 > 0.5 &&
         'Years very similar to each other (high lag1): the trend may look more certain than it is.',

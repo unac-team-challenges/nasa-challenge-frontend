@@ -16,6 +16,7 @@ pnpm build                # revisa tipos y genera dist/
 pnpm lint                 # eslint
 pnpm format               # prettier
 pnpm test                 # vitest
+pnpm e2e                  # Playwright: recorrido completo (primera vez: pnpm exec playwright install chromium)
 ```
 
 > **Red del evento:** el wifi de la sede corta `registry.npmjs.org` (`ECONNRESET`). Para instalar paquetes, conéctate al hotspot del celular.

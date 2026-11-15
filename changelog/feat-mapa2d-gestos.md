@@ -16,6 +16,10 @@ Segunda parte de la mejora 8 (mapa 2D en celular): pellizcar para acercar y arra
 - Sin dependencias nuevas. `pnpm lint`, `pnpm build` y `pnpm test` pasan; e2e `recorrido`, `enlaces`, `tiempo-caso2` y `mapa2d-gestos` (nuevo) pasan.
 - `mapa2d-gestos.spec.ts` (390 × 844) emite eventos de puntero táctil porque Playwright no trae pellizco. Comprueba: el pellizco acerca a 3× y no baja de 1×; el arrastre mueve 40 px, no se sale de los bordes y no elige zona; un toque simple sigue eligiendo; recentrar deshace el zoom; con ratón no hay gestos. Tres de los cuatro fallan sin el cambio; el cuarto es el control del ratón.
 
+## Integración con `developer`
+- #43 (8a), #46 (mapa de calor) y #47 (mapa limpio) ya están en `developer`. En `Mapa2D.tsx` los gestos conviven con la imagen del calor (`useCalor`), que va dentro del contenedor `.zoom2d` y por eso se acerca y se mueve con el mapa.
+- En celular «Volver a la vista inicial» está detrás del botón «⋯» (#47): la prueba lo abre antes de pulsarlo.
+
 ## Pendiente
-- Verificar en un celular real: el pellizco, el arrastre y que `touch-action: none` no estorbe al deslizar la página fuera del mapa.
-- 8c: encuadre que respete los paneles, después de que se mergeen las demás PRs de celular.
+- Probar pellizco y arrastre con dedos reales en un celular.
+- 8c: encuadre que respete los paneles, ahora que las demás PRs de celular están mezcladas.

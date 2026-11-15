@@ -118,6 +118,8 @@ test('un toque simple sigue eligiendo la zona, y el botón de recentrar deshace 
   await toque(page, 'pointerup', 2, cx + 90, cy)
   expect((await vista(page)).k).toBeGreaterThan(2)
 
+  // en celular los controles del mapa van detrás del botón «⋯»
+  await page.getByRole('button', { name: 'Controles del mapa' }).click()
   await page.getByRole('button', { name: 'Volver a la vista inicial' }).click()
   await expect.poll(async () => (await vista(page)).k, { timeout: 4000 }).toBeCloseTo(1, 1)
 

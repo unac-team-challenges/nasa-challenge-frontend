@@ -1,9 +1,9 @@
 import { Link, type ErrorComponentProps } from '@tanstack/react-router'
 import { CircleAlert } from 'lucide-react'
-import { TEXTOS } from '../i18n/textos'
-import { useApp } from '../store'
-import { Alert, AlertDescription, AlertTitle } from './ui/alert'
-import { Button } from './ui/button'
+import { TEXTOS } from '@/i18n/textos'
+import { useApp } from '@/stores/app'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 
 function Aviso({
   titulo,

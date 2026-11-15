@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Precalcula el suelo del mapa 3D (src/mapa/escena.ts): relieve de Sudamérica, mar, ríos y fronteras.
+"""Precalcula el suelo del mapa 3D (src/features/mapa/escena/escena.ts): relieve de Sudamérica, mar, ríos y fronteras.
 
 Todo se calcula aquí, una sola vez; el navegador solo carga una imagen y un JSON pequeño.
 
@@ -20,11 +20,11 @@ Salida:
         y las curvas de nivel
     G = agua continental: ríos y lagos de Natural Earth 1:50m (Amazonas, Titicaca...)
     B = fronteras entre países
-(la caja también está en MUNDO, en src/mapa/escena.ts) (las fronteras ya van dibujadas en mundo2.png).
+(la caja también está en MUNDO, en src/features/mapa/escena/escena.ts) (las fronteras ya van dibujadas en mundo2.png).
 
 Uso (desde la raíz del repo; necesita numpy, scipy y pillow):
     python3 scripts/generar_mundo.py
-Si cambias la caja (LON0..LAT1), actualiza MUNDO en src/mapa/escena.ts.
+Si cambias la caja (LON0..LAT1), actualiza MUNDO en src/features/mapa/escena/escena.ts.
 """
 import io
 import json

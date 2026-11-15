@@ -1,5 +1,5 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
-import type { Estado, Region, Variable } from '../data/datos'
+import type { Estado, Region, Variable } from '@/data/datos'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -399,7 +399,7 @@ export const FRASES = {
   },
 }
 
-/** Nombre y dato de cada personaje de la fauna del mapa 3D (src/mapa/fauna.ts), por especie. */
+/** Nombre y dato de cada personaje de la fauna del mapa 3D (src/features/mapa/escena/fauna.ts), por especie. */
 export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
   es: {
     alpaca: ['Alpaca · Puno', 'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.'],

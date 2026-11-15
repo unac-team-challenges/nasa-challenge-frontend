@@ -1,7 +1,7 @@
-import { ALTO_MAPA_CELULAR } from '../lib/disposicion'
-import { TEXTOS } from '../i18n/textos'
-import { useApp } from '../store'
-import { Skeleton } from './ui/skeleton'
+import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
+import { TEXTOS } from '@/i18n/textos'
+import { useApp } from '@/stores/app'
+import { Skeleton } from '@/components/ui/skeleton'
 
 /** Aviso accesible para lectores de pantalla: "Cargando…". */
 function Estado() {

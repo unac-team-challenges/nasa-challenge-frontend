@@ -6,7 +6,7 @@ Revisión del frontend del 14 de nov. Estas cosas no son solo de código: depend
 
 ## 1. Expedientes (pendiente, hace falta tu definición)
 
-**Qué hay hoy.** Nada. El prototipo v2 tenía rutas `#expediente-1…`; en el código actual esas rutas ya no existen (`src/lib/ruta.ts` las mandaba al explorador "hasta el otro PR") y `Cabecera.tsx` tenía anotado «Pendiente: el menú de expedientes». En el stack (`07-stack-decidido`) el expediente está como **extra**: «detección automática → expediente», armado con las mismas plantillas de texto.
+**Qué hay hoy.** Nada. El prototipo v2 tenía rutas `#expediente-1…`; en el código actual esas rutas ya no existen (`src/hooks/ruta.ts` las mandaba al explorador "hasta el otro PR") y `Cabecera.tsx` tenía anotado «Pendiente: el menú de expedientes». En el stack (`07-stack-decidido`) el expediente está como **extra**: «detección automática → expediente», armado con las mismas plantillas de texto.
 
 **Qué necesitamos para hacerlo:**
 
@@ -31,7 +31,7 @@ Con la URL ya definida en el Drive, un expediente sería un enlace: `/zona/20?pe
 
 ## 3. Fuentes mezcladas en la misma pantalla
 
-**Qué hay hoy.** La API solo se usa con la tendencia larga y con El Niño incluido. «Sin El Niño» y la máquina del tiempo siempre salen de la copia local (`useVista` en `src/lib/useZonas.ts`). Y las dos fuentes no son lo mismo: la lluvia de la API es **GPM IMERG** y la de la copia local es **NASA POWER**. Si alguien marca «sin El Niño» o mueve el año, los números pasan de una fuente a otra sin avisar. (Está explicado en la página de metodología, pero no en el momento en que ocurre.)
+**Qué hay hoy.** La API solo se usa con la tendencia larga y con El Niño incluido. «Sin El Niño» y la máquina del tiempo siempre salen de la copia local (`useVista` en `src/hooks/useZonas.ts`). Y las dos fuentes no son lo mismo: la lluvia de la API es **GPM IMERG** y la de la copia local es **NASA POWER**. Si alguien marca «sin El Niño» o mueve el año, los números pasan de una fuente a otra sin avisar. (Está explicado en la página de metodología, pero no en el momento en que ocurre.)
 
 **Opciones:**
 
@@ -74,18 +74,21 @@ Con la URL ya definida en el Drive, un expediente sería un enlace: `/zona/20?pe
 
 ## 7. Estructura de carpetas del frontend
 
-En el Drive (`07-stack-decidido` y los documentos de decisión) **no encontré el árbol de carpetas del frontend**; solo hay decisiones sueltas: `src/api/openapi.json` + `schema.d.ts`, `src/i18n/textos.ts` (un solo archivo de textos), `public/data/` como plan B con la forma de la API, y los nombres de componentes de Figma (`Mapa`, `FichaZona`, `Semaforo`, `SelectorPerfil`, `GraficoSerie`). Hoy el código está así:
+En el Drive (`07-stack-decidido` y los documentos de decisión) **no encontré el árbol de carpetas del frontend**; solo hay decisiones sueltas: `src/api/openapi.json` + `schema.d.ts`, `src/i18n/textos.ts` (un solo archivo de textos), `public/data/` como plan B con la forma de la API, y los nombres de componentes de Figma (`Mapa`, `FichaZona`, `Semaforo`, `SelectorPerfil`, `GraficoSerie`). Ya hay un árbol acordado y el código lo sigue (detalle y reglas en `ARQUITECTURE.md`):
 
 ```
 src/
-  api/         cliente de la API (openapi-fetch) y tipos generados
-  components/  pantallas y piezas (Explorador, Ficha, Portada, Metodologia…); ui/ = shadcn
-  data/        copia local de datos (plan B)
-  i18n/        textos.ts (es/en)
-  lib/         hooks y utilidades (URL, zonas, formato, color)
-  mapa/        three.js (3D) y SVG (2D)
-  test/        preparación de las pruebas
-  router.tsx   rutas (TanStack Router)  ·  store.ts  estado global (Zustand)
+  app/        une features: App, router y rutas/ (Inicio, Explorador)
+  features/   mapa/ · ficha/ · tiempo/ · portada/ · metodologia/  (una feature no importa de otra)
+  components/ UI compartida (Cabecera, Errores, Esperas); ui/ = shadcn
+  hooks/      useZonas, meta, ruta
+  lib/        busqueda.ts (Zod + router), utils.ts (cn)
+  utils/      funciones puras: color, direccion, formato, webgl
+  stores/     app.ts (Zustand global)
+  api/        cliente de la API (openapi-fetch) y tipos generados
+  data/       copia local de datos (plan B)
+  i18n/       textos.ts (es/en)
+  testing/    preparación de las pruebas
 ```
 
-**Pregunta:** ¿existe un árbol acordado (en Figma, Trello o el proyecto «Nasa» de Claude)? Si lo tienes, pégalo aquí y reorganizamos para que coincida.
+Árbol acordado: ver `ARQUITECTURE.md`.

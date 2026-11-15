@@ -6,6 +6,11 @@ import { useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
+import { useCalor } from '@/features/mapa/hooks/useCalor'
+import { PARADAS_CALOR, tieneAnio } from '@/features/mapa/utils/calor'
+
+/** Frío → calor, los mismos tokens que pinta el mapa de calor (PARADAS_CALOR). */
+const RAMPA = `linear-gradient(to right, ${PARADAS_CALOR.map((v) => `var(${v})`).join(', ')})`
 
 const CLAVE = 'leyenda-abierta'
 
@@ -47,6 +52,10 @@ export function Leyenda() {
   const sube = `var(--map-${claveMapa(1, variable)})`
   const baja = `var(--map-${claveMapa(-1, variable)})`
   const cols = anio == null ? t.legCols[variable] : t.legColsT
+  const calor = useCalor()
+  const conCalor = !!calor && tieneAnio(calor, anio)
+  // Con el mapa de calor, el color es la temperatura: las muestras de estado la llevan debajo
+  const lleno = conCalor ? RAMPA : sube
   const maxima = Math.max(
     ...Object.values(zonas)
       .filter((d) => d.status !== 'pocos_datos')
@@ -91,7 +100,7 @@ export function Leyenda() {
   const muestra = 'h-3.5 w-[18px] flex-none rounded-[3px] box-border'
 
   return (
-    <div className="absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
+    <div className="absolute bottom-[86px] left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
       <details
         className="group"
         open={abierta}
@@ -156,15 +165,17 @@ export function Leyenda() {
           {anio == null && (
             <>
               <span className="flex items-center gap-1.5">
-                <span className={muestra} style={{ background: sube }} />
+                <span className={muestra} style={{ background: lleno }} />
                 {t.texReal}
               </span>
               <span className="flex items-center gap-1.5">
                 <span
                   className={muestra}
                   style={{
-                    background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
-                    border: `1px solid ${sube}`,
+                    background: conCalor
+                      ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${RAMPA}`
+                      : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                    border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
                     opacity: 0.85,
                   }}
                 />
@@ -177,6 +188,25 @@ export function Leyenda() {
             {t.texFew}
           </span>
         </div>
+        {calor && conCalor && (
+          <div className="mt-1.5 grid gap-0.5 text-xs">
+            <span className="text-fg">
+              {anio == null
+                ? t.calorMedia(calor.anio0, calor.anio0 + calor.anios - 1)
+                : t.calorAnio(anio)}
+            </span>
+            <span
+              className="h-2.5 rounded-[3px] border border-line"
+              style={{ background: RAMPA }}
+              aria-hidden
+            />
+            <span className="flex justify-between text-muted">
+              <span>{Math.round(calor.min)} °C</span>
+              <span>{Math.round(calor.max)} °C</span>
+            </span>
+            <span className="text-muted">{t.calorNota}</span>
+          </div>
+        )}
         <p className="m-0 mt-1 text-xs text-fg">
           {anio == null
             ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))

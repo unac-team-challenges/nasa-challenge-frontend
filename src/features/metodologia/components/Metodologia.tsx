@@ -6,7 +6,7 @@ import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
 const enlace = 'text-accent-text underline-offset-2 hover:underline'
-const h2 = 'm-0 font-display text-2xl font-bold tracking-display'
+const h2 = 'm-0 scroll-mt-36 min-[901px]:scroll-mt-24 font-display text-2xl font-bold tracking-display'
 
 function Ext({ a: [texto, url] }: { a: [string, string] }) {
   return (

@@ -144,6 +144,19 @@ describe('ficha del agricultor', () => {
     expect(r.antes.malos).toBe(0)
   })
 
+  it('años de poco verdor: el piso de 0,01 NDVI en un departamento estable (selva)', () => {
+    // Primeros años 0,830 ± 0,002: la desviación (0,002) queda bajo el piso. 0,825 es ruido; 0,815 es año malo.
+    const r = aniosMalosPorMitad(serie([0.828, 0.832, 0.828, 0.832, 0.825, 0.815]), 'vegetacion')!
+    expect(r.antes.malos).toBe(0)
+    expect(r.ahora.malos).toBe(1)
+  })
+
+  it('años de poco verdor: un departamento que varía mucho exige una caída mayor que 0,01', () => {
+    // Primeros años 0,36 ± 0,04: el umbral sube a ~0,04. Bajar 0,02 no cuenta; bajar 0,08 sí.
+    const r = aniosMalosPorMitad(serie([0.32, 0.4, 0.32, 0.4, 0.34, 0.28]), 'vegetacion')!
+    expect(r.ahora.malos).toBe(1)
+  })
+
   it('El Niño: promedio de la anomalía en sus años', () => {
     const e = efectoNino(serie([100, 200, 100, 0]), 'lluvia', [2002, 2004, 1998])!
     expect(e.anios).toEqual([2002, 2004])

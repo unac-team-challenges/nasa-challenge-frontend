@@ -57,9 +57,9 @@ export function anomalias(pts: Punto[], variable: Variable, media = promedio(pts
 /** Años más secos o más calurosos (los de mayor anomalía en contra de lo que preocupa al campo). */
 export function peoresAnios(pts: Punto[], variable: Variable, cuantos = 3) {
   const filas = anomalias(pts, variable)
-  // Lluvia: preocupan los años secos (anomalía más negativa). Temperatura: los más calurosos.
+  // Lluvia y vegetación: preocupan los años de menos (anomalía más negativa). Temperatura: los más calurosos.
   const orden =
-    variable === 'lluvia' ? (x: number, y: number) => x - y : (x: number, y: number) => y - x
+    variable === 'temperatura' ? (x: number, y: number) => y - x : (x: number, y: number) => x - y
   return filas
     .slice()
     .sort((p, q) => orden(p.a, q.a))
@@ -69,7 +69,11 @@ export function peoresAnios(pts: Punto[], variable: Variable, cuantos = 3) {
 
 /** La serie como CSV (año y valor), para que el estudiante la abra en una hoja de cálculo. */
 export function serieCsv(pts: Punto[], variable: Variable) {
-  const cabecera = variable === 'lluvia' ? 'anio,lluvia_mm' : 'anio,temperatura_c'
+  const cabecera = {
+    lluvia: 'anio,lluvia_mm',
+    temperatura: 'anio,temperatura_c',
+    vegetacion: 'anio,ndvi',
+  }[variable]
   return [cabecera, ...pts.map((p) => `${p.y},${+p.v.toFixed(3)}`)].join('\n')
 }
 
@@ -109,14 +113,25 @@ export function escalaTendencia(zonas: Zona[], variable: Variable) {
 
 /**
  * Qué es un «año malo» para el campo, frente a lo normal: lluvia, un año seco (20 % o más por
- * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima).
+ * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima); vegetación, un año de
+ * poco verdor: NDVI por debajo de lo normal en 0,01 o en lo que varía ese departamento (1 desviación
+ * típica de sus primeros años), lo que sea mayor. El piso evita que el ruido del satélite en la selva
+ * (NDVI saturado, ~0,003) cuente como año malo; la desviación típica evita que casi todos los años de
+ * la costa norte, que varía hasta 0,06, salgan malos.
  */
-export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3 } as const
+export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3, vegetacion: -0.01 } as const
 
-export function esMalo(anomalia: number, variable: Variable) {
-  return variable === 'lluvia'
-    ? anomalia <= UMBRAL_MALO.lluvia
-    : anomalia >= UMBRAL_MALO.temperatura
+/** `umbralVeg`: lo que baja el NDVI de ese departamento para ser año malo (positivo); solo vegetación. */
+export function esMalo(anomalia: number, variable: Variable, umbralVeg = -UMBRAL_MALO.vegetacion) {
+  if (variable === 'temperatura') return anomalia >= UMBRAL_MALO.temperatura
+  if (variable === 'vegetacion') return anomalia <= -umbralVeg
+  return anomalia <= UMBRAL_MALO[variable]
+}
+
+/** Desviación típica de los valores de la serie. */
+function desvio(pts: Punto[]) {
+  const m = promedio(pts)
+  return Math.sqrt(pts.reduce((s, p) => s + (p.v - m) ** 2, 0) / pts.length)
 }
 
 /** Mediana: el valor del medio, al que no lo arrastra un año fuera de lo común. */
@@ -131,8 +146,9 @@ export function mediana(vals: number[]) {
  * «Lo de siempre» es una línea base fija de la primera mitad: medido contra todo el periodo, una
  * tendencia haría que los años recientes salgan «malos» por construcción. Es la mediana de esa
  * mitad sin los años de El Niño (`nino`): en la costa norte el Niño de 1983 o 1998 multiplica la
- * lluvia y, con el promedio, un año típico salía «seco». Cada mitad trae sus años con su anomalía
- * frente a esa base y si fue malo.
+ * lluvia y, con el promedio, un año típico salía «seco». En la vegetación, el umbral de año malo
+ * sale de lo que varía el departamento en sus primeros años (ver UMBRAL_MALO). Cada mitad trae sus
+ * años con su anomalía frente a esa base y si fue malo.
  */
 export function aniosMalosPorMitad(pts: Punto[], variable: Variable, nino: number[] = []) {
   if (pts.length < 4) return null
@@ -141,11 +157,14 @@ export function aniosMalosPorMitad(pts: Punto[], variable: Variable, nino: numbe
   const sinNino = primera.filter((p) => !nino.includes(p.y))
   const base = mediana((sinNino.length ? sinNino : primera).map((p) => p.v))
   const filas = anomalias(pts, variable, base)
+  // Vegetación: el umbral sale de lo que varía el departamento en sus primeros años (con piso)
+  const umbral = Math.max(-UMBRAL_MALO.vegetacion, desvio(primera))
+  const malo = (a: number) => esMalo(a, variable, umbral)
   const mitad = (f: typeof filas) => ({
     desde: f[0].y,
     hasta: f[f.length - 1].y,
-    anios: f.map((x) => ({ ...x, malo: esMalo(x.a, variable) })),
-    malos: f.filter((x) => esMalo(x.a, variable)).length,
+    anios: f.map((x) => ({ ...x, malo: malo(x.a) })),
+    malos: f.filter((x) => malo(x.a)).length,
   })
   return {
     antes: mitad(filas.filter((f) => f.y <= corte)),
@@ -180,7 +199,7 @@ export function respuestaMalos(
 ): RespuestaMalos {
   if (veredicto === 'igual') return 'igual'
   // Hacia dónde empuja la tendencia: +1 = más años malos, −1 = menos
-  const empuja = Math.sign(d.slope_per_decade) * (variable === 'lluvia' ? -1 : 1)
+  const empuja = Math.sign(d.slope_per_decade) * (variable === 'temperatura' ? 1 : -1)
   const seguro = d.status === 'real' && empuja === (veredicto === 'mas' ? 1 : -1)
   if (veredicto === 'mas') return seguro ? 'si' : 'masSinSeguro'
   return seguro ? 'no' : 'menosSinSeguro'
@@ -224,7 +243,7 @@ export function anioParaRecordar(
   const peor = (anios: AnioMalo[]) =>
     anios
       .filter((x) => x.malo)
-      .sort((p, q) => (variable === 'lluvia' ? p.a - q.a : q.a - p.a))[0] ?? null
+      .sort((p, q) => (variable === 'temperatura' ? q.a - p.a : p.a - q.a))[0] ?? null
   return peor(mitades.ahora.anios) ?? peor(mitades.antes.anios)
 }
 
@@ -302,7 +321,7 @@ export function tendenciaSinMasMalos(
   d: Pick<Zona, 'status' | 'slope_per_decade'>,
   variable: Variable,
 ) {
-  const empuja = Math.sign(d.slope_per_decade) * (variable === 'lluvia' ? -1 : 1)
+  const empuja = Math.sign(d.slope_per_decade) * (variable === 'temperatura' ? 1 : -1)
   return (
     d.status === 'real' && empuja === 1 && (respuesta === 'igual' || respuesta === 'menosSinSeguro')
   )

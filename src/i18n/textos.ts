@@ -33,6 +33,8 @@ type Fraccion =
   | 'masTriple'
 /** Cómo fue un año frente a la mitad central de los años (ver comoFue). */
 type ComoFue = 'bajo' | 'normal' | 'alto'
+/** Cuánto cambió el verdor frente a su promedio (ver nivelVerdor). */
+type NivelVerdor = 'apenas' | 'poco' | 'bastante'
 /** Cuánta lluvia faltó (ver cuantoFalto). */
 type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
 
@@ -46,7 +48,11 @@ const es = {
   variableLbl: 'Variable',
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
-  variables: { lluvia: 'Lluvia', temperatura: 'Temperatura' } as PorVariable<string>,
+  variables: {
+    lluvia: 'Lluvia',
+    temperatura: 'Temperatura',
+    vegetacion: 'Vegetación',
+  } as PorVariable<string>,
   heroH: '¿Qué está cambiando en tu zona del Perú?',
   heroLead: (a: number, b: number) =>
     `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
@@ -64,14 +70,17 @@ const es = {
     'Mapa del Perú en 3D: cada departamento sube o se hunde según cuánto cambió la variable',
   // Explorador
   explorador: 'Explorador',
-  mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
+  mapH: {
+    lluvia: 'Lluvia anual',
+    temperatura: 'Temperatura media',
+    vegetacion: 'Vegetación (NDVI)',
+  } as PorVariable<string>,
   mapSub: 'Cambio por década',
   mapSubAnio: 'Cada departamento frente a su propio promedio',
   /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
   mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
   mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
-  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -83,45 +92,73 @@ const es = {
       ['Igual', 'sin cambio'],
       ['Se hunde', 'más frío'],
     ],
+    vegetacion: [
+      ['Sube', 'más verde'],
+      ['Igual', 'sin cambio'],
+      ['Se hunde', 'menos verde'],
+    ],
   } as PorVariable<[string, string][]>,
   noChange: 'sin cambio',
   texReal: 'Pleno: cambio real',
   texCas: 'Punteado: posible casualidad',
   texFew: 'Contorno: pocos datos',
-  calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
+  calorCosa: {
+    lluvia: 'lluvia anual',
+    temperatura: 'temperatura media',
+    vegetacion: 'verdor (NDVI)',
+  } as PorVariable<string>,
   calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
   calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
-  calorNota: {
-    lluvia:
-      'Celdas NASA POWER de ~50 km (MERRA-2). Más oscuro = llueve más: la costa es ocre y la selva, violeta. En los Andes el valor sale suavizado.',
-    temperatura:
-      'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
-  } as PorVariable<string>,
+  /** Notas del color, una idea por viñeta */
+  /** Qué dice la altura, según quién mira: [tendencia, año a año] */
+  legAltura: {
+    agricultor: ['Altura: cuánto cambió por década', 'Altura: ese año frente a lo normal'],
+    estudiante: ['Altura: pendiente de Sen por década', 'Altura: anomalía frente a la media'],
+  } as Record<Perfil, [string, string]>,
+  /** Rótulos de las columnas para el perfil estudiante: [tendencia, año a año] */
+  legColsEst: [
+    [
+      ['Sube', 'pendiente > 0'],
+      ['Igual', 'pendiente ≈ 0'],
+      ['Se hunde', 'pendiente < 0'],
+    ],
+    [
+      ['Sube', 'anomalía > 0'],
+      ['Igual', 'anomalía ≈ 0'],
+      ['Se hunde', 'anomalía < 0'],
+    ],
+  ] as [[string, string][], [string, string][]],
+  legMax: (v: string) => `máx. ${v}`,
+  legSeguro: 'Qué tan seguro es',
+  legCuadros: 'Los 5 cuadros: su tendencia',
   // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
-  vegetacionBtn: 'Vegetación',
+  vegetacionBtn: 'Lugares medidos',
   vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
   mapHVeg: 'Vegetación medida con satélite',
   mapSubVeg: 'MODIS, 2001–2024 · todo el Perú y 5 lugares',
   vegSube: 'Más vegetación',
   vegBaja: 'Menos árboles',
   vegIgual: 'Sin cambio claro',
-  legVegNota:
-    'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
   vegIntroH: 'Vegetación: 5 lugares medidos',
   vegIntro:
     'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
   legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
-  legVegMallaNota:
-    'Celdas de ~27 km, cada año con al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
-  scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
-  varDef: {
-    lluvia: (fuente: string) =>
-      `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
-    temperatura: (fuente: string) =>
-      `Temperatura del aire a 2 m: °C, promedio anual del departamento (${fuente}).`,
-  } as PorVariable<(fuente: string) => string>,
+  // Relieve, bosque y ficha del modo Vegetación
+  legVegAltura: 'Altura: más verde, más alta',
+  ndviMedio: 'NDVI medio',
+  ndviNivel: [
+    'Desierto o suelo desnudo',
+    'Vegetación escasa',
+    'Vegetación moderada',
+    'Vegetación densa',
+    'Bosque denso',
+  ],
+  vegTarjetaMeta: (a: number, b: number, n: number) =>
+    n ? `MODIS ${a}–${b} · ${n} celdas de ~27 km` : `MODIS ${a}–${b} · celda más cercana`,
+  regionNombre: ['Costa', 'Sierra', 'Selva'],
+  altitudMedia: (m: number) => `altitud media ${String(m).replace(/\B(?=(\d{3})+$)/g, ' ')} m`,
   spinOn: 'Pausar giro',
   spinOff: 'Girar el mapa',
   recenter: 'Volver a la vista inicial',
@@ -130,12 +167,12 @@ const es = {
   railHint: 'Toca una zona',
   // Ficha
   kind: (r: Region) => `Departamento de la ${r}`,
-  unitAxis: { lluvia: 'mm/año', temperatura: '°C' } as PorVariable<string>,
+  unitAxis: { lluvia: 'mm/año', temperatura: '°C', vegetacion: 'NDVI' } as PorVariable<string>,
   /** local: copia de NASA POWER, con celdas de ~50 km; con la API, el tamaño depende de su fuente */
   src: (variable: Variable, celdas: number, fuente: string, local: boolean) =>
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
-      : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? ' de ~50 km' : ''}`,
+      : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : variable === 'vegetacion' ? 'verdor (NDVI)' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? (variable === 'vegetacion' ? ' de ~27 km' : ' de ~50 km') : ''}`,
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
@@ -230,14 +267,21 @@ const es = {
     lluvia: (desde: number, cuanto: string) => `Desde ${desde}, llueve ${cuanto}`,
     temperatura: (desde: number, grados: string, sube: boolean) =>
       `Desde ${desde}, hace como ${grados} más de ${sube ? 'calor' : 'frío'}`,
+    /** nivel: cuánto cambió frente a su verdor promedio (ver nivelVerdor) */
+    vegetacion: (desde: number, nivel: NivelVerdor, sube: boolean) =>
+      `Desde ${desde}, el campo está ${{ apenas: 'apenas', poco: 'un poco', bastante: 'bastante' }[nivel]} ${sube ? 'más' : 'menos'} verde que antes`,
   },
   /** Titular cuando el cambio no es claro: no se afirma ni dirección ni cifra */
   campoSinCambio: {
     lluvia: 'No se ve un cambio claro en la lluvia',
     temperatura: 'No se ve un cambio claro en el calor',
+    vegetacion: 'No se ve un cambio claro en el verdor',
   } as PorVariable<string>,
   campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
   /** cifra sin signo: "8 %" o "0,20 °C" */
+  /** El verdor: cifra del NDVI sin signo ("0,016") */
+  campoRitmoVerde: (cifra: string, sube: boolean, a: number, b: number) =>
+    `El verdor (NDVI) ${sube ? 'sube' : 'baja'} unos ${cifra} cada 10 años, de ${a} a ${b}.`,
   campoRitmo: (cifra: string, sube: boolean, a: number, b: number) =>
     `Son unos ${cifra} ${sube ? 'más' : 'menos'} cada 10 años, de ${a} a ${b}.`,
   /** El calor en metros de altura (ver metrosEquivalentes) */
@@ -245,8 +289,17 @@ const es = {
     `Es como tener la chacra unos ${metros} más ${sube ? 'abajo' : 'arriba'} en el cerro.`,
   campoAlturaNota: 'Cuenta aproximada: subiendo 1000 metros, el aire se enfría unos 6,5 °C.',
   /** «¿Y el calor?»: la otra variable, según la que se está viendo */
-  otraH: { lluvia: '¿Y el calor?', temperatura: '¿Y la lluvia?' } as PorVariable<string>,
-  otraVer: { lluvia: 'Ver el calor', temperatura: 'Ver la lluvia' } as PorVariable<string>,
+  otraH: {
+    lluvia: '¿Y el calor?',
+    temperatura: '¿Y la lluvia?',
+    vegetacion: '¿Y la lluvia y el calor?',
+  } as PorVariable<string>,
+  /** Botón para pasar a esa variable (la clave es la variable de destino) */
+  otraVer: {
+    lluvia: 'Ver la lluvia',
+    temperatura: 'Ver el calor',
+    vegetacion: 'Ver el verdor',
+  } as PorVariable<string>,
   /** Solo si los dos cambios son claros: menos lluvia y más calor */
   otraCruce: 'Menos lluvia y más calor a la vez: la tierra se seca más rápido.',
   /** Botón para oír la ficha del agricultor */
@@ -257,6 +310,7 @@ const es = {
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
+    vegetacion: ['Menos verde', 'Más verde'],
   } as PorVariable<[string, string]>,
   medIgual: 'Igual',
   medAria: (valor: string, a: string, b: string) =>
@@ -268,16 +322,19 @@ const es = {
   campoPeores: {
     lluvia: (anios: string) => `Los años más secos: ${anios}.`,
     temperatura: (anios: string) => `Los años más calurosos: ${anios}.`,
+    vegetacion: (anios: string) => `Los años con menos verdor: ${anios}.`,
   } as PorVariable<(anios: string) => string>,
   anomH: 'Cada año frente a lo normal',
   anomEje: {
     lluvia: '% frente a lo normal',
     temperatura: '°C frente a lo normal',
+    vegetacion: 'NDVI frente a lo normal',
   } as PorVariable<string>,
   /** [arriba, abajo] */
   anomLeyenda: {
     lluvia: ['Año lluvioso', 'Año seco'],
     temperatura: ['Año más caluroso', 'Año más frío'],
+    vegetacion: ['Año más verde', 'Año menos verde'],
   } as PorVariable<[string, string]>,
   nino: 'El Niño',
   anomCap: (a: number, b: number, lluvia: boolean, sinNino: boolean) =>
@@ -288,6 +345,8 @@ const es = {
       `${valor} ${sube ? 'más' : 'menos'} lluvia que lo normal`,
     temperatura: (valor: string, sube: boolean) =>
       `${valor} ${sube ? 'más caluroso' : 'más frío'} que lo normal`,
+    vegetacion: (valor: string, sube: boolean) =>
+      `${valor} ${sube ? 'más' : 'menos'} verdor que lo normal`,
   } as PorVariable<(valor: string, sube: boolean) => string>,
   anomTipValor: (v: string) => `${v} en el año`,
   serieH: 'La serie año por año',
@@ -306,6 +365,7 @@ const es = {
   malosH: {
     lluvia: '¿Ahora hay más años de seca?',
     temperatura: '¿Ahora hay más años de calor fuerte?',
+    vegetacion: '¿Ahora hay más años de verdor flojo?',
   } as PorVariable<string>,
   /** El titular: solo dice «sí» o «no» si la tendencia es un cambio claro y va hacia ese lado */
   malosRespuesta: {
@@ -326,6 +386,15 @@ const es = {
       menosSinSeguro:
         'Han caído menos años de calor fuerte que antes, pero todavía no se puede decir que vaya a seguir así.',
       igual: 'Más o menos como siempre: el calor fuerte no viene ni más ni menos seguido.',
+    },
+    vegetacion: {
+      si: 'Sí, los años de verdor flojo vienen más seguido que antes.',
+      no: 'No, al revés: ahora los años de verdor flojo vienen menos seguido.',
+      masSinSeguro:
+        'Han caído más años de verdor flojo que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años de verdor flojo que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: el verdor flojo no viene ni más ni menos seguido.',
     },
   } as PorVariable<Record<RespuestaMalos, string>>,
   malosFrec: (f: Frecuencia) =>
@@ -353,14 +422,23 @@ const es = {
   /** grados sin signo: "0,6 °C" */
   malosRecuerdaCalor: (anio: number, grados: string) =>
     `¿Te acuerdas de ${anio}? Ese año hizo ${grados} más de calor que lo de siempre.`,
+  malosRecuerdaVerde: (anio: number) =>
+    `¿Te acuerdas de ${anio}? Ese año el campo estuvo menos verde que de costumbre.`,
   malosDef: {
     lluvia: 'Año de seca: faltó una quinta parte de la lluvia de siempre, o más.',
     temperatura: 'Año de calor fuerte: 0,3 °C o más por encima de lo de siempre.',
+    vegetacion:
+      'Año de verdor flojo: el campo estuvo menos verde que de costumbre, más de lo que suele variar aquí.',
   } as PorVariable<string>,
-  malosPunto: { lluvia: 'Año de seca', temperatura: 'Año de calor fuerte' } as PorVariable<string>,
+  malosPunto: {
+    lluvia: 'Año de seca',
+    temperatura: 'Año de calor fuerte',
+    vegetacion: 'Año de verdor flojo',
+  } as PorVariable<string>,
   malosOtro: {
     lluvia: 'Año normal o lluvioso',
     temperatura: 'Año normal o más fresco',
+    vegetacion: 'Año normal o más verde',
   } as PorVariable<string>,
   malosAntes: 'Antes',
   malosAhora: 'Ahora',
@@ -372,6 +450,8 @@ const es = {
     lluvia: 'Ojo: en promedio llueve menos, pero eso todavía no ha traído más años de seca.',
     temperatura:
       'Ojo: en promedio hace más calor, pero eso todavía no ha traído más años de calor fuerte.',
+    vegetacion:
+      'Ojo: en promedio el campo está menos verde, pero eso todavía no ha traído más años de verdor flojo.',
   } as PorVariable<string>,
   dosVeredicto: {
     coinciden: 'Sí coinciden',
@@ -406,6 +486,9 @@ const es = {
       `¿Y ${anio}? Llovió ${valor}: ${como === 'bajo' ? 'menos de lo normal aquí' : como === 'alto' ? 'más de lo normal aquí' : 'dentro de lo normal'}.`,
     temperatura: (anio: number, valor: string, como: ComoFue) =>
       `¿Y ${anio}? Hizo ${valor} de promedio: ${como === 'bajo' ? 'más fresco que lo normal' : como === 'alto' ? 'más caluroso que lo normal' : 'dentro de lo normal'}.`,
+    // La tarjeta no sale para la vegetación (ver CampoAnioNormal); el texto queda por completitud
+    vegetacion: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Verdor (NDVI) de ${valor}: ${como === 'bajo' ? 'menos verde que lo normal' : como === 'alto' ? 'más verde que lo normal' : 'dentro de lo normal'}.`,
   } as PorVariable<(anio: number, valor: string, como: ComoFue) => string>,
   seguirH: 'Dónde seguir',
   seguirSenamhi: 'Pronósticos y avisos del tiempo (SENAMHI)',
@@ -506,6 +589,7 @@ const es = {
   verb: {
     lluvia: ['la lluvia sube', 'la lluvia baja'],
     temperatura: ['la temperatura sube', 'la temperatura baja'],
+    vegetacion: ['el verdor sube', 'el verdor baja'],
   } as PorVariable<[string, string]>,
   howH: 'Cómo lo sabemos',
   howMethod: 'Método',
@@ -531,6 +615,7 @@ const es = {
   tapP: {
     lluvia: 'Verás cuánto cambió su lluvia y si el cambio es real o casualidad.',
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
+    vegetacion: 'Verás cuánto cambió su verdor y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
   timeModeAria: 'Qué ver en el mapa',
@@ -550,7 +635,6 @@ const es = {
     ['Igual', 'como su promedio'],
     ['Se hunde', 'menos que su promedio'],
   ] as [string, string][],
-  scaleTime: (v: string) => `Columna más alta: ${v} frente a su promedio`,
   legTimeNote: (y: number) => `Año ${y}: cada departamento frente a su propio promedio`,
   tipTime: (nombre: string, v: string, y: number) => `${nombre} en ${y}: ${v} frente a su promedio`,
   // Caso 2: antes y después (NDVI real de MODIS)
@@ -617,7 +701,7 @@ const en: Textos = {
   variableLbl: 'Variable',
   perfilLbl: 'Profile',
   periodoLbl: 'Period',
-  variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
+  variables: { lluvia: 'Rainfall', temperatura: 'Temperature', vegetacion: 'Vegetation' },
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
@@ -632,13 +716,16 @@ const en: Textos = {
   ocean: 'Pacific Ocean',
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
-  mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
+  mapH: {
+    lluvia: 'Annual rainfall',
+    temperatura: 'Mean temperature',
+    vegetacion: 'Vegetation (NDVI)',
+  },
   mapSub: 'Change per decade',
   mapSubAnio: 'Each department vs its own average',
   mapModoTendencia: (a, b) => `trend ${a}–${b}`,
   mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
-  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],
@@ -650,43 +737,68 @@ const en: Textos = {
       ['Flat', 'no change'],
       ['Sinks', 'cooler'],
     ],
+    vegetacion: [
+      ['Rises', 'greener'],
+      ['Flat', 'no change'],
+      ['Sinks', 'less green'],
+    ],
   },
   noChange: 'no change',
   texReal: 'Solid: real change',
   texCas: 'Dotted: possibly chance',
   texFew: 'Outline: not enough data',
-  calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
+  calorCosa: {
+    lluvia: 'annual rainfall',
+    temperatura: 'mean temperature',
+    vegetacion: 'greenness (NDVI)',
+  },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
   calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
-  calorNota: {
-    lluvia:
-      'NASA POWER cells of ~50 km (MERRA-2). Darker = more rain: the coast is ochre and the jungle, violet. In the Andes values are smoothed.',
-    temperatura:
-      'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  legAltura: {
+    agricultor: ['Height: how much it changed per decade', 'Height: that year vs normal'],
+    estudiante: ['Height: Sen slope per decade', 'Height: anomaly vs the mean'],
   },
-  vegetacionBtn: 'Vegetation',
+  legColsEst: [
+    [
+      ['Rises', 'slope > 0'],
+      ['Flat', 'slope ≈ 0'],
+      ['Sinks', 'slope < 0'],
+    ],
+    [
+      ['Rises', 'anomaly > 0'],
+      ['Flat', 'anomaly ≈ 0'],
+      ['Sinks', 'anomaly < 0'],
+    ],
+  ],
+  legMax: (v) => `max. ${v}`,
+  legSeguro: 'How sure it is',
+  legCuadros: 'The 5 squares: their trend',
+  vegetacionBtn: 'Measured places',
   vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
   mapHVeg: 'Vegetation measured by satellite',
   mapSubVeg: 'MODIS, 2001–2024 · all of Peru and 5 places',
   vegSube: 'More vegetation',
   vegBaja: 'Fewer trees',
   vegIgual: 'No clear change',
-  legVegNota:
-    'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
   vegIntroH: 'Vegetation: 5 measured places',
   vegIntro:
     'The background colour is the greenness (NDVI) of all of Peru, measured by the MODIS satellites. The 5 squares are places studied up close: on the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
   legVegMalla: (a, b) => `Background: mean greenness (NDVI) ${a}–${b}`,
-  legVegMallaNota:
-    'Cells of ~27 km, each year with at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
-  scaleTrend: (v) => `Tallest column: ${v} per decade`,
-  varDef: {
-    lluvia: (fuente) =>
-      `Rainfall: millimetres per year, average of the department cells (${fuente}).`,
-    temperatura: (fuente) => `Air temperature at 2 m: °C, department annual average (${fuente}).`,
-  },
+  legVegAltura: 'Height: greener, taller',
+  ndviMedio: 'mean NDVI',
+  ndviNivel: [
+    'Desert or bare soil',
+    'Sparse vegetation',
+    'Moderate vegetation',
+    'Dense vegetation',
+    'Dense forest',
+  ],
+  vegTarjetaMeta: (a, b, n) =>
+    n ? `MODIS ${a}–${b} · ${n} cells of ~27 km` : `MODIS ${a}–${b} · nearest cell`,
+  regionNombre: ['Coast', 'Andes', 'Rainforest'],
+  altitudMedia: (m) => `mean altitude ${m.toLocaleString('en-US')} m`,
   spinOn: 'Pause rotation',
   spinOff: 'Rotate the map',
   recenter: 'Back to the starting view',
@@ -695,11 +807,11 @@ const en: Textos = {
   railHint: 'Tap an area',
   kind: (r) =>
     `${({ costa: 'Coastal', sierra: 'Highland', selva: 'Rainforest' } as Record<Region, string>)[r]} department`,
-  unitAxis: { lluvia: 'mm/yr', temperatura: '°C' },
+  unitAxis: { lluvia: 'mm/yr', temperatura: '°C', vegetacion: 'NDVI' },
   src: (variable, celdas, fuente, local) =>
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
-      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : variable === 'vegetacion' ? 'greenness (NDVI)' : 'temperature'} averaged over ${celdas} ${local ? (variable === 'vegetacion' ? '~27 km ' : '~50 km ') : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
   avisoFijo: (_variable, lag1, motivo) =>
@@ -796,19 +908,28 @@ const en: Textos = {
     lluvia: (desde, cuanto) => `Since ${desde}, it rains ${cuanto}`,
     temperatura: (desde, grados, sube) =>
       `Since ${desde}, it’s about ${grados} ${sube ? 'warmer' : 'cooler'}`,
+    vegetacion: (desde, nivel, sube) =>
+      `Since ${desde}, the land is ${{ apenas: 'slightly', poco: 'a bit', bastante: 'much' }[nivel]} ${sube ? 'greener' : 'less green'} than before`,
   },
   campoSinCambio: {
     lluvia: 'No clear change in rainfall',
     temperatura: 'No clear change in heat',
+    vegetacion: 'No clear change in greenness',
   },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
+  campoRitmoVerde: (cifra, sube, a, b) =>
+    `Greenness (NDVI) ${sube ? 'rises' : 'falls'} by about ${cifra} every 10 years, from ${a} to ${b}.`,
   campoRitmo: (cifra, sube, a, b) =>
     `That’s about ${cifra} ${sube ? 'more' : 'less'} every 10 years, from ${a} to ${b}.`,
   campoAltura: (metros, sube) =>
     `It’s like having your field about ${metros} ${sube ? 'lower' : 'higher'} up the mountain.`,
   campoAlturaNota: 'Rough rule: going up 1000 metres, the air cools by about 6.5 °C.',
-  otraH: { lluvia: 'And the heat?', temperatura: 'And the rain?' },
-  otraVer: { lluvia: 'See the heat', temperatura: 'See the rain' },
+  otraH: {
+    lluvia: 'And the heat?',
+    temperatura: 'And the rain?',
+    vegetacion: 'And the rain and heat?',
+  },
+  otraVer: { lluvia: 'See the rain', temperatura: 'See the heat', vegetacion: 'See greenness' },
   otraCruce: 'Less rain and more heat at the same time: the soil dries out faster.',
   escuchar: 'Listen',
   escucharParar: 'Stop',
@@ -817,6 +938,7 @@ const en: Textos = {
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
+    vegetacion: ['Less green', 'Greener'],
   },
   medIgual: 'Same',
   medAria: (valor, a, b) => `Change per decade: ${valor}; likely range between ${a} and ${b}`,
@@ -827,12 +949,14 @@ const en: Textos = {
   campoPeores: {
     lluvia: (anios) => `The driest years: ${anios}.`,
     temperatura: (anios) => `The hottest years: ${anios}.`,
+    vegetacion: (anios) => `The years with least greenness: ${anios}.`,
   },
   anomH: 'Each year compared with normal',
-  anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal' },
+  anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal', vegetacion: 'NDVI vs normal' },
   anomLeyenda: {
     lluvia: ['Rainy year', 'Dry year'],
     temperatura: ['Hotter year', 'Cooler year'],
+    vegetacion: ['Greener year', 'Less green year'],
   },
   nino: 'El Niño',
   anomCap: (a, b, lluvia, sinNino) =>
@@ -841,6 +965,7 @@ const en: Textos = {
   anomTip: {
     lluvia: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} rain than normal`,
     temperatura: (valor, sube) => `${valor} ${sube ? 'hotter' : 'cooler'} than normal`,
+    vegetacion: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} greenness than normal`,
   },
   anomTipValor: (v) => `${v} in the year`,
   serieH: 'The series year by year',
@@ -858,6 +983,7 @@ const en: Textos = {
   malosH: {
     lluvia: 'Are there more drought years now?',
     temperatura: 'Are there more scorching years now?',
+    vegetacion: 'Are there more weak-green years now?',
   },
   malosRespuesta: {
     lluvia: {
@@ -877,6 +1003,15 @@ const en: Textos = {
       menosSinSeguro:
         'There have been fewer scorching years than before, but we can’t say yet that it will stay that way.',
       igual: 'Pretty much as always: scorching years aren’t coming more or less often.',
+    },
+    vegetacion: {
+      si: 'Yes, weak-green years are coming more often than before.',
+      no: 'No, the other way round: weak-green years are coming less often.',
+      masSinSeguro:
+        'There have been more weak-green years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer weak-green years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: weak-green years aren’t coming more or less often.',
     },
   },
   malosFrec: (f) =>
@@ -898,12 +1033,23 @@ const en: Textos = {
     } of the usual rain was missing.`,
   malosRecuerdaCalor: (anio, grados) =>
     `Remember ${anio}? That year was ${grados} hotter than usual.`,
+  malosRecuerdaVerde: (anio) => `Remember ${anio}? That year the land was less green than usual.`,
   malosDef: {
     lluvia: 'Drought year: a fifth or more of the usual rain was missing.',
     temperatura: 'Scorching year: 0.3 °C or more above usual.',
+    vegetacion:
+      'Weak-green year: the land was less green than usual, more than it usually varies here.',
   },
-  malosPunto: { lluvia: 'Drought year', temperatura: 'Scorching year' },
-  malosOtro: { lluvia: 'Normal or rainy year', temperatura: 'Normal or cooler year' },
+  malosPunto: {
+    lluvia: 'Drought year',
+    temperatura: 'Scorching year',
+    vegetacion: 'Weak-green year',
+  },
+  malosOtro: {
+    lluvia: 'Normal or rainy year',
+    temperatura: 'Normal or cooler year',
+    vegetacion: 'Normal or greener year',
+  },
   malosAntes: 'Before',
   malosAhora: 'Now',
   malosBase: (a, b) =>
@@ -912,6 +1058,8 @@ const en: Textos = {
   malosAclara: {
     lluvia: 'Note: on average it rains less, but that hasn’t brought more drought years yet.',
     temperatura: 'Note: on average it’s warmer, but that hasn’t brought more scorching years yet.',
+    vegetacion:
+      'Note: on average the land is less green, but that hasn’t brought more weak-green years yet.',
   },
   dosVeredicto: {
     coinciden: 'They agree',
@@ -941,6 +1089,8 @@ const en: Textos = {
       `And ${anio}? It rained ${valor}: ${como === 'bajo' ? 'less than normal here' : como === 'alto' ? 'more than normal here' : 'within normal'}.`,
     temperatura: (anio, valor, como) =>
       `And ${anio}? It averaged ${valor}: ${como === 'bajo' ? 'cooler than normal' : como === 'alto' ? 'hotter than normal' : 'within normal'}.`,
+    vegetacion: (anio, valor, como) =>
+      `And ${anio}? Greenness (NDVI) of ${valor}: ${como === 'bajo' ? 'less green than normal' : como === 'alto' ? 'greener than normal' : 'within normal'}.`,
   },
   seguirH: 'Where to follow up',
   seguirSenamhi: 'Weather forecasts and warnings (SENAMHI)',
@@ -1034,6 +1184,7 @@ const en: Textos = {
   verb: {
     lluvia: ['rainfall rises', 'rainfall falls'],
     temperatura: ['temperature rises', 'temperature falls'],
+    vegetacion: ['greenness rises', 'greenness falls'],
   },
   howH: 'How we know',
   howMethod: 'Method',
@@ -1060,6 +1211,8 @@ const en: Textos = {
     lluvia: "You'll see how much its rainfall changed and whether the change is real or chance.",
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
+    vegetacion:
+      "You'll see how much its greenness changed and whether the change is real or chance.",
   },
   timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
@@ -1078,7 +1231,6 @@ const en: Textos = {
     ['Flat', 'at its average'],
     ['Sinks', 'below its average'],
   ],
-  scaleTime: (v) => `Tallest column: ${v} vs its average`,
   legTimeNote: (y) => `Year ${y}: each department vs its own average`,
   tipTime: (nombre, v, y) => `${nombre} in ${y}: ${v} vs its average`,
   cmpLbl: 'Compare vegetation in 2001 and 2024',

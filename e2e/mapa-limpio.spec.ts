@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 import { coberturaPaneles } from './apoyo/cobertura'
 
 test.use({ viewport: { width: 390, height: 844 } })
@@ -51,9 +52,12 @@ test('en escritorio la leyenda sigue flotando y el título conserva su subtítul
   await page.goto('/explorar?sinwebgl')
   await expect(page.getByText('Cambio por década').first()).toBeVisible()
   const detalles = page.locator('details', { hasText: 'Cómo leer el mapa' })
+  // Empieza minimizada también en escritorio; abierta flota y no pasa de 300 px
+  await expect(detalles).not.toHaveAttribute('open', '')
+  await detalles.locator('summary').click()
   await expect(detalles).toHaveAttribute('open', '')
   const hoja = (await detalles.locator('xpath=..').boundingBox())!
-  expect(hoja.width).toBeLessThan(400)
+  expect(hoja.width).toBeLessThanOrEqual(300)
 })
 
 test('con todo cerrado, los paneles tapan menos del 25 % del mapa', async ({ page }) => {

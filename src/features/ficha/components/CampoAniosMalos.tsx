@@ -36,8 +36,9 @@ export function CampoAniosMalos() {
   const lluvia = variable === 'lluvia'
   const respuesta = respuestaMalos(compararMalos(antes, ahora), zonas[sel], variable)
   const recordar = anioParaRecordar(mitades, variable)
-  // Lluvia: lo malo es el año seco; temperatura, el caluroso. Los dos salen en el mismo color.
-  const color = `var(${colorDireccion(lluvia ? -1 : 1, variable)})`
+  // Lo malo: el año seco (lluvia), el de verdor flojo (vegetación) o el caluroso (temperatura).
+  // Todos salen en el color de «lo malo» de su variable.
+  const color = `var(${colorDireccion(variable === 'temperatura' ? 1 : -1, variable)})`
   const tipo = t.malosPunto[variable]
 
   return (
@@ -83,7 +84,9 @@ export function CampoAniosMalos() {
         <p data-leer className="m-0">
           {lluvia
             ? t.malosRecuerdaLluvia(recordar.y, cuantoFalto(recordar.a))
-            : t.malosRecuerdaCalor(recordar.y, `${num(Math.abs(recordar.a), 1, idioma)} °C`)}
+            : variable === 'vegetacion'
+              ? t.malosRecuerdaVerde(recordar.y)
+              : t.malosRecuerdaCalor(recordar.y, `${num(Math.abs(recordar.a), 1, idioma)} °C`)}
         </p>
       )}
 

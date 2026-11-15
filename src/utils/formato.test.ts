@@ -14,4 +14,10 @@ describe('formato con signo', () => {
     expect(fmtValor(0.214, 'temperatura', 'es')).toBe('+0,21 °C')
     expect(fmtPct(14.2)).toBe('+14 %')
   })
+
+  it('la vegetación va en NDVI, con tres decimales por década y dos por año', () => {
+    expect(fmtValor(0.0042, 'vegetacion', 'es')).toBe('+0,004 NDVI')
+    expect(fmtValor(-0.0001, 'vegetacion', 'en')).toBe('0.000 NDVI')
+    expect(fmtAnomalia(-0.034, 'vegetacion', 'es')).toBe('−0,03 NDVI')
+  })
 })

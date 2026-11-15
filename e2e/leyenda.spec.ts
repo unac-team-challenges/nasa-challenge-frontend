@@ -1,40 +1,58 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
-test.use({ viewport: { width: 390, height: 844 } })
+for (const [nombre, viewport] of [
+  ['celular', { width: 390, height: 844 }],
+  ['escritorio', { width: 1400, height: 900 }],
+] as const) {
+  test(`${nombre}: la leyenda empieza minimizada y se abre y se cierra con la misma flecha`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/explorar?sinwebgl&variable=temperatura')
+    const detalles = page.locator('details', { hasText: 'Cómo leer el mapa' })
+    const resumen = detalles.locator('summary')
 
-test('la leyenda se puede minimizar con ✕ y recuerda la elección al recargar', async ({ page }) => {
-  await page.goto('/explorar?sinwebgl')
+    // Minimizada: una franja de una línea, sin un segundo botón para cerrar
+    await expect(detalles).not.toHaveAttribute('open', '')
+    await expect(page.getByRole('button', { name: 'Minimizar la leyenda' })).toHaveCount(0)
+
+    await resumen.click()
+    await expect(detalles).toHaveAttribute('open', '')
+    // Las cifras de la escala van aparte del texto que las explica
+    await expect(detalles.getByText('°C', { exact: false }).first()).toBeVisible()
+
+    await resumen.click()
+    await expect(detalles).not.toHaveAttribute('open', '')
+
+    // Al volver a entrar, minimizada otra vez
+    await resumen.click()
+    await page.reload()
+    await expect(detalles).not.toHaveAttribute('open', '')
+  })
+}
+
+test('los rótulos de las columnas dependen del perfil', async ({ page }) => {
+  await page.goto('/explorar?sinwebgl&variable=lluvia&perfil=estudiante')
   const detalles = page.locator('details', { hasText: 'Cómo leer el mapa' })
-  const resumen = detalles.locator('summary')
-  const cerrar = page.getByRole('button', { name: 'Minimizar la leyenda' })
-
-  // En celular empieza minimizada: una franja de una línea y sin ✕
-  await expect(detalles).not.toHaveAttribute('open', '')
-  await expect(cerrar).toHaveCount(0)
-
-  // Se abre al tocar el título y entonces aparece la ✕
-  await resumen.click()
-  await expect(detalles).toHaveAttribute('open', '')
-  await expect(cerrar).toBeVisible()
-  await page.screenshot({ path: '/tmp/claude-1000/-home-leandro-rojas-Escritorio-Nasa/4c622a49-0b98-4c76-b7e4-850fd5f04e4c/scratchpad/ley-abierta.png' })
-
-  // La elección de abrirla se recuerda
-  await page.reload()
-  await expect(detalles).toHaveAttribute('open', '')
-
-  // La ✕ la minimiza y también se recuerda
-  await page.getByRole('button', { name: 'Minimizar la leyenda' }).click()
-  await expect(detalles).not.toHaveAttribute('open', '')
-  await expect(cerrar).toHaveCount(0)
-  await page.screenshot({ path: '/tmp/claude-1000/-home-leandro-rojas-Escritorio-Nasa/4c622a49-0b98-4c76-b7e4-850fd5f04e4c/scratchpad/ley-cerrada.png' })
-  await page.reload()
-  await expect(detalles).not.toHaveAttribute('open', '')
+  await detalles.locator('summary').click()
+  await expect(detalles.getByRole('img', { name: /pendiente > 0/ })).toBeVisible()
+  await page.goto('/explorar?sinwebgl&variable=lluvia&perfil=agricultor')
+  await detalles.locator('summary').click()
+  await expect(detalles.getByRole('img', { name: /llueve más/ })).toBeVisible()
 })
 
-test('sin haber elegido nunca, no guarda nada (el valor por defecto sigue al ancho)', async ({
+test('al elegir un departamento la leyenda se minimiza para dejar sitio al informe', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1024, height: 700 })
   await page.goto('/explorar?sinwebgl')
-  await page.waitForTimeout(500)
-  expect(await page.evaluate(() => localStorage.getItem('leyenda-abierta'))).toBeNull()
+  const detalles = page.locator('details', { hasText: 'Cómo leer el mapa' })
+  await detalles.locator('summary').click()
+  await expect(detalles).toHaveAttribute('open', '')
+  // con el teclado: la leyenda abierta puede tapar a Cusco y el clic no le llegaría
+  await page.getByRole('button', { name: /^Cusco/i }).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#informe')).toContainText('Cusco')
+  await expect(detalles).not.toHaveAttribute('open', '')
 })

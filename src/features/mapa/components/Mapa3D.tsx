@@ -4,7 +4,8 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
 import { esUbigeo, useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
+import { EscenaPeru, type ModoMapa } from '@/features/mapa/escena/escena'
+import { escenaActiva } from '@/features/mapa/escena/activa'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
 
@@ -36,6 +37,9 @@ export function Mapa3D({ modo }: Props) {
   const zonas = useZonas()
   const rango = useRango()
   const calor = useCalor()
+  // En el explorador, la malla de vegetación llega antes de tocar el botón: el bosque ya está
+  // plantado y el modo entra sin espera
+  const calorVeg = useCalor('vegetacion', modo === 'explorar')
   const modoInicial = useRef(modo)
 
   // Crear y destruir la escena (solo al montar)
@@ -80,7 +84,7 @@ export function Mapa3D({ modo }: Props) {
     escena.current?.setDatos(zonas, variable)
   }, [zonas, variable])
 
-  // Modo Vegetación: los 5 recuadros medidos sobre los departamentos atenuados
+  // Modo Vegetación: relieve por verdor, bosque y los 5 recuadros medidos
   useEffect(() => {
     escena.current?.setVegetacion(vegetacion)
   }, [vegetacion])
@@ -88,6 +92,10 @@ export function Mapa3D({ modo }: Props) {
   useEffect(() => {
     escena.current?.setCalor(calor)
   }, [calor])
+
+  useEffect(() => {
+    escena.current?.setCalor(calorVeg)
+  }, [calorVeg])
 
   useEffect(() => {
     if (modo === 'explorar') escena.current?.seleccionar(sel && esUbigeo(sel) ? sel : null, true)

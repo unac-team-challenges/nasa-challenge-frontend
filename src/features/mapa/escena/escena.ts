@@ -13,9 +13,17 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
-import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
-import { dibujarCalor, tieneAnio, varianteCalor, type Calor } from '@/features/mapa/utils/calor'
+import { datosTarjeta, datosTarjetaVeg } from '@/features/mapa/utils/tarjeta'
+import {
+  dibujarCalor,
+  PARADAS_LLUVIA,
+  PARADAS_VEG,
+  tieneAnio,
+  varianteCalor,
+  type Calor,
+} from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
+import { Bosque, crearLocalizador, REGIONES, resumenPorDepto } from '@/features/mapa/escena/bosque'
 import {
   COLOR_TENDENCIA,
   LUGARES_VEGETACION,
@@ -192,6 +200,13 @@ interface DatosMalla {
   brillo: number
 }
 type TipoCalor = 'real' | 'punteado' | 'apagado'
+type ClaveCalor = Variable | 'vegetacion'
+const claveCalor = (c: Calor): ClaveCalor =>
+  c.paradas === PARADAS_VEG ? 'vegetacion' : c.paradas === PARADAS_LLUVIA ? 'lluvia' : 'temperatura'
+/** Duración del fundido de color entre modos (s). */
+const FUNDIDO = 0.75
+/** Modo Vegetación: cuántos departamentos extremos llevan etiqueta (los más y los menos verdes). */
+const EXTREMOS_VEG = 3
 
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -214,7 +229,18 @@ const proyectar = ([lon, lat]: number[]) =>
  * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
-const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.webp
+const TEXTURAS_MUNDO = [
+  ['mapa/mundo.webp', 'uMundo'],
+  ['mapa/mundo2.webp', 'uMundo2'],
+] as const
+// Las texturas (~1 MB) empiezan a bajar apenas llega este módulo, sin esperar a que se arme la
+// escena (~1 s después). El TextureLoader (y el 2D) reutilizan la misma descarga: mismo modo CORS.
+for (const [archivo] of TEXTURAS_MUNDO) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = import.meta.env.BASE_URL + archivo
+}
 /** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
 const RELIEVE = 1.8
 /** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
@@ -303,10 +329,24 @@ void main() {
   #include <fog_fragment>
 }`
 
-/** Relieve real sobre la cara superior de las columnas: la textura y su caja, compartidas con el suelo. */
+/**
+ * Relieve real sobre la cara superior de las columnas: la textura y su caja, compartidas con el
+ * suelo. uFundido (0 → 1) mezcla el color anterior de cada tapa con el nuevo al cambiar de modo;
+ * uOrigen lleva del mundo a las coordenadas proyectadas (las de las texturas de las mallas).
+ */
 interface RelieveTapa {
   uMundo: { value: THREE.Texture | null }
   uCaja: { value: THREE.Vector4 }
+  uFundido: { value: number }
+  uOrigen: { value: THREE.Vector2 }
+}
+
+/** Color que tenía la tapa antes del cambio: una textura (con su repeat/offset) o un color liso. */
+interface Previo {
+  uPrevio: { value: THREE.Texture | null }
+  uPrevioUV: { value: THREE.Vector4 }
+  uPrevioColor: { value: THREE.Color }
+  uPrevioMapa: { value: number }
 }
 
 /**
@@ -316,9 +356,19 @@ interface RelieveTapa {
  */
 function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa) {
   const decl = '#include <common>\nvarying float vAlto, vPared;\nvarying vec2 vXZ;'
+  const previo: Previo = {
+    uPrevio: { value: null },
+    uPrevioUV: { value: new THREE.Vector4(1, 1, 0, 0) },
+    uPrevioColor: { value: new THREE.Color() },
+    uPrevioMapa: { value: 0 },
+  }
+  mat.userData.previo = previo
   mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, previo)
     sh.uniforms.uMundo = tapa.uMundo
     sh.uniforms.uCaja = tapa.uCaja
+    sh.uniforms.uFundido = tapa.uFundido
+    sh.uniforms.uOrigen = tapa.uOrigen
     sh.vertexShader = sh.vertexShader.replace('#include <common>', decl).replace(
       '#include <begin_vertex>',
       `#include <begin_vertex>
@@ -328,10 +378,25 @@ function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa)
   vXZ = wPos.xz;`,
     )
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', decl + '\nuniform sampler2D uMundo;\nuniform vec4 uCaja;')
+      .replace(
+        '#include <common>',
+        decl +
+          `
+uniform sampler2D uMundo, uPrevio;
+uniform vec4 uCaja, uPrevioUV;
+uniform vec3 uPrevioColor;
+uniform float uFundido, uPrevioMapa;
+uniform vec2 uOrigen;`,
+      )
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
+  // Cambio de modo: del color anterior al nuevo, sin corte (la textura anterior con su propia caja)
+  if (uFundido < 1.0) {
+    vec2 pp = vec2(vXZ.x - uOrigen.x, uOrigen.y - vXZ.y);
+    vec3 antes = uPrevioMapa > 0.5 ? texture2D(uPrevio, pp * uPrevioUV.xy + uPrevioUV.zw).rgb : uPrevioColor;
+    diffuseColor.rgb = mix(antes, diffuseColor.rgb, uFundido);
+  }
   // Cara superior: Andes, valles y llanura amazónica con el sombreado real (SRTM), sin cambiar la altura del dato
   float hs = texture2D(uMundo, (vXZ - uCaja.xy) / uCaja.zw).r;
 #ifdef CALOR
@@ -381,7 +446,8 @@ function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number
   const S = 256
   const c = document.createElement('canvas')
   c.width = c.height = S
-  const g = c.getContext('2d')!
+  // Se lee con getImageData: canvas en CPU, sin esperar a que la GPU devuelva los píxeles
+  const g = c.getContext('2d', { willReadFrequently: true })!
   g.fillStyle = '#000'
   g.fillRect(0, 0, S, S)
   g.fillStyle = '#fff'
@@ -589,9 +655,6 @@ interface Vuelo {
   dur: number
 }
 
-/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
-export const escenaActiva: { current: EscenaPeru | null } = { current: null }
-
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -614,11 +677,35 @@ export class EscenaPeru {
   private anio: { valores: Record<string, number>; max: number } | null = null
   /** Año de la máquina del tiempo (para la malla de calor) */
   private numeroAnio: number | null = null
-  /** Mapa de calor de temperatura: una textura (1 px por celda) que comparten las 25 tapas */
-  private calor: Calor | null = null
+  /**
+   * Mallas por celda ya cargadas (temperatura, lluvia, vegetación). Se guardan las tres: volver a
+   * un modo es inmediato y nunca se ve la malla de otro modo mientras llega la nueva.
+   */
+  private calores = new Map<ClaveCalor, Calor>()
   private lienzoCalor = document.createElement('canvas')
-  /** Una textura opaca por estado de la tendencia (ver varianteCalor) */
-  private texCalor: Record<TipoCalor, THREE.CanvasTexture> | null = null
+  /**
+   * Texturas opacas de cada malla, una por estado de la tendencia (ver varianteCalor), creadas al
+   * primer uso, con la firma (año y tema) con la que se pintaron.
+   */
+  private texCalor = new Map<
+    Calor,
+    { tex: Partial<Record<TipoCalor, THREE.CanvasTexture>>; firma: string }
+  >()
+  private versionTema = 0
+  /** Fundido del color de las tapas al cambiar de modo: 0 = color anterior, 1 = nuevo. */
+  private fundido = 1
+  /** Bosque del modo Vegetación (plantas de cada zona según el NDVI y la altitud). */
+  private bosque: Bosque
+  private localizar = crearLocalizador()
+  /** NDVI, altitud y regiones de cada departamento (modo Vegetación: ficha y altura de la columna). */
+  private ndvi: ReturnType<typeof resumenPorDepto> | null = null
+  /** Nombres de las 3 regiones (modo Vegetación), sobre la columna del departamento donde caen. */
+  /** Modo Vegetación: etiquetas de los departamentos más y menos verdes (id '' = sin dato aún). */
+  private etiquetasVeg: { id: string; el: HTMLDivElement }[] = []
+  /** Altura de la cara superior de cada departamento (la leen las plantas en la GPU). */
+  private topes = new Float32Array(DEPARTAMENTOS.length)
+  /** Altitud del suelo (canal R de mundo2.webp: 0..255 = 0..6000 m), para saber qué planta crece. */
+  private elevacion: Uint8ClampedArray | null = null
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
   private ancho = 1
@@ -640,6 +727,8 @@ export class EscenaPeru {
     el: HTMLDivElement
     x: number
     z: number
+    lon: number
+    lat: number
     departamento: string
   }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
@@ -693,7 +782,12 @@ export class EscenaPeru {
    * con setViewOffset, así el lienzo nunca cambia de tamaño al abrir el informe.
    */
   private corrimiento = 0
-  private tapa: RelieveTapa = { uMundo: { value: null }, uCaja: { value: new THREE.Vector4() } }
+  private tapa: RelieveTapa = {
+    uMundo: { value: null },
+    uCaja: { value: new THREE.Vector4() },
+    uFundido: { value: 1 },
+    uOrigen: { value: new THREE.Vector2() },
+  }
   private panel = 0
   private alElegir?: (id: string) => void
   private alGirar?: (girando: boolean) => void
@@ -706,6 +800,8 @@ export class EscenaPeru {
     this.alGirar = op.alGirar
 
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    // Sin chequeo síncrono de shaders en producción: frena el primer frame
+    r.debug.checkShaderErrors = import.meta.env.DEV
     r.outputColorSpace = THREE.LinearSRGBColorSpace
     this.dprMax = Math.min(devicePixelRatio || 1, 1.5)
     this.dpr = Math.min(this.dprMax, 1.25)
@@ -790,6 +886,7 @@ export class EscenaPeru {
     this.mapa.position.x -= centro.x
     this.mapa.position.z -= centro.z
     this.mapa.updateMatrixWorld(true)
+    this.tapa.uOrigen.value.set(this.mapa.position.x, this.mapa.position.z)
     for (const m of this.mallas)
       m.userData.centro = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()).setY(0)
 
@@ -845,10 +942,7 @@ export class EscenaPeru {
     matSuelo.uniforms.uPeru.value = sombra
     const cargador = new THREE.TextureLoader()
     const base = import.meta.env.BASE_URL
-    for (const [archivo, clave] of [
-      ['mapa/mundo.png', 'uMundo'],
-      ['mapa/mundo2.png', 'uMundo2'],
-    ] as const)
+    for (const [archivo, clave] of TEXTURAS_MUNDO)
       cargador.load(base + archivo, (tx) => {
         if (this.destruida) return tx.dispose() // el mapa se cerró mientras cargaba
         tx.flipY = false
@@ -858,6 +952,7 @@ export class EscenaPeru {
         this.texturas.push(tx)
         matSuelo.uniforms[clave].value = tx
         if (clave === 'uMundo') this.tapa.uMundo.value = tx
+        else this.leerElevacion(tx.image as CanvasImageSource)
         this.sucio = true
       })
     this.mar = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matSuelo)
@@ -919,9 +1014,13 @@ export class EscenaPeru {
         el,
         x: v.x + this.mapa.position.x,
         z: -v.y + this.mapa.position.z,
+        lon: l.lon,
+        lat: l.lat,
         departamento: l.departamento,
       })
     }
+    for (let i = 0; i < EXTREMOS_VEG * 2; i++)
+      this.etiquetasVeg.push({ id: '', el: nuevaEtiqueta('lbl3d') })
     for (const p of PAISES) {
       const v = proyectar([p.lon, p.lat])
       const el = nuevaEtiqueta('lbl3d country')
@@ -1080,6 +1179,7 @@ export class EscenaPeru {
       },
       nivelMar: -PISO - 0.02,
     })
+    this.bosque = new Bosque(this.escena)
     this.tip = nuevaEtiqueta('tip3d')
     this.tip.hidden = true
     this.tarjeta = crearTarjeta(capaEtiquetas)
@@ -1183,6 +1283,7 @@ export class EscenaPeru {
 
   /** Datos nuevos: recalcula colores y alturas. */
   setDatos(zonas: Record<string, Zona>, variable: Variable, instantaneo = false) {
+    if (variable !== this.variable && !this.veg && !instantaneo) this.fundir()
     this.zonas = zonas
     this.variable = variable
     this.pintar()
@@ -1202,7 +1303,6 @@ export class EscenaPeru {
   ) {
     this.anio = anio
     this.numeroAnio = anio ? numero : null
-    this.dibujarCalor()
     this.pintar()
     this.alturas(false)
     this.textosEtiquetas()
@@ -1210,47 +1310,154 @@ export class EscenaPeru {
     this.llenarTarjeta()
   }
 
+  /** Malla del modo actual (la de vegetación o la de la variable), si ya llegó. */
+  private get calor() {
+    return this.calores.get(this.veg ? 'vegetacion' : this.variable) ?? null
+  }
+
   /**
-   * Malla de temperatura por celda. La textura se ubica con las coordenadas proyectadas: las tapas
-   * de ExtrudeGeometry usan (x, y) de `proyectar` como UV, así que basta escalar y desplazar.
+   * Malla por celda (temperatura, lluvia o vegetación). La textura se ubica con las coordenadas
+   * proyectadas: las tapas de ExtrudeGeometry usan (x, y) de `proyectar` como UV, así que basta
+   * escalar y desplazar. null = todavía cargando: cada modo conserva la que ya tenía.
    */
   setCalor(calor: Calor | null) {
-    if (calor === this.calor) return
-    this.calor = calor
-    if (this.texCalor) Object.values(this.texCalor).forEach((t) => t.dispose())
-    this.texCalor = null
-    if (calor) {
-      const nueva = () => {
-        const tx = new THREE.CanvasTexture(document.createElement('canvas'))
-        tx.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
-        tx.channel = 1 // uv1: tapas y paredes con la posición proyectada
-        tx.repeat.set(1 / (COSLAT * K * calor.spanLon), 1 / (K * calor.spanLat))
-        tx.offset.set((LON0 - calor.lonMin) / calor.spanLon, (LAT0 - calor.latMin) / calor.spanLat)
-        return tx
-      }
-      this.texCalor = { real: nueva(), punteado: nueva(), apagado: nueva() }
-      this.dibujarCalor()
-    }
+    if (!calor) return
+    const clave = claveCalor(calor)
+    const antes = this.calores.get(clave)
+    if (antes === calor) return
+    if (clave === (this.veg ? 'vegetacion' : this.variable)) this.fundir()
+    this.calores.set(clave, calor)
+    if (antes) this.soltarTexturas(antes)
+    if (clave === 'vegetacion') this.prepararVegetacion()
     this.pintar()
   }
 
-  /** Repinta el calor (media o año) y sus variantes con los colores del tema. */
-  private dibujarCalor() {
-    if (!this.calor || !this.texCalor || !tieneAnio(this.calor, this.numeroAnio)) return
-    dibujarCalor(this.lienzoCalor, this.calor, this.numeroAnio)
-    const panel = this.color('--panel')
-    for (const [tipo, tx] of Object.entries(this.texCalor) as [TipoCalor, THREE.CanvasTexture][]) {
-      varianteCalor(tx.image as HTMLCanvasElement, this.lienzoCalor, tipo, panel)
-      tx.needsUpdate = true
+  /** Textura de la malla `c` para un estado, pintada con el año y el tema actuales (se crea al primer uso). */
+  private texturaCalor(c: Calor, tipo: TipoCalor) {
+    let t = this.texCalor.get(c)
+    if (!t) {
+      t = { tex: {}, firma: '' }
+      this.texCalor.set(c, t)
     }
+    let tx = t.tex[tipo]
+    if (!tx) {
+      tx = new THREE.CanvasTexture(document.createElement('canvas'))
+      tx.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+      tx.channel = 1 // uv1: tapas y paredes con la posición proyectada
+      tx.repeat.set(1 / (COSLAT * K * c.spanLon), 1 / (K * c.spanLat))
+      tx.offset.set((LON0 - c.lonMin) / c.spanLon, (LAT0 - c.latMin) / c.spanLat)
+      t.tex[tipo] = tx
+      t.firma = '' // se pinta abajo, con las demás de la misma malla
+    }
+    const firma = `${this.numeroAnio}|${this.versionTema}`
+    if (t.firma !== firma) {
+      t.firma = firma
+      dibujarCalor(this.lienzoCalor, c, this.numeroAnio)
+      const panel = this.color('--panel')
+      for (const [k, x] of Object.entries(t.tex) as [TipoCalor, THREE.CanvasTexture][]) {
+        varianteCalor(x.image as HTMLCanvasElement, this.lienzoCalor, k, panel)
+        x.needsUpdate = true
+      }
+    }
+    return tx
+  }
+
+  private soltarTexturas(c: Calor) {
+    for (const tx of Object.values(this.texCalor.get(c)?.tex ?? {})) tx.dispose()
+    this.texCalor.delete(c)
   }
 
   /**
-   * Modo «Vegetación»: no hay datos de los 25 departamentos, así que se aplanan y atenúan, y se
-   * dibujan encima los 5 recuadros medidos con el color de su tendencia.
+   * Guarda el color actual de cada tapa y empieza a fundirlo con el que viene (cuadro() lo anima):
+   * al cambiar de modo los colores pasan de uno a otro en vez de saltar.
+   */
+  private fundir() {
+    if (reducido() || !this.punteadas) return
+    for (const m of this.mallas) {
+      const P = m.material.userData.previo as Previo
+      const mapa = m.material.map
+      P.uPrevio.value = mapa
+      P.uPrevioMapa.value = mapa ? 1 : 0
+      if (mapa) P.uPrevioUV.value.set(mapa.repeat.x, mapa.repeat.y, mapa.offset.x, mapa.offset.y)
+      P.uPrevioColor.value.copy(m.material.color)
+    }
+    this.fundido = 0
+    this.tapa.uFundido.value = 0
+    this.sucio = true
+  }
+
+  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.webp (NaN sin la textura). */
+  private altitud = (lon: number, lat: number) => {
+    const E = this.elevacion
+    if (!E) return NaN
+    const S = 1024
+    const fx = ((lon - MUNDO.lon0) / (MUNDO.lon1 - MUNDO.lon0)) * S - 0.5
+    const fy = ((MUNDO.lat1 - lat) / (MUNDO.lat1 - MUNDO.lat0)) * S - 0.5
+    const x = Math.max(0, Math.min(S - 2, Math.floor(fx)))
+    const y = Math.max(0, Math.min(S - 2, Math.floor(fy)))
+    const tx = Math.min(1, Math.max(0, fx - x))
+    const ty = Math.min(1, Math.max(0, fy - y))
+    const i = y * S + x
+    const arriba = E[i] + (E[i + 1] - E[i]) * tx
+    const abajo = E[i + S] + (E[i + S + 1] - E[i + S]) * tx
+    return ((arriba + (abajo - arriba) * ty) / 255) * 6000
+  }
+
+  /**
+   * Con la malla de vegetación y la altitud (llegan en cualquier orden): NDVI, altitud y regiones
+   * de cada departamento (alturas y ficha) y el bosque.
+   */
+  private prepararVegetacion() {
+    const c = this.calores.get('vegetacion')
+    if (!c || !this.elevacion) return
+    this.ndvi = resumenPorDepto(c, this.localizar, this.altitud)
+    // Como en lluvia y temperatura: solo se nombran los extremos (los más y los menos verdes)
+    const { media, celdas } = this.ndvi
+    const orden = DEPARTAMENTOS.map((_, k) => k)
+      .filter((k) => celdas[k] > 0 && Number.isFinite(media[k]))
+      .sort((a, b) => media[b] - media[a])
+    const extremos = [...orden.slice(0, EXTREMOS_VEG), ...orden.slice(-EXTREMOS_VEG)]
+    this.etiquetasVeg.forEach((e, i) => (e.id = DEPARTAMENTOS[extremos[i]]?.id ?? ''))
+    this.textosVeg()
+    this.bosque.plantar(
+      c,
+      this.altitud,
+      this.localizar,
+      (lon, lat) => {
+        const v = proyectar([lon, lat])
+        return [v.x + this.mapa.position.x, -v.y + this.mapa.position.z]
+      },
+      celular(),
+    )
+    if (this.veg) {
+      this.alturas(false)
+      this.llenarTarjeta()
+    }
+    this.sucio = true
+  }
+
+  /** Lee la altitud del suelo una vez (la imagen ya está cargada para el relieve). */
+  private leerElevacion(img: CanvasImageSource) {
+    const S = 1024
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = S
+    const g = cv.getContext('2d', { willReadFrequently: true })
+    if (!g) return
+    g.drawImage(img, 0, 0, S, S)
+    const d = g.getImageData(0, 0, S, S).data
+    const r = new Uint8ClampedArray(S * S)
+    for (let i = 0; i < r.length; i++) r[i] = d[i * 4]
+    this.elevacion = r
+    this.prepararVegetacion()
+  }
+
+  /**
+   * Modo «Vegetación»: cada columna sube según el verdor medio (NDVI) de su departamento, la tapa
+   * muestra el NDVI por celda, crecen las plantas de cada zona y encima van los 5 recuadros medidos.
    */
   setVegetacion(on: boolean) {
     if (this.veg === on) return
+    this.fundir()
     this.veg = on
     this.ubicarCajasVeg()
     this.pintar()
@@ -1320,7 +1527,7 @@ export class EscenaPeru {
       down: texturaPunteada(this.color('--map-down')),
       green: texturaPunteada(this.color('--map-green')),
     }
-    this.dibujarCalor()
+    this.versionTema++ // las mallas se repintan con los colores nuevos al usarse
     this.pintar()
     this.actualizarParticulas()
   }
@@ -1374,11 +1581,27 @@ export class EscenaPeru {
    */
   private llenarTarjeta() {
     const T = this.tarjeta
-    // En el modo Vegetación la tarjeta mostraría lluvia o temperatura: no se muestra
-    const d = this.hover && !this.veg ? this.zonas[this.hover] : undefined
-    T.raiz.classList.toggle('on', !!d)
-    if (!d || !this.hover) return
-    const c = datosTarjeta(d, this.variable, this.idioma, this.anio?.valores[this.hover])
+    const id = this.hover
+    const d = id && !this.veg ? this.zonas[id] : undefined
+    // Modo Vegetación: el NDVI medio del departamento (no su lluvia ni su temperatura)
+    const k = id && this.veg ? DEPARTAMENTOS.findIndex((z) => z.id === id) : -1
+    const veg = this.calores.get('vegetacion')
+    const c =
+      id && d
+        ? datosTarjeta(d, this.variable, this.idioma, this.anio?.valores[id])
+        : id && k >= 0 && this.ndvi && veg && Number.isFinite(this.ndvi.media[k])
+          ? datosTarjetaVeg(
+              id,
+              this.ndvi.media[k],
+              this.ndvi.celdas[k],
+              [veg.anio0, veg.anio0 + veg.anios - 1],
+              this.idioma,
+              this.ndvi.altitud[k],
+              REGIONES.map((_, r) => this.ndvi!.regiones[k * 3 + r]),
+            )
+          : null
+    T.raiz.classList.toggle('on', !!c)
+    if (!c) return
     const fuerte = document.createElement('strong')
     const chico = document.createElement('small')
     fuerte.textContent = c.valor
@@ -1410,6 +1633,7 @@ export class EscenaPeru {
     if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
+    this.textosVeg()
     this.sucio = true
   }
 
@@ -1621,7 +1845,8 @@ export class EscenaPeru {
     this.relieve.geometry.dispose()
     this.mar.material.dispose()
     this.texturas.forEach((t) => t.dispose())
-    if (this.texCalor) Object.values(this.texCalor).forEach((t) => t.dispose())
+    for (const c of [...this.texCalor.keys()]) this.soltarTexturas(c)
+    this.bosque.destruir()
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     if (this.punteadas) Object.values(this.punteadas).forEach((t) => t.dispose())
     this.renderer.dispose()
@@ -1632,7 +1857,8 @@ export class EscenaPeru {
   private pintar() {
     if (!this.punteadas) return
     // Con malla (temperatura o lluvia): la tapa muestra el color por celda; el estado va en punteado y opacidad
-    const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
+    const c = this.calor
+    const malla = c && tieneAnio(c, this.numeroAnio) ? c : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -1642,26 +1868,22 @@ export class EscenaPeru {
       let transparente = false
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
-      if (this.veg && calor) {
+      if (this.veg && malla) {
         // Modo Vegetación: el NDVI por celda, pleno (la tendencia va solo en los 5 recuadros)
         mat.color.set(0xffffff)
-        mapa = calor.real
+        mapa = this.texturaCalor(malla, 'real')
       } else if (this.veg) {
         // Sin malla todavía: el departamento queda de fondo, sin dato
         mat.color.set(this.color('--muted'))
         transparente = true
         opacidad = 0.22
-      } else if (calor) {
+      } else if (malla) {
         // Opaco siempre: el estado va pintado en la textura (punteado o velo), sin columnas cortadas
         mat.color.set(0xffffff)
-        mapa =
-          calor[
-            d.status === 'real'
-              ? 'real'
-              : d.status === 'posible_casualidad'
-                ? 'punteado'
-                : 'apagado'
-          ]
+        mapa = this.texturaCalor(
+          malla,
+          d.status === 'real' ? 'real' : d.status === 'posible_casualidad' ? 'punteado' : 'apagado',
+        )
       } else if (this.anio && valorAnio != null)
         mat.color.set(colorAnomalia(valorAnio, this.anio.max, this.variable))
       else if (d.status === 'real') mat.color.set(this.color(`--map-${clave}`))
@@ -1676,7 +1898,7 @@ export class EscenaPeru {
         opacidad = 0.16
       }
       // Recompilar el shader solo si cambia lo que lo define (textura, transparencia o modo calor)
-      const conCalor = !!calor
+      const conCalor = !!malla
       const defs = (mat.defines ??= {})
       if (!!mat.map !== !!mapa || mat.transparent !== transparente || 'CALOR' in defs !== conCalor)
         mat.needsUpdate = true
@@ -1699,12 +1921,16 @@ export class EscenaPeru {
 
   private alturas(instantaneo: boolean) {
     const max = Math.max(...Object.values(this.zonas).map((d) => Math.abs(d.slope_per_decade))) || 1
-    for (const m of this.mallas) {
+    // Modo Vegetación: la altura es el verdor medio (la selva arriba, el desierto de la costa abajo)
+    const ndvi = this.veg ? this.ndvi?.media : undefined
+    const maxNdvi = ndvi ? Math.max(...ndvi.filter(Number.isFinite)) || 1 : 1
+    this.mallas.forEach((m, i) => {
       const d = this.zonas[m.userData.id]
-      if (!d) continue
+      if (!d && !ndvi) return
       const valorAnio = this.anio?.valores[m.userData.id]
-      const h =
-        d.status === 'pocos_datos' || this.veg
+      const h = ndvi
+        ? (Math.max(0, ndvi[i]) / maxNdvi) * ALTURA_MAX
+        : !d || d.status === 'pocos_datos' || this.veg
           ? 0.05
           : this.anio && valorAnio != null
             ? Math.max(-1.1, Math.min(1.1, valorAnio / this.anio.max)) * ALTURA_MAX
@@ -1714,7 +1940,7 @@ export class EscenaPeru {
         m.userData.h = m.userData.objetivo
         m.scale.z = m.userData.h
       }
-    }
+    })
     this.sucio = true
   }
 
@@ -1733,11 +1959,31 @@ export class EscenaPeru {
     el.replaceChildren(NOMBRE[id], small)
   }
 
+  /** Nombre y NDVI medio de cada departamento extremo del modo Vegetación. */
+  private textosVeg() {
+    if (!this.ndvi) return
+    for (const e of this.etiquetasVeg) {
+      if (!e.id) continue
+      const k = DEPARTAMENTOS.findIndex((d) => d.id === e.id)
+      const small = document.createElement('small')
+      small.textContent =
+        'NDVI ' +
+        this.ndvi.media[k].toLocaleString(this.idioma, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      e.el.replaceChildren(NOMBRE[e.id], small)
+      e.el.classList.toggle('sel', e.id === this.sel)
+    }
+    this.sucio = true
+  }
+
   private textosEtiquetas() {
     for (const L of this.etiquetas) {
       this.texto(L.el, L.id)
       L.el.classList.toggle('sel', L.id === this.sel)
     }
+    for (const e of this.etiquetasVeg) e.el.classList.toggle('sel', e.id === this.sel)
     // En el modo Vegetación no va la etiqueta con el valor del departamento elegido
     const aparte = !this.veg && !!this.sel && !conEtiquetaFija(this.sel)
     this.etiquetaSel.hidden = !aparte
@@ -1747,6 +1993,8 @@ export class EscenaPeru {
 
   private formatearAnomalia(a: number) {
     const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(a).toFixed(2).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(a) * 100) + ' %'
@@ -1754,6 +2002,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(v).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'
@@ -1889,13 +2139,18 @@ export class EscenaPeru {
     }
     let moviendo = false
     const quieto = reducido()
+    // Interpolaciones por tiempo y no por cuadro: igual de suaves a 30, 60 o 120 cuadros/s
+    // (f es lo que avanzan en un cuadro a 60/s, como antes)
+    const suave = (f: number) => 1 - Math.pow(1 - f, dt * 60)
     const dc = this.corrimientoObjetivo() - this.corrimiento
     if (Math.abs(dc) > 0.5) {
-      this.corrimiento += quieto ? dc : dc * 0.12
+      this.corrimiento += quieto ? dc : dc * suave(0.12)
       this.aplicarCorrimiento()
       moviendo = true
     }
-    for (const m of this.mallas) {
+    const kh = suave(this.anio || this.veg ? 0.07 : 0.12)
+    const kz = suave(0.2)
+    this.mallas.forEach((m, i) => {
       const id = m.userData.id
       const dh = m.userData.objetivo - m.userData.h
       const eleva = id === this.sel ? ELEVA_SEL : id === this.hover ? ELEVA_HOVER : 0
@@ -1903,20 +2158,31 @@ export class EscenaPeru {
       const db = (id === this.hover ? 1 : 0) - m.userData.brillo
       if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) {
         moviendo = true
-        m.userData.h += dh * (this.anio ? 0.07 : 0.12)
+        m.userData.h += dh * kh
         m.scale.z = m.userData.h
-        m.position.z += dz * 0.2
+        m.position.z += dz * kz
       }
       if (db !== 0) {
         // entra rápido y sale más lento; con «reducir movimiento», de golpe
         m.userData.brillo =
           quieto || Math.abs(db) < 0.01
             ? m.userData.brillo + db
-            : m.userData.brillo + db * (db > 0 ? 0.35 : 0.18)
+            : m.userData.brillo + db * suave(db > 0 ? 0.35 : 0.18)
         m.material.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
         moviendo = true
       }
+      this.topes[i] = m.position.z + m.scale.z
+    })
+    // Cambio de modo: el color de las tapas pasa del anterior al nuevo (curva suave)
+    if (this.fundido < 1) {
+      this.fundido = quieto ? 1 : Math.min(1, this.fundido + dt / FUNDIDO)
+      const f = this.fundido
+      this.tapa.uFundido.value = f * f * (3 - 2 * f)
+      moviendo = true
     }
+    // Las plantas crecen (o se van) sobre la cara de cada departamento, que también se mueve
+    const conPlantas = this.veg && this.modo === 'explorar'
+    if (this.bosque.paso(dt, conPlantas, this.topes, quieto)) moviendo = true
     this.moviendo = moviendo
     if (this.puntero) {
       const e = this.puntero
@@ -2021,6 +2287,19 @@ export class EscenaPeru {
       const m = malla(mv.departamento)
       if (conVeg && m) this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z)
     }
+    // Departamentos extremos (en celular, 2 de cada punta), sobre su columna como en lluvia y temperatura
+    this.etiquetasVeg.forEach((e, i) => {
+      const m = e.id ? malla(e.id) : undefined
+      const ver = conVeg && !!m && (!celular() || i % EXTREMOS_VEG < 2)
+      if (e.el.hidden === ver) e.el.hidden = !ver
+      if (ver && m)
+        this.ubicarEtiqueta(
+          e.el,
+          m.userData.centro.x,
+          m.position.z + m.scale.z + 0.4,
+          m.userData.centro.z,
+        )
+    })
     for (const p of this.etiquetasPais) {
       // En celular no se muestran los nombres de países (v12)
       if (p.el.hidden !== celular()) p.el.hidden = celular()

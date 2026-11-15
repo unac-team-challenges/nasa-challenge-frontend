@@ -11,6 +11,7 @@ export function cifraCampo(d: Zona, variable: Variable, idioma: Idioma) {
     return d.pct_change_per_decade != null
       ? `${Math.round(Math.abs(d.pct_change_per_decade))} %`
       : `${Math.round(Math.abs(d.slope_per_decade))} mm`
+  if (variable === 'vegetacion') return `${num(d.slope_per_decade, 3, idioma)} NDVI`
   return `${num(d.slope_per_decade, 2, idioma)} °C`
 }
 
@@ -89,6 +90,7 @@ export const metrosEquivalentes = (grados: number) =>
  */
 export function titularCampo(d: Zona, variable: Variable, rango: Rango, idioma: Idioma) {
   const t = TEXTOS[idioma]
+  if (variable === 'vegetacion') return titularVerdor(d, rango, idioma)
   const lluvia = variable === 'lluvia'
   const claro = d.status === 'real'
   const sube = d.slope_per_decade >= 0
@@ -117,5 +119,41 @@ export function titularCampo(d: Zona, variable: Variable, rango: Rango, idioma: 
       claro && !sinPct ? t.campoRitmo(cifra, sube, desde, hasta) : t.campoPeriodo(desde, hasta),
     /** Metros de altura equivalentes (solo calor con cambio claro) */
     metros: claro && !lluvia ? metrosEquivalentes(total) : null,
+  }
+}
+
+/**
+ * Cuánto cambió el verdor en el periodo frente a su verdor promedio (la recta de Sen en el año
+ * central): «apenas» bajo 3 %, «un poco» bajo 10 %, «bastante» desde ahí. El NDVI no trae % y sus
+ * pendientes son chicas (0,003–0,016 por década): sin esto, todo cambio sonaría igual.
+ */
+export function nivelVerdor(
+  d: Pick<Zona, 'slope_per_decade' | 'intercept'>,
+  desde: number,
+  hasta: number,
+): 'apenas' | 'poco' | 'bastante' {
+  const total = Math.abs(cambioEnPeriodo(d.slope_per_decade, desde, hasta))
+  const media =
+    d.intercept != null ? d.intercept + (d.slope_per_decade / 10) * ((desde + hasta) / 2) : 0
+  const pct = media > 0 ? (total / media) * 100 : 0
+  return pct < 3 ? 'apenas' : pct < 10 ? 'poco' : 'bastante'
+}
+
+/** El titular del verdor: «Desde 2001, el campo está un poco más verde que antes». */
+function titularVerdor(d: Zona, rango: Rango, idioma: Idioma) {
+  const t = TEXTOS[idioma]
+  const claro = d.status === 'real'
+  const sube = d.slope_per_decade >= 0
+  const { year_start: desde, year_end: hasta } = rango
+  return {
+    claro,
+    sube,
+    titular: claro
+      ? t.campoFrase.vegetacion(desde, nivelVerdor(d, desde, hasta), sube)
+      : t.campoSinCambio.vegetacion,
+    debajo: claro
+      ? t.campoRitmoVerde(num(d.slope_per_decade, 3, idioma), sube, desde, hasta)
+      : t.campoPeriodo(desde, hasta),
+    metros: null,
   }
 }

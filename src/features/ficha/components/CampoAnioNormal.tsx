@@ -17,7 +17,7 @@ export function CampoAnioNormal() {
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
   const { serie: pts } = useDetalle(sel)
-  if (!pts || pts.length < 4) return null
+  if (!pts || pts.length < 4 || variable === 'vegetacion') return null
   const n = anioNormal(pts)
   const lluvia = variable === 'lluvia'
   const mm = (v: number) => `${miles(Math.round(v), idioma)} mm`

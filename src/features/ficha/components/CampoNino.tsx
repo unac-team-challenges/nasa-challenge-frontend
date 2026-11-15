@@ -24,7 +24,7 @@ export function CampoNino() {
   const { rango } = useVista()
   const { serie: pts } = useDetalle(sel)
   const zonas = useZonas()
-  if (!pts || !sel) return null
+  if (!pts || !sel || variable === 'vegetacion') return null // el NDVI no se explica con El Niño
   const e = efectoNino(pts, variable, ninoEn(rango), zonas[sel])
   const lluvia = variable === 'lluvia'
 

@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
   BookOpen,
-  ChevronDown,
   Database,
   Sigma,
   TrafficCone,
@@ -33,7 +32,7 @@ const tile =
 /** Solo el idioma viaja a /metodologia (las demás opciones son del mapa) */
 const conIdioma = (p: { lang?: 'es' | 'en' }) => ({ lang: p.lang })
 
-/** Menú "Metodología" de la cabecera: la página entera o directo a una de sus secciones. */
+/** Menú "Metodología" (botón flotante, abajo a la derecha): la página entera o directo a una de sus secciones. */
 export function MenuMetodologia() {
   const idioma = useApp((s) => s.idioma)
   const activa = useRuta() === 'metodologia'
@@ -53,21 +52,19 @@ export function MenuMetodologia() {
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
+        {/* Botón flotante (ya no va en la cabecera): abajo a la derecha en escritorio */}
         <Button
+          size="icon"
           variant="ghost"
+          aria-label={activa ? `${t.metodologiaCorto} ${t.paginaActual}` : t.metodologiaCorto}
+          title={t.metodologiaCorto}
           data-activa={activa || undefined}
-          className="group relative rounded-m px-2 hover:bg-panel-2 hover:no-underline data-[state=open]:bg-panel-2 data-activa:text-accent-text sm:px-3"
+          className={`vidrio z-40 size-12 rounded-full text-fg hover:bg-panel-2 data-[state=open]:bg-panel-2 data-activa:text-accent-text min-[901px]:fixed min-[901px]:top-auto min-[901px]:right-5 min-[901px]:bottom-5 ${
+            // En celular, flotando abajo taparía el texto: va arriba a la derecha del mapa
+            activa ? 'fixed right-4 bottom-4' : 'absolute top-3 right-3 max-[900px]:size-11'
+          }`}
         >
-          <BookOpen className="size-4.5" aria-hidden="true" />
-          <span className="max-sm:sr-only">{t.metodologiaCorto}</span>
-          {activa && <span className="sr-only">{t.paginaActual}</span>}
-          <ChevronDown
-            className="size-3.5 text-muted transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none max-sm:hidden"
-            aria-hidden="true"
-          />
-          {activa && (
-            <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
-          )}
+          <BookOpen className="size-5" aria-hidden="true" />
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -77,9 +74,10 @@ export function MenuMetodologia() {
             navego.current = false
           }}
           align="end"
-          sideOffset={8}
+          side="top"
+          sideOffset={10}
           collisionPadding={12}
-          className="z-50 w-[min(22rem,calc(100vw-24px))] rounded-l border border-line bg-panel p-1.5 text-sm shadow-[0_18px_40px_-12px_var(--shadow)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1 motion-reduce:animate-none"
+          className="z-50 w-[min(22rem,calc(100vw-24px))] rounded-l border border-line bg-panel p-1.5 text-sm shadow-[0_18px_40px_-12px_var(--shadow)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-1 motion-reduce:animate-none"
         >
           <DropdownMenu.Item asChild onSelect={() => (navego.current = true)}>
             <Link

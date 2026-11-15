@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 import { coberturaPaneles } from './apoyo/cobertura'
 
 // Proyecto «celular» (Pixel 7, ver playwright.config.ts). Tres comprobaciones del documento de UX,
@@ -38,7 +39,7 @@ test('el idioma muestra cuál está activo y cambiarlo lo deja en la URL (mejora
   await idioma.getByRole('button', { name: 'ES' }).tap()
   const espanol = page.getByRole('group', { name: 'Cambiar idioma' })
   await expect(espanol.getByRole('button', { name: 'ES' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page).not.toHaveURL(/lang=/)
+  await expect(page).toHaveURL(/lang=es/) // el inglés es el idioma por defecto
 })
 
 test('con todo cerrado, los paneles tapan menos del 25 % del mapa (mejora 3)', async ({ page }) => {

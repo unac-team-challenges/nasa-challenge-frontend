@@ -7,21 +7,21 @@
 
 @theme inline {
   --color-background: var(--bg);
-  --color-foreground: var(--text);
+  --color-foreground: var(--fg);
   --color-card: var(--panel);
-  --color-card-foreground: var(--text);
+  --color-card-foreground: var(--fg);
   --color-popover: var(--panel);
-  --color-popover-foreground: var(--text);
+  --color-popover-foreground: var(--fg);
   --color-primary: var(--accent);
   --color-primary-foreground: #fff;
-  --color-secondary: var(--floor);
-  --color-secondary-foreground: var(--text);
-  --color-muted: var(--floor);
-  --color-muted-foreground: color-mix(in oklab, var(--text) 65%, transparent);
+  --color-secondary: var(--line);
+  --color-secondary-foreground: var(--fg);
+  --color-muted: var(--line);
+  --color-muted-foreground: color-mix(in oklab, var(--fg) 65%, transparent);
   --color-accent-foreground: #fff;
   --color-destructive: #b3261e;
-  --color-border: var(--floor);
-  --color-input: var(--floor);
+  --color-border: var(--line);
+  --color-input: var(--line);
   --color-ring: var(--accent);
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;

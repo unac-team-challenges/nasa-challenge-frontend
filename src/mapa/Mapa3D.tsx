@@ -2,6 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { TEXTOS } from '../i18n/textos'
 import { useRango, useZonas } from '../lib/useZonas'
 import { anomaliasAnio } from '../data/datos'
+import { useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
 import { EscenaPeru, type ModoMapa } from './escena'
 import { Mapa2D } from './Mapa2D'
@@ -19,7 +20,14 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, variable, tema, sel, conWebgl, anio, periodo } = useApp()
+  const { idioma, tema, conWebgl, periodo } = useApp()
+  const busqueda = useBusqueda()
+  const { variable, sel, anio } = busqueda
+  // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
+  const busquedaRef = useRef(busqueda)
+  useEffect(() => {
+    busquedaRef.current = busqueda
+  })
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const rango = useRango()
@@ -34,14 +42,14 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
     const e = new EscenaPeru(contenedor.current, capa.current, {
       oceano: TEXTOS[useApp.getState().idioma].ocean,
       modo,
-      alElegir: (id) => useApp.getState().seleccionar(id),
+      alElegir: (id) => busquedaRef.current.seleccionar(id),
       alGirar: (g) => alGirarRef.current?.(g),
     })
     escena.current = e
     if (controlRef) controlRef.current = e
     e.aplicarTema()
     e.setIdioma(useApp.getState().idioma)
-    const { variable: v, sel: s } = useApp.getState()
+    const { variable: v, sel: s } = busquedaRef.current
     e.setDatos(zonas, v, true)
     if (modo === 'explorar' && s) e.seleccionar(s, true)
     alGirarRef.current?.(modo === 'inicio' || !s)

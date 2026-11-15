@@ -1,27 +1,32 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { NOMBRE } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { fmtValor } from '../lib/formato'
 import { useRango, useZonas } from '../lib/useZonas'
-import { EscenaPeru } from '../mapa/escena'
+import type { EscenaPeru } from '../mapa/escena'
 import { Mapa2D } from '../mapa/Mapa2D'
-import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
+import { useBusqueda } from '../lib/busqueda'
 import { colorDireccion } from '../lib/direccion'
-import { Ficha } from './Ficha'
 import { BarraTiempo } from './BarraTiempo'
+import { MapaSkeleton } from './Esperas'
+import { Ficha } from './Ficha'
 import { Leyenda } from './Leyenda'
+import { Button } from './ui/button'
 
-const boton =
-  'presionable inline-flex size-10 cursor-pointer items-center justify-center rounded-s border border-line-2 bg-panel/92 hover:border-fg'
+// three.js se descarga aparte: mientras llega se ve el esqueleto del mapa
+const Mapa3D = lazy(() => import('../mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+
+const boton = 'bg-panel/92'
 
 /**
  * Explorador (v10): el mapa abre a todo el ancho con el informe minimizado;
  * al tocar una zona, el informe se abre solo.
  */
 export function Explorador() {
-  const { idioma, variable, sel, sinNino, informeMin, setInformeMin } = useApp()
-  const { conWebgl, modoMapa, setModoMapa, anio } = useApp()
+  const { idioma, sinNino, informeMin, setInformeMin } = useApp()
+  const { conWebgl, modoMapa, setModoMapa } = useApp()
+  const { variable, sel, anio } = useBusqueda()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
@@ -44,7 +49,13 @@ export function Explorador() {
       <div className="relative flex min-w-0 flex-col border-b border-line min-[901px]:border-r min-[901px]:border-b-0">
         <div className="relative h-[62vh] min-h-80 flex-none min-[901px]:h-auto min-[901px]:flex-1">
           {/* En 2D el 3D se desmonta: libera la tarjeta gráfica */}
-          {en3d ? <Mapa3D modo="explorar" controlRef={escena} alGirar={setGirando} /> : <Mapa2D />}
+          {en3d ? (
+            <Suspense fallback={<MapaSkeleton explorar />}>
+              <Mapa3D modo="explorar" controlRef={escena} alGirar={setGirando} />
+            </Suspense>
+          ) : (
+            <Mapa2D />
+          )}
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="pointer-events-auto flex flex-wrap items-baseline gap-2.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
@@ -75,23 +86,21 @@ export function Explorador() {
                 aria-label={t.vistaMapa}
               >
                 {(['3d', '2d'] as const).map((m) => (
-                  <button
+                  <Button
                     key={m}
-                    type="button"
+                    variant="toggle"
+                    size="sm"
                     aria-pressed={modoMapa === m}
                     onClick={() => setModoMapa(m)}
-                    className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm ${
-                      modoMapa === m ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
-                    }`}
                   >
                     {m.toUpperCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
-            <button
-              type="button"
-              className={`${boton} disabled:cursor-default disabled:opacity-40`}
+            <Button
+              size="icon"
+              className={boton}
               disabled={!en3d}
               aria-pressed={girando}
               aria-label={girando ? t.spinOn : t.spinOff}
@@ -108,10 +117,10 @@ export function Explorador() {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
-            <button
-              type="button"
-              className={`${boton} disabled:cursor-default disabled:opacity-40`}
+            </Button>
+            <Button
+              size="icon"
+              className={boton}
               disabled={!en3d}
               aria-label={t.recenter}
               title={t.recenter}
@@ -126,7 +135,7 @@ export function Explorador() {
                   strokeLinecap="round"
                 />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

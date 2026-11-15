@@ -1,12 +1,18 @@
+import { Link, useNavigate } from '@tanstack/react-router'
+import { lazy, Suspense } from 'react'
 import { ORDEN_PERFILES, TEXTOS } from '../i18n/textos'
 import { useVista } from '../lib/useZonas'
-import { Mapa3D } from '../mapa/Mapa3D'
 import { useApp } from '../store'
-import { FranjasPeru } from './FranjasPeru'
+import { MapaSkeleton } from './Esperas'
+import { Button } from './ui/button'
 
-/** Portada: el Perú en 3D, la pregunta, las franjas, los 4 perfiles y el botón principal. */
+// three.js pesa casi la mitad de la web: se descarga aparte mientras se ve el esqueleto
+const Mapa3D = lazy(() => import('../mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+
+/** Portada: el Perú en 3D, la pregunta, los 2 perfiles (agricultor y estudiante) y el botón principal. */
 export function Portada() {
-  const { idioma, setPerfil, conWebgl } = useApp()
+  const { idioma, conWebgl } = useApp()
+  const navigate = useNavigate()
   const t = TEXTOS[idioma]
   // La portada habla de la lluvia: sus años y su fuente
   const { rango, fuente } = useVista('lluvia')
@@ -22,7 +28,6 @@ export function Portada() {
             {t.heroH}
           </h1>
           <p className="m-0 max-w-120 text-lg text-muted">{t.heroLead(a, b)}</p>
-          <FranjasPeru />
           <div className="flex flex-col gap-2.5">
             <h2 className="m-0 text-[15px] font-semibold">{t.whoH}</h2>
             <div className="grid grid-cols-1 gap-2 min-[521px]:grid-cols-2">
@@ -33,10 +38,9 @@ export function Portada() {
                     key={p}
                     type="button"
                     className="presionable flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-m border border-line-2 bg-panel px-3.5 py-3 text-left hover:border-accent"
-                    onClick={() => {
-                      setPerfil(p)
-                      location.hash = 'explorar'
-                    }}
+                    onClick={() =>
+                      navigate({ to: '/explorar', search: (s) => ({ ...s, perfil: p }) })
+                    }
                   >
                     <b className="text-[15px]">{nombre}</b>
                     <span className="text-[13px] text-muted">{pista}</span>
@@ -46,17 +50,21 @@ export function Portada() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a
-              href="#explorar"
-              className="presionable inline-flex min-h-10 items-center rounded-s border border-accent bg-accent px-3.5 text-sm font-semibold text-accent-fg no-underline"
-            >
-              {t.exploreBtn}
-            </a>
+            <Button asChild variant="default">
+              <Link to="/explorar" search={(s) => s}>
+                {t.exploreBtn}
+              </Link>
+            </Button>
             <span className="text-[13px] text-muted">{t.fuenteReal(fuente)}</span>
+            <Link to="/metodologia" className="text-[13px] text-accent-text">
+              {t.metodologiaEnlace}
+            </Link>
           </div>
         </div>
         <div className="relative order-first min-h-100 overflow-hidden rounded-l border border-line min-[901px]:order-none min-[901px]:min-h-105">
-          <Mapa3D modo="inicio" />
+          <Suspense fallback={<MapaSkeleton />}>
+            <Mapa3D modo="inicio" />
+          </Suspense>
           {/* "Arrastra para girar" solo tiene sentido en 3D */}
           {conWebgl && (
             <p className="pointer-events-none absolute right-4 bottom-3.5 left-4 z-[2] m-0 text-[13px] text-muted">

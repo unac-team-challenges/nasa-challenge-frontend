@@ -9,6 +9,10 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
-  // e2e/ es de Playwright, no de Vitest
-  test: { exclude: [...configDefaults.exclude, 'e2e/**'] },
+  test: {
+    // e2e/ es de Playwright, no de Vitest
+    exclude: [...configDefaults.exclude, 'e2e/**'],
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+  },
 })

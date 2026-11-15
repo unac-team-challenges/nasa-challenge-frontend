@@ -35,6 +35,7 @@ const es = {
   mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
   mapSub: (a: number, b: number) => `Cambio por década, ${a}–${b}`,
   legSum: 'Cómo leer el mapa',
+  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -245,6 +246,7 @@ const en: Textos = {
   mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
   mapSub: (a, b) => `Change per decade, ${a}–${b}`,
   legSum: 'How to read the map',
+  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],

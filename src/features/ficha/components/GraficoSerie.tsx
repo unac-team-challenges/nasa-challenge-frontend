@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useMemo } from 'react'
 import { NOMBRE, ninoEn, type Variable, type Zona } from '@/data/datos'
 import { TEXTOS, type Idioma } from '@/i18n/textos'
 import { fmtValor, num, numConSigno } from '@/utils/formato'
@@ -38,8 +39,9 @@ interface Props {
  */
 export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, anio }: Props) {
   const t = TEXTOS[idioma]
+  // Los mismos datos mientras no cambie la serie: al mover el año, Recharts no rehace ni re-anima
+  const filas = useMemo(() => (pts && pts.length > 1 ? filasSerie(pts, d) : []), [pts, d])
   if (!pts || pts.length < 2) return null
-  const filas = filasSerie(pts, d)
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y
   const temp = variable === 'temperatura'

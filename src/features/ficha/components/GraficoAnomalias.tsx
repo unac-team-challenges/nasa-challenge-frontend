@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useMemo } from 'react'
 import { NOMBRE, ninoEn, type Variable } from '@/data/datos'
 import { TEXTOS, type Idioma } from '@/i18n/textos'
 import { colorDireccion } from '@/utils/direccion'
@@ -36,8 +37,9 @@ interface Props {
  */
 export function GraficoAnomalias({ id, variable, pts, sinNino, idioma, anio }: Props) {
   const t = TEXTOS[idioma]
+  // Los mismos datos mientras no cambie la serie: al mover el año, Recharts no rehace ni re-anima
+  const filas = useMemo(() => (pts ? anomalias(pts, variable) : []), [pts, variable])
   if (!pts || pts.length < 2) return null
-  const filas = anomalias(pts, variable)
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y
   const temp = variable === 'temperatura'

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { anomaliasPeru } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { colorAnomalia } from '@/utils/color'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia } from '@/utils/formato'
 import { useRango } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -17,7 +17,8 @@ const PASO_MS = 850
  */
 export function BarraTiempo() {
   const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
-  const { variable, anio, setAnio } = useBusqueda()
+  const { variable, setAnio } = useBusqueda()
+  const anio = useAnio()
   // El Play lee el año y la función más recientes sin reiniciar su reloj
   const vivo = useRef({ anio, setAnio })
   useEffect(() => {

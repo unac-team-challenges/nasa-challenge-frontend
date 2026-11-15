@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { NOMBRE, REGION, zonasProbadas } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
@@ -29,8 +29,10 @@ import { Tendencia } from '@/features/ficha/components/Tendencia'
  * lecturas de esa misma serie pensadas para su campaña (años malos, El Niño, año normal) y
  * a dónde ir por avisos oficiales; «¿Coinciden dos fuentes?» queda solo para el estudiante.
  * El estudiante suma lo que pide una tesis: robustez, ranking, limitaciones, descargas y cita.
+ * Va con memo: no tiene props, así que no se redibuja cuando se redibuja la ruta (al cambiar el
+ * año de la barra de tiempo); solo cuando cambia lo que lee.
  */
-export function Ficha() {
+export const Ficha = memo(function Ficha() {
   const idioma = useApp((s) => s.idioma)
   const { variable, perfil, sel } = useBusqueda()
   const t = TEXTOS[idioma]
@@ -132,4 +134,4 @@ export function Ficha() {
       <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>
     </div>
   )
-}
+})

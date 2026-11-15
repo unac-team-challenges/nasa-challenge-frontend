@@ -41,18 +41,30 @@ export type Busqueda = z.output<typeof esquema>
 
 export const validarBusqueda = (s: Record<string, unknown>): Busqueda => esquema.parse(s)
 
-/** Variable, perfil, zona y año de la URL, con sus funciones para cambiarlos (sin apilar historial). */
+/**
+ * Año de la máquina del tiempo (null = tendencia). Va aparte de useBusqueda a propósito: al
+ * arrastrar la barra cambia muchas veces por segundo, y solo deben redibujarse quienes lo usan.
+ */
+export function useAnio(): number | null {
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).anio ?? null })
+}
+
+/**
+ * Variable, perfil y zona de la URL, con sus funciones para cambiarlos (sin apilar historial).
+ * Cada valor se lee con un selector: el componente se redibuja solo si cambia ese valor, no al
+ * cambiar el año (para el año, useAnio).
+ */
 export function useBusqueda() {
-  const s = useSearch({ strict: false }) as Busqueda
-  const { id } = useParams({ strict: false }) as { id?: string }
+  const variable = useSearch({ strict: false, select: (s) => (s as Busqueda).variable })
+  const perfil = useSearch({ strict: false, select: (s) => (s as Busqueda).perfil })
+  const id = useParams({ strict: false, select: (p) => (p as { id?: string }).id })
   const navigate = useNavigate()
   const poner = (cambio: Partial<Busqueda>) =>
     navigate({ to: '.', search: (p: Busqueda) => ({ ...p, ...cambio }), replace: true })
   return {
-    variable: s.variable ?? 'lluvia',
-    perfil: s.perfil ?? 'agricultor',
+    variable: variable ?? 'lluvia',
+    perfil: perfil ?? 'agricultor',
     sel: id ?? null,
-    anio: s.anio ?? null,
     setVariable: (variable: Variable) => {
       useApp.getState().setSinNino(false)
       return poner({ variable })

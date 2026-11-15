@@ -7,7 +7,7 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { escenaActiva } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
@@ -34,7 +34,8 @@ const RETRASO_INFO_S = 1.3
 export function Explorador() {
   const { idioma, sinNino, informeMin, setInformeMin } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
-  const { variable, sel, anio, seleccionar } = useBusqueda()
+  const { variable, sel, seleccionar } = useBusqueda()
+  const anio = useAnio()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()

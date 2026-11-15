@@ -3,6 +3,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtP, fmtValor } from '@/utils/formato'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { robustez } from '@/features/ficha/utils/estudiante'
 
@@ -18,7 +19,9 @@ const SELLO = {
  * con pendiente, q y estado, y un veredicto. Es la pregunta que hace un jurado de tesis.
  */
 export function EstRobustez() {
-  const { idioma, periodo, sinNino } = useApp()
+  const { idioma, periodo, sinNino } = useApp(
+    useShallow((s) => ({ idioma: s.idioma, periodo: s.periodo, sinNino: s.sinNino })),
+  )
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
   if (!sel) return null

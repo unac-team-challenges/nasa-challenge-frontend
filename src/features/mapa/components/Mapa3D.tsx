@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
-import { esUbigeo, useBusqueda } from '@/lib/busqueda'
+import { esUbigeo, useAnio, useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
@@ -23,7 +23,8 @@ export function Mapa3D({ modo }: Props) {
   const escena = useRef<EscenaPeru | null>(null)
   const { idioma, tema, conWebgl, periodo } = useApp()
   const busqueda = useBusqueda()
-  const { variable, sel, anio } = busqueda
+  const { variable, sel } = busqueda
+  const anio = useAnio()
   // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
   const busquedaRef = useRef(busqueda)
   useEffect(() => {

@@ -41,6 +41,8 @@ const COSLAT = Math.cos((LAT0 * Math.PI) / 180)
 const LUZ = Math.PI
 /** Zonas con etiqueta flotante. */
 const CLAVE = ['24', '20', '15', '21', '16', '08']
+/** En celular solo estas llevan etiqueta fija (Tumbes y Piura quedaban bajo los paneles); la elegida siempre tiene la suya. */
+const CLAVE_CELULAR = ['15', '21', '16', '08']
 const DESPLAZA_ETIQUETA: Record<string, number> = { '24': -30 } // Tumbes queda pegado a Piura
 const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
   inicio: { pos: [8, 29, 66], tgt: [0, -1, 5] },
@@ -104,6 +106,9 @@ void main() {
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
+/** ¿Esta zona lleva etiqueta fija en esta pantalla? Si no, la elegida usa la etiqueta suelta. */
+const conEtiquetaFija = (id: string) =>
+  CLAVE.includes(id) && (!celular() || CLAVE_CELULAR.includes(id))
 
 interface DatosMalla {
   id: string
@@ -878,7 +883,9 @@ export class EscenaPeru {
     const fg = this.color('--fg')
     const U = this.mar.material.uniforms
     U.uHondo.value.set(hexMix(mar, claro ? fg : '#000000', claro ? 0.18 : 0.4))
-    U.uSomero.value.set(hexMix(mar, claro ? '#ffffff' : this.color('--accent-soft'), claro ? 0.35 : 0.2))
+    U.uSomero.value.set(
+      hexMix(mar, claro ? '#ffffff' : this.color('--accent-soft'), claro ? 0.35 : 0.2),
+    )
     U.uEspuma.value.set(hexMix(mar, claro ? '#ffffff' : fg, claro ? 0.8 : 0.35))
     U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
     U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
@@ -998,7 +1005,8 @@ export class EscenaPeru {
     this.animalHover = a
     if (!a) {
       this.tip.hidden = true
-      this.renderer.domElement.style.cursor = this.hover && this.modo === 'explorar' ? 'pointer' : ''
+      this.renderer.domElement.style.cursor =
+        this.hover && this.modo === 'explorar' ? 'pointer' : ''
       return
     }
     const b = this.contenedor.getBoundingClientRect()
@@ -1241,7 +1249,7 @@ export class EscenaPeru {
       this.texto(L.el, L.id)
       L.el.classList.toggle('sel', L.id === this.sel)
     }
-    const aparte = !!this.sel && !CLAVE.includes(this.sel)
+    const aparte = !!this.sel && !conEtiquetaFija(this.sel)
     this.etiquetaSel.hidden = !aparte
     if (aparte && this.sel) this.texto(this.etiquetaSel, this.sel)
     this.sucio = true
@@ -1316,7 +1324,8 @@ export class EscenaPeru {
     this.aplicarCorrimiento()
     // tamaño de los puntos en píxeles del búfer, como hace PointsMaterial
     if (this.particulas)
-      this.particulas.puntos.material.uniforms.uEscala.value = (h * this.renderer.getPixelRatio()) / 2
+      this.particulas.puntos.material.uniforms.uEscala.value =
+        (h * this.renderer.getPixelRatio()) / 2
     this.sucio = true
   }
 
@@ -1477,8 +1486,9 @@ export class EscenaPeru {
     const apretado = celular() && this.modo === 'inicio'
     const malla = (id: string) => this.porId.get(id)
     for (const L of this.etiquetas) {
-      if (L.el.hidden !== apretado) L.el.hidden = apretado
-      if (apretado) continue
+      const oculta = apretado || !conEtiquetaFija(L.id)
+      if (L.el.hidden !== oculta) L.el.hidden = oculta
+      if (oculta) continue
       const m = malla(L.id)!
       this.ubicarEtiqueta(
         L.el,
@@ -1488,7 +1498,10 @@ export class EscenaPeru {
         DESPLAZA_ETIQUETA[L.id],
       )
     }
-    if (this.sel && !CLAVE.includes(this.sel) && !apretado) {
+    // La etiqueta suelta (zona elegida sin etiqueta fija) también sigue al ancho de la pantalla
+    const aparte = !!this.sel && !conEtiquetaFija(this.sel) && !apretado
+    if (this.etiquetaSel.hidden === aparte) this.etiquetaSel.hidden = !aparte
+    if (aparte && this.sel) {
       const m = malla(this.sel)
       if (m)
         this.ubicarEtiqueta(

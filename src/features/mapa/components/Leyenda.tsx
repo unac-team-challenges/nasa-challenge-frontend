@@ -90,126 +90,158 @@ export function Leyenda() {
   )
   const muestra = 'h-3.5 w-[18px] flex-none rounded-[3px] box-border'
 
+  // En celular, abierta es una hoja pegada al borde de abajo del mapa; tocar el mapa la cierra
+  const hoja = abierta
+    ? 'max-[900px]:inset-x-0 max-[900px]:bottom-0 max-[900px]:z-[5] max-[900px]:max-h-[70%] max-[900px]:max-w-none max-[900px]:overflow-y-auto max-[900px]:rounded-b-none max-[900px]:border-x-0 max-[900px]:border-b-0 max-[900px]:px-4 max-[900px]:pb-4'
+    : ''
+
   return (
-    <div className="absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
-      <details
-        className="group"
-        open={abierta}
-        // Al montar, el navegador avisa con el mismo valor: solo cuenta si cambió
-        onToggle={(e) => e.currentTarget.open !== abierta && elegir(e.currentTarget.open)}
-      >
-        <summary className="flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="flex-none">
-            <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path
-              d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8M12 16.6v.1"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-          {t.legSum}
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="flex-none transition-transform group-open:rotate-180"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </summary>
-        <svg
-          viewBox="0 0 330 118"
-          className="mt-1.5 block h-auto w-full max-w-[250px]"
-          role="img"
-          aria-label={cols.map((c) => c.join(': ')).join('. ')}
-        >
-          <line
-            x1={4}
-            y1={56}
-            x2={326}
-            y2={56}
-            style={{ stroke: 'var(--muted)' }}
-            strokeDasharray="4 4"
-          />
-          {columna(36, 16, 56, sube)}
-          {columna(146, 52, 56, 'var(--muted)')}
-          {columna(256, 70, 84, baja)}
-          <text x={322} y={51} textAnchor="end" fontSize={9.5} style={{ fill: 'var(--muted)' }}>
-            {t.noChange}
-          </text>
-          {rotulo(60, cols[0])}
-          {rotulo(170, cols[1])}
-          {rotulo(280, cols[2])}
-        </svg>
-        <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
-          {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
-          {anio == null && (
-            <>
-              <span className="flex items-center gap-1.5">
-                <span className={muestra} style={{ background: sube }} />
-                {t.texReal}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span
-                  className={muestra}
-                  style={{
-                    background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
-                    border: `1px solid ${sube}`,
-                    opacity: 0.85,
-                  }}
-                />
-                {t.texCas}
-              </span>
-            </>
-          )}
-          <span className="flex items-center gap-1.5">
-            <span className={`${muestra} border-2 border-dashed border-muted`} />
-            {t.texFew}
-          </span>
-        </div>
-        <p className="m-0 mt-1 text-xs text-fg">
-          {anio == null
-            ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
-            : t.scaleTime(
-                fmtAnomalia(anomaliasAnio(variable, periodo, rango).max, variable, idioma).replace(
-                  '+',
-                  '',
-                ),
-              )}
-        </p>
-        <p className="m-0 text-xs text-muted">
-          {/* La máquina del tiempo usa la copia local */}
-          {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
-        </p>
-      </details>
+    <>
       {abierta && (
         <button
           type="button"
-          aria-label={t.legMin}
-          title={t.legMin}
+          tabIndex={-1}
+          aria-hidden="true"
           onClick={() => elegir(false)}
-          className="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M5 5l14 14M19 5L5 19"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+          className="absolute inset-0 z-[4] cursor-default border-0 bg-fg/10 min-[901px]:hidden"
+        />
       )}
-    </div>
+      <div
+        className={`absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))] ${hoja}`}
+      >
+        <details
+          className="group"
+          open={abierta}
+          // Al montar, el navegador avisa con el mismo valor: solo cuenta si cambió
+          onToggle={(e) => e.currentTarget.open !== abierta && elegir(e.currentTarget.open)}
+        >
+          <summary className="flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="flex-none"
+            >
+              <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8M12 16.6v.1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            {t.legSum}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="flex-none transition-transform group-open:rotate-180"
+            >
+              <path
+                d="M6 9l6 6 6-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </summary>
+          {/* En celular el título del mapa va en una línea; lo que se pinta se explica aquí */}
+          <p className="m-0 mt-1 text-xs font-semibold text-fg min-[901px]:hidden">
+            {anio == null ? t.mapSub : t.mapSubAnio}
+          </p>
+          <p className="m-0 text-xs text-muted min-[901px]:hidden">
+            {t.timeHelp(rango.year_end - rango.year_start + 1)}
+          </p>
+          <svg
+            viewBox="0 0 330 118"
+            className="mt-1.5 block h-auto w-full max-w-[250px]"
+            role="img"
+            aria-label={cols.map((c) => c.join(': ')).join('. ')}
+          >
+            <line
+              x1={4}
+              y1={56}
+              x2={326}
+              y2={56}
+              style={{ stroke: 'var(--muted)' }}
+              strokeDasharray="4 4"
+            />
+            {columna(36, 16, 56, sube)}
+            {columna(146, 52, 56, 'var(--muted)')}
+            {columna(256, 70, 84, baja)}
+            <text x={322} y={51} textAnchor="end" fontSize={9.5} style={{ fill: 'var(--muted)' }}>
+              {t.noChange}
+            </text>
+            {rotulo(60, cols[0])}
+            {rotulo(170, cols[1])}
+            {rotulo(280, cols[2])}
+          </svg>
+          <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
+            {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
+            {anio == null && (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className={muestra} style={{ background: sube }} />
+                  {t.texReal}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={muestra}
+                    style={{
+                      background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                      border: `1px solid ${sube}`,
+                      opacity: 0.85,
+                    }}
+                  />
+                  {t.texCas}
+                </span>
+              </>
+            )}
+            <span className="flex items-center gap-1.5">
+              <span className={`${muestra} border-2 border-dashed border-muted`} />
+              {t.texFew}
+            </span>
+          </div>
+          <p className="m-0 mt-1 text-xs text-fg">
+            {anio == null
+              ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
+              : t.scaleTime(
+                  fmtAnomalia(
+                    anomaliasAnio(variable, periodo, rango).max,
+                    variable,
+                    idioma,
+                  ).replace('+', ''),
+                )}
+          </p>
+          <p className="m-0 text-xs text-muted">
+            {/* La máquina del tiempo usa la copia local */}
+            {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+          </p>
+        </details>
+        {abierta && (
+          <button
+            type="button"
+            aria-label={t.legMin}
+            title={t.legMin}
+            onClick={() => elegir(false)}
+            className="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 5l14 14M19 5L5 19"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </>
   )
 }

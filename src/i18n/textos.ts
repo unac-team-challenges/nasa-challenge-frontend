@@ -1,5 +1,5 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
-import type { Estado, Periodo, Region, Variable } from '../data/datos'
+import type { Estado, Region, Variable } from '../data/datos'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -15,7 +15,6 @@ const es = {
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
   variables: { lluvia: 'Lluvia', temperatura: 'Temperatura' } as PorVariable<string>,
-  periodos: { largo: 'Desde 1981', reciente: 'Desde 2001' } as Record<Periodo, string>,
   heroH: '¿Qué está cambiando en tu zona del Perú?',
   heroLead: (a: number, b: number) =>
     `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
@@ -198,7 +197,6 @@ const en: Textos = {
   perfilLbl: 'Profile',
   periodoLbl: 'Period',
   variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
-  periodos: { largo: 'Since 1981', reciente: 'Since 2001' },
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
@@ -456,7 +454,7 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
     inicio: {
       titulo: 'Detective del Perú · ¿Qué está cambiando en tu zona?',
       descripcion:
-        'Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde 2001, y si el cambio es real o casualidad.',
+        'Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde {desde}, y si el cambio es real o casualidad.',
     },
     explorar: {
       titulo: 'Explorador del clima del Perú · Detective del Perú',
@@ -473,7 +471,7 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
     inicio: {
       titulo: 'Peru Trend Detective · What is changing in your area?',
       descripcion:
-        '3D map of Peru with NASA data: how much rainfall and temperature changed in each department since 2001, and whether the change is real or chance.',
+        '3D map of Peru with NASA data: how much rainfall and temperature changed in each department since {desde}, and whether the change is real or chance.',
     },
     explorar: {
       titulo: 'Peru climate explorer · Peru Trend Detective',
@@ -495,7 +493,14 @@ interface Metodologia {
   intro: string
   fuentesH: string
   tablaCols: [string, string, string, string]
-  fuentes: { variable: string; fuente: string; resolucion: string; anios: string; enlace: Enlace }[]
+  fuentes: {
+    variable: string
+    fuente: string
+    resolucion: string
+    anios?: string
+    rango?: 'lluvia' | 'temperatura' | 'local'
+    enlace: Enlace
+  }[]
   fuentesNota: string
   calculoH: string
   pasos: [titulo: string, texto: string][]
@@ -528,14 +533,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         variable: 'Lluvia',
         fuente: 'GPM IMERG v07 (NASA), promedio mensual',
         resolucion: '≈ 10 km',
-        anios: '2001–2024',
+        rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
       },
       {
         variable: 'Temperatura',
         fuente: 'MERRA-2 (NASA) vía POWER: temperatura del aire a 2 m (T2M)',
         resolucion: '≈ 50 × 60 km',
-        anios: '2001–2024',
+        rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -543,7 +548,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente:
           'NASA POWER (MERRA-2): lluvia y temperatura. La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
         resolucion: '≈ 50 × 60 km',
-        anios: '1981–2024',
+        rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -649,14 +654,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         variable: 'Rainfall',
         fuente: 'GPM IMERG v07 (NASA), monthly mean',
         resolucion: '≈ 10 km',
-        anios: '2001–2024',
+        rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
       },
       {
         variable: 'Temperature',
         fuente: 'MERRA-2 (NASA) via POWER: air temperature at 2 m (T2M)',
         resolucion: '≈ 50 × 60 km',
-        anios: '2001–2024',
+        rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -664,7 +669,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente:
           'NASA POWER (MERRA-2): rainfall and temperature. The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
         resolucion: '≈ 50 × 60 km',
-        anios: '1981–2024',
+        rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {

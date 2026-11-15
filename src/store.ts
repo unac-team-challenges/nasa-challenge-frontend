@@ -62,8 +62,8 @@ interface EstadoApp {
 
 export const useApp = create<EstadoApp>((set, get) => ({
   idioma: idiomaInicial(),
-  // Solo la tendencia larga (1981–2024): decisión de Favio, 14 nov. El periodo reciente sigue en los datos.
-  periodo: 'largo',
+  // 2001–2024 por defecto: el periodo decidido el 14 nov (backend, docs/tendencias.md) y el que sirve la API.
+  periodo: 'reciente',
   setPeriodo: (periodo) => set({ periodo, reproduciendo: false }),
   reproduciendo: false,
   setReproduciendo: (reproduciendo) => set({ reproduciendo }),

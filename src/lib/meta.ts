@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { META } from '../i18n/textos'
 import { useApp } from '../store'
+import { useRango } from './useZonas'
 import type { Ruta } from './ruta'
 
 /** Fondo de cada tema (--bg de src/index.css): el color de la barra del navegador en el celular. */
@@ -17,8 +18,10 @@ const poner = (selector: string, valor: string) =>
 export function useMeta(ruta: Ruta) {
   const idioma = useApp((s) => s.idioma)
   const tema = useApp((s) => s.tema)
+  const desde = useRango('lluvia').year_start
   useEffect(() => {
-    const { titulo, descripcion } = META[idioma][ruta]
+    const { titulo } = META[idioma][ruta]
+    const descripcion = META[idioma][ruta].descripcion.replace('{desde}', String(desde))
     document.title = titulo
     poner('meta[name="description"]', descripcion)
     poner('meta[property="og:title"]', titulo)
@@ -26,7 +29,7 @@ export function useMeta(ruta: Ruta) {
     poner('meta[property="og:locale"]', idioma === 'es' ? 'es_PE' : 'en_US')
     poner('meta[name="twitter:title"]', titulo)
     poner('meta[name="twitter:description"]', descripcion)
-  }, [ruta, idioma])
+  }, [ruta, idioma, desde])
   useEffect(() => {
     // Sin tema elegido, cada etiqueta sigue al sistema (su `media`); con tema elegido, ambas valen lo mismo
     poner('meta[name="theme-color"][media*="light"]', COLOR[tema ?? 'claro'])

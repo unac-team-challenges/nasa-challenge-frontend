@@ -66,7 +66,7 @@ Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` 
 
 ## Datos y periodo
 
-Con la API del backend (`VITE_API_URL`) se muestra **2001–2024** (lluvia GPM IMERG, temperatura MERRA-2 vía POWER). Si no responde, la copia local (`src/data/power.json`, NASA POWER) muestra **1981–2024**. «Sin El Niño» y la máquina del tiempo usan siempre la copia local. Detalle en `/metodologia` y `docs/para-favio.md`.
+Con la API del backend (`VITE_API_URL`) se muestra **2001–2024** (lluvia GPM IMERG, temperatura MERRA-2 vía POWER). Si no responde, la copia local (`src/data/power.json`, NASA POWER) muestra también **2001–2024** (la serie 1981–2024 sigue en los datos). «Sin El Niño» y la máquina del tiempo usan siempre la copia local. Detalle en `/metodologia` y `docs/para-favio.md`.
 
 ## Pendiente de decisión
 

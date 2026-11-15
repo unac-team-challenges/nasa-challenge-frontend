@@ -10,13 +10,12 @@ import { descargarTexto, tablaCsv } from '@/features/ficha/utils/estudiante'
 import { Button } from '@/components/ui/button'
 
 /** Bloque de texto copiable (cita APA, BibTeX, consulta a la API). */
-function Copiable({ texto, etiqueta, nota }: { texto: string; etiqueta: string; nota?: string }) {
+function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
   const t = TEXTOS[useApp((s) => s.idioma)]
   const [copiado, setCopiado] = useState(false)
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted">{etiqueta}</span>
-      {nota && <span className="text-xs text-muted">{nota}</span>}
       <div className="flex items-start gap-2">
         <pre className="m-0 min-w-0 flex-1 overflow-x-auto rounded-s border border-line bg-panel-2 p-2 font-mono text-[11.5px] leading-snug whitespace-pre-wrap break-words">
           {texto}
@@ -46,7 +45,7 @@ function Copiable({ texto, etiqueta, nota }: { texto: string; etiqueta: string; 
 
 /**
  * Estudiante: llevarse los datos (tabla de los 25 en CSV), citar (APA y BibTeX, con el enlace a
- * esta zona) y reproducir el cálculo (la consulta a la API y los repositorios).
+ * esta vista exacta) y reproducir el cálculo (la consulta a la API y los repositorios).
  */
 export function EstRecursos() {
   const idioma = useApp((s) => s.idioma)
@@ -114,11 +113,7 @@ export function EstRecursos() {
         </h3>
         <Copiable etiqueta="APA" texto={apa} />
         <Copiable etiqueta="BibTeX" texto={bib} />
-        <Copiable
-          etiqueta={`${t.citarEnlace} (${NOMBRE[sel]})`}
-          nota={t.citarEnlaceNota}
-          texto={enlace}
-        />
+        <Copiable etiqueta={`${t.citarEnlace} (${NOMBRE[sel]})`} texto={enlace} />
       </section>
 
       <section

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { anomaliasAnio, FUENTE_LOCAL } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
-import { useAnio, useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -36,7 +36,8 @@ function guardarEleccion(abierta: boolean) {
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {
-  const { idioma, periodo } = useApp()
+  const { idioma } = useApp()
+  const periodo = usePeriodo()
   const { variable, vegetacion } = useBusqueda()
   const anio = useAnio()
   const t = TEXTOS[idioma]

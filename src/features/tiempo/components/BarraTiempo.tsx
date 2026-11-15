@@ -78,7 +78,7 @@ export function BarraTiempo() {
       <div
         role="group"
         aria-label={t.timeModeAria}
-        className="order-1 flex flex-none overflow-hidden rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
+        className="order-1 flex flex-none rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
       >
         <Button
           variant="toggle"
@@ -86,7 +86,7 @@ export function BarraTiempo() {
           aria-pressed={!porAnio}
           onClick={() => setAnio(null)}
           title={t.timeTrendTitle(a, b)}
-          className="min-h-8 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-l-s px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-t-s min-[901px]:rounded-bl-none min-[901px]:px-1"
         >
           {t.timeTrend}
         </Button>
@@ -96,7 +96,7 @@ export function BarraTiempo() {
           aria-pressed={porAnio}
           onClick={() => setAnio(b)}
           title={t.timeByYearTitle}
-          className="min-h-8 border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-r-s border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-tr-none min-[901px]:rounded-b-s min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
         >
           {t.timeByYear}
         </Button>

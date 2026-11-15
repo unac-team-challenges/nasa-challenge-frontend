@@ -52,6 +52,17 @@ PR: base `developer`. Solo frontend; no toca el contrato (`openapi.json`).
 ## Sin cambios
 - Mapa 3D y 2D, leyenda y barra de tiempo (salvo leer el año con `useAnio()`), API y datos.
 
+## Revisión del 15 nov
+- Merge de `developer` (ya con #51 lluvia, #52 encuadre del 2D y #55 animaciones): un conflicto en `Explorador.tsx`, resuelto conservando `useMargenMapa` y `useAnio`.
+- Las causas se explican como contexto cuando el cambio no es `real` (`entradasPara` recibe el estado).
+- `cmpUnidad` («es un recuadro, no el departamento») se ve en los dos perfiles.
+- Textos del agricultor con cautela: `bosque` y `calentamientoRegion` dicen «posible explicación», no la causa.
+- `tecCriterioV` dice `|lag1| ≤ 0,5`, igual que `docs/tendencias.md` del backend.
+- Fuentes, recta de Sen y exportar corregidos en `95bf03f`.
+
 ## Pendiente
 - Confirmar la autoría de la cita del proyecto en «Cómo citar» (hoy «UNAC Team Challenges»).
 - Los umbrales de año seco (−20 %) y caluroso (+0,3 °C) están en `UMBRAL_MALO`; el equipo puede ajustarlos.
+- Abrir a mano los enlaces de las fuentes y comprobar las cifras citadas (155 estaciones, 37 %, 56 %, 62 %).
+- «¿Qué trae El Niño aquí?» compara con el promedio de la serie; en temperatura puede leerse como causa.
+- Este PR junta ficha por perfil, causas y fuentes, exportar y rendimiento: queda así por decisión del equipo.

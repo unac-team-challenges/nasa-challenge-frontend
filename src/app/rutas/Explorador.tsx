@@ -16,6 +16,7 @@ import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Popover } from 'radix-ui'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
+import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 
 const boton = 'bg-panel/92'
 
@@ -38,7 +39,7 @@ export function Explorador() {
   const { idioma, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
   const cajaMapa = useMargenMapa<HTMLDivElement>()
-  const { variable, sel, seleccionar } = useBusqueda()
+  const { variable, sel, seleccionar, vegetacion } = useBusqueda()
   const anio = useAnio()
   const sinNino = useSinNino()
   const en3d = modoMapa === '3d'
@@ -205,22 +206,28 @@ export function Explorador() {
           >
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
-                {t.mapH[variable]} ·{' '}
-                {anio == null
-                  ? t.mapModoTendencia(rango.year_start, rango.year_end)
-                  : t.mapModoAnio(anio)}
+                {vegetacion ? (
+                  t.mapHVeg
+                ) : (
+                  <>
+                    {t.mapH[variable]} ·{' '}
+                    {anio == null
+                      ? t.mapModoTendencia(rango.year_start, rango.year_end)
+                      : t.mapModoAnio(anio)}
+                  </>
+                )}
               </h2>
               <span className="hidden text-[13px] text-muted min-[901px]:inline">
-                {anio == null ? t.mapSub : t.mapSubAnio}
+                {vegetacion ? t.mapSubVeg : anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
-            <AyudaModo />
+            {!vegetacion && <AyudaModo />}
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}
               </p>
             )}
-            {sinNino && variable === 'lluvia' && (
+            {sinNino && variable === 'lluvia' && !vegetacion && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.ninoOn}
               </p>
@@ -228,7 +235,8 @@ export function Explorador() {
           </div>
           <div className="pointer-events-auto contents">
             <Leyenda />
-            <BarraTiempo />
+            {/* La vegetación no tiene máquina del tiempo (solo 5 lugares, 2001 frente a 2024) */}
+            {!vegetacion && <BarraTiempo />}
           </div>
           {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
           <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex">
@@ -286,7 +294,7 @@ export function Explorador() {
           className={
             informeMin
               ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg min-[901px]:h-full min-[901px]:w-14 min-[901px]:flex-none min-[901px]:flex-col min-[901px]:justify-start min-[901px]:px-0 min-[901px]:py-3.5'
-              : 'presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
+              : 'toque44 presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
           }
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="flex-none">
@@ -304,7 +312,7 @@ export function Explorador() {
               <span className="font-display text-[15px] font-[650] tracking-display whitespace-nowrap min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]">
                 {sel ? NOMBRE[sel] : t.railHint}
               </span>
-              {d && d.status !== 'pocos_datos' && (
+              {d && d.status !== 'pocos_datos' && !vegetacion && (
                 <span
                   className="text-[13px] min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]"
                   style={{ color: `var(${colorDireccion(d.slope_per_decade, variable)})` }}
@@ -326,7 +334,7 @@ export function Explorador() {
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >
-              <Ficha />
+              {vegetacion ? <PanelVegetacion /> : <Ficha />}
             </div>
           </div>
         )}

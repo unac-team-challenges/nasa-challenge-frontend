@@ -25,7 +25,7 @@ export function Mapa3D({ modo }: Props) {
   const { idioma, tema, conWebgl } = useApp()
   const periodo = usePeriodo()
   const busqueda = useBusqueda()
-  const { variable, sel } = busqueda
+  const { variable, sel, vegetacion } = busqueda
   const anio = useAnio()
   // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
   const busquedaRef = useRef(busqueda)
@@ -55,6 +55,7 @@ export function Mapa3D({ modo }: Props) {
     const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
     e.setCalor(calor)
+    e.setVegetacion(busquedaRef.current.vegetacion)
     if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
     useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
     const sistema = matchMedia('(prefers-color-scheme: dark)')
@@ -78,6 +79,11 @@ export function Mapa3D({ modo }: Props) {
   useEffect(() => {
     escena.current?.setDatos(zonas, variable)
   }, [zonas, variable])
+
+  // Modo Vegetación: los 5 recuadros medidos sobre los departamentos atenuados
+  useEffect(() => {
+    escena.current?.setVegetacion(vegetacion)
+  }, [vegetacion])
 
   useEffect(() => {
     escena.current?.setCalor(calor)

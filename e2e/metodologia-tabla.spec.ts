@@ -7,7 +7,7 @@ for (const ancho of [390, 320]) {
     await page.setViewportSize({ width: ancho, height: 800 })
     await page.goto('/metodologia')
     const tabla = page.getByRole('table')
-    await expect(tabla.getByRole('row')).toHaveCount(7) // encabezado + 6 fuentes
+    await expect(tabla.getByRole('row')).toHaveCount(8) // encabezado + 7 fuentes
     const { envoltura, pagina } = await tabla.evaluate((t) => ({
       envoltura: t.parentElement!.scrollWidth - t.parentElement!.clientWidth,
       pagina: document.documentElement.scrollWidth - innerWidth,

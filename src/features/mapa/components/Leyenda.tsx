@@ -246,17 +246,20 @@ export function Leyenda() {
               <span className="text-muted">{t.calorNota[variable]}</span>
             </div>
           )}
-          <p className="m-0 mt-1 text-xs text-fg">
-            {anio == null
-              ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
-              : t.scaleTime(
-                  fmtAnomalia(
-                    anomaliasAnio(variable, periodo, rango).max,
-                    variable,
-                    idioma,
-                  ).replace('+', ''),
-                )}
-          </p>
+          {/* Sin tendencia fiable (todas pocos_datos) no hay columna más alta que mostrar */}
+          {(anio != null || maxima > 0) && (
+            <p className="m-0 mt-1 text-xs text-fg">
+              {anio == null
+                ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
+                : t.scaleTime(
+                    fmtAnomalia(
+                      anomaliasAnio(variable, periodo, rango).max,
+                      variable,
+                      idioma,
+                    ).replace('+', ''),
+                  )}
+            </p>
+          )}
           <p className="m-0 text-xs text-muted">
             {/* La máquina del tiempo usa la copia local */}
             {t.varDef[variable](anio == null ? fuente : fuenteLocal(variable))}

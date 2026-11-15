@@ -94,7 +94,8 @@ export function Cabecera() {
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
-                {nombre}
+                {/* En celular solo la variable activa muestra el texto: con tres, el perfil quedaba fuera de la tira */}
+                <span className={variable === v ? undefined : 'max-[479px]:sr-only'}>{nombre}</span>
               </Button>
             )
           })}

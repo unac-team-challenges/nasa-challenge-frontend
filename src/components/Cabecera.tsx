@@ -75,7 +75,9 @@ export function Cabecera() {
       </div>
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" className="hidden sm:inline-flex">
-          <Link to="/metodologia">{t.metodologiaCorto}</Link>
+          <Link to="/metodologia" search={(p) => ({ lang: p.lang })}>
+            {t.metodologiaCorto}
+          </Link>
         </Button>
         <Button
           aria-label={t.cambiarIdioma}

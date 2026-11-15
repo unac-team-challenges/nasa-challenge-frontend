@@ -24,6 +24,12 @@ test('un enlace con ?lang=en se abre en inglés y el cambio de idioma queda en l
   await expect(page).toHaveURL(/lang=en/)
 })
 
+test('el idioma de la URL sobrevive al ir a la metodología', async ({ page }) => {
+  await page.goto('/explorar?sinwebgl&lang=en')
+  await page.getByRole('link', { name: 'Methodology' }).first().click()
+  await expect(page).toHaveURL(/metodologia.*lang=en/)
+})
+
 test('elegir una zona actualiza la URL y se puede recargar', async ({ page }) => {
   await page.goto('/explorar?sinwebgl')
   await page

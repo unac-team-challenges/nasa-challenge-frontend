@@ -160,7 +160,7 @@ export function Ficha() {
       </div>
 
       {st === 'pocos_datos' ? (
-        <p className="m-0">{t.fewCeldas(d.celdas)}</p>
+        <p className="m-0">{t.fewCeldas(d.celdas, fuente, !api)}</p>
       ) : (
         <>
           <div className="flex flex-col gap-0.5">

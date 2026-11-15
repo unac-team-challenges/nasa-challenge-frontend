@@ -21,8 +21,8 @@ interface StatsApi {
   pct_change_per_decade?: number | null
   year_start?: number | null
   year_end?: number | null
-  celdas?: number
-  motivo?: string
+  /** Por qué interpretar con cuidado (p. ej., el cambio de satélites de IMERG en 2014) */
+  aviso?: string | null
 }
 
 /** La lluvia puede llegar en mm/día (GPM IMERG en el backend); la interfaz usa mm/año. */
@@ -42,13 +42,13 @@ function tieneStats(x: unknown): x is { stats: StatsApi } {
   )
 }
 
-function aZona(id: string, s: StatsApi, factor: number): Zona {
+function aZona(id: string, celdas: number | undefined, s: StatsApi, factor: number): Zona {
   return {
     id,
-    celdas: s.celdas ?? 0,
+    celdas: celdas ?? 0,
     n_years: s.n_years,
     status: s.status,
-    motivo: s.motivo ?? '',
+    motivo: s.aviso ?? '',
     slope_per_decade: s.slope_per_decade * factor,
     ci_low: s.ci_low * factor,
     ci_high: s.ci_high * factor,
@@ -81,9 +81,9 @@ async function variableDeApi(
   const f = factorUnidad(variable, info.unidad)
   return {
     zonas: Object.fromEntries(
-      (lista as ({ id: string } & { stats: StatsApi })[]).map((z) => [
+      (lista as { id: string; celdas?: number; stats: StatsApi }[]).map((z) => [
         z.id,
-        aZona(z.id, z.stats, f),
+        aZona(z.id, z.celdas, z.stats, f),
       ]),
     ),
     rango: { year_start: info.anio_inicio, year_end: info.anio_fin },

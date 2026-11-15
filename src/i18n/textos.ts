@@ -88,10 +88,10 @@ const es = {
   perDecade: 'por década',
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
-  fewCeldas: (n: number) =>
+  fewCeldas: (n: number, fuente: string, local: boolean) =>
     n === 0
-      ? 'Ninguna celda de NASA POWER (de unos 50 km) cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.'
-      : `Solo ${n} ${n === 1 ? 'celda' : 'celdas'} de NASA POWER (de unos 50 km) ${n === 1 ? 'cae' : 'caen'} en este departamento. Necesitamos al menos 4 para medir una tendencia confiable, así que no sacamos conclusiones.`,
+      ? `Ninguna celda de ${fuente}${local ? ' (de unos 50 km)' : ''} cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.`
+      : `Solo ${n} ${n === 1 ? 'celda' : 'celdas'} de ${fuente}${local ? ' (de unos 50 km)' : ''} ${n === 1 ? 'cae' : 'caen'} en este departamento. Necesitamos al menos 4 para medir una tendencia confiable, así que no sacamos conclusiones.`,
   chartCap: (lluvia: boolean, sinNino: boolean, anios: string) =>
     'Puntos: valor de cada año. Línea gruesa: tendencia (pendiente de Sen). Zona sombreada: rango probable.' +
     (lluvia
@@ -115,7 +115,7 @@ const es = {
   howSlope: 'Pendiente',
   howSlopeV: (v: string) => `Sen, ${v} por década`,
   howN: 'Años con datos',
-  howCeldas: 'Celdas de POWER',
+  howCeldas: 'Celdas',
   howLag: 'Autocorrelación (lag1)',
   howMotivo: 'Por qué no es «cambio real»',
   howSrc: 'Fuente',
@@ -234,7 +234,7 @@ const en: Textos = {
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
-  notaFija: 'Average of very few grid cells: low-confidence data',
+  notaFija: 'Average of very few or shared grid cells: low-confidence data',
   status: {
     real: 'Real change',
     posible_casualidad: 'Possibly chance',
@@ -243,10 +243,10 @@ const en: Textos = {
   perDecade: 'per decade',
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
-  fewCeldas: (n) =>
+  fewCeldas: (n, fuente, local) =>
     n === 0
-      ? 'No NASA POWER cell (about 50 km wide) falls inside this department, so it has no series of its own. We draw no conclusion.'
-      : `Only ${n} NASA POWER ${n === 1 ? 'cell' : 'cells'} (about 50 km wide) ${n === 1 ? 'falls' : 'fall'} in this department. We need at least 4 to measure a reliable trend, so we draw no conclusion.`,
+      ? `No ${fuente} cell${local ? ' (about 50 km wide)' : ''} falls inside this department, so it has no series of its own. We draw no conclusion.`
+      : `Only ${n} ${fuente} ${n === 1 ? 'cell' : 'cells'}${local ? ' (about 50 km wide)' : ''} ${n === 1 ? 'falls' : 'fall'} in this department. We need at least 4 to measure a reliable trend, so we draw no conclusion.`,
   chartCap: (lluvia, sinNino, anios) =>
     "Dots: each year's value. Thick line: trend (Sen's slope). Shaded area: likely range." +
     (lluvia
@@ -270,7 +270,7 @@ const en: Textos = {
   howSlope: 'Slope',
   howSlopeV: (v) => `Sen, ${v} per decade`,
   howN: 'Years with data',
-  howCeldas: 'POWER cells',
+  howCeldas: 'Grid cells',
   howLag: 'Autocorrelation (lag1)',
   howMotivo: 'Why it is not a real change',
   howSrc: 'Source',

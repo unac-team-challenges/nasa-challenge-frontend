@@ -11,6 +11,8 @@ const ids = Array.from({ length: 25 }, (_, i) => String(i + 1).padStart(2, '0'))
 const zonaSinStats = (id: string) => ({ id, nombre: id, lat: -10, lon: -75 })
 const zonaConStats = (id: string) => ({
   ...zonaSinStats(id),
+  // Como el backend (#41): celdas fuera de stats y aviso en vez de motivo
+  celdas: 9,
   stats: {
     slope_per_decade: 0.1,
     ci_low: 0.05,
@@ -19,6 +21,7 @@ const zonaConStats = (id: string) => ({
     q_value: 0.02,
     n_years: 44,
     status: 'real',
+    aviso: 'IMERG cambia de satélites en 2014',
   },
 })
 const variables = [
@@ -122,6 +125,8 @@ describe('datosDeApi (cliente con respaldo)', () => {
     expect(lluvia.zonas['20'].status).toBe('real')
     expect(lluvia.zonas['20'].slope_per_decade).toBeCloseTo(36.5)
     expect(lluvia.zonas['20'].ci_low).toBeCloseTo(18.25)
+    expect(lluvia.zonas['20'].celdas).toBe(9)
+    expect(lluvia.zonas['20'].motivo).toBe('IMERG cambia de satélites en 2014')
     expect(lluvia.rango).toEqual({ year_start: 2001, year_end: 2024 })
     expect(lluvia.fuente).toBe('GPM IMERG')
     // La temperatura no cambia de unidad

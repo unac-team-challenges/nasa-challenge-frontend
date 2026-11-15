@@ -14,6 +14,7 @@ PR: #11 se unió a `feat/caso2-antes-despues` cuando esa rama ya estaba en `deve
 - En modo API, la ficha espera la serie de la API (no mezcla con la local). Una variable sin `anio_inicio`/`anio_fin` va con la copia local.
 - La máquina del tiempo ajusta el año al rango si cambia la variable o El Niño.
 - La lógica de respaldo local no cambia.
+- Compatible con `stats` del backend (PR #41 de `nasa-challenge-backend`): `celdas` se lee de la zona (no de `stats`) y `aviso` se muestra como motivo. Los textos de celdas usan la fuente de la API. Probado con ese backend en local: la portada dice 2001–2024 y GPM IMERG v07, Piura usa 291 celdas y Callao muestra su nota.
 - Pruebas: 16 en Vitest (`consultas`, `datos` y `decidirFuente`); e2e 4 de 4. Probado en el navegador con una API simulada: con respuesta rápida la portada dice 2001–2024 y GPM, y Callao muestra la nota; con 3 s de demora entrando a `#explorar`, se queda en 1981–2024.
 
 ## Pendiente

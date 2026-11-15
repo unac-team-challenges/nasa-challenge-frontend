@@ -439,7 +439,7 @@ export function Mapa2D({ interactivo = true }: Props) {
                 strokeLinejoin: 'round',
                 pointerEvents: 'stroke',
               }}
-              onClick={() => seleccionar(id)}
+              onClick={() => seleccionar(id, true)}
             />
           ))}
         </svg>

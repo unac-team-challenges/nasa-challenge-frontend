@@ -12,6 +12,8 @@ test('en celular se puede tocar Callao un poco fuera de su contorno (zona de ~3 
   // 8 px mar adentro: fuera del polígono, dentro del área de toque
   await page.touchscreen.tap(callao.x - 8, callao.y + callao.height / 2)
   await expect(page).toHaveURL(/\/zona\/07/)
+  // viene del mapa: sale la presentación del departamento (no es un cambio desde la Pista)
+  await expect(page.locator('.presentacion')).toHaveCount(1)
 })
 
 test('la ficha flotante sale con el ratón, no con el dedo; tocar abre el informe', async ({

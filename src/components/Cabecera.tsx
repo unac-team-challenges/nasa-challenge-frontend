@@ -107,10 +107,12 @@ export function Cabecera() {
                 size="sm"
                 className={opcion}
                 aria-pressed={!vegetacion && variable === v}
+                title={nombre}
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
-                {nombre}
+                {/* En celular solo el ícono: con tres variables y el perfil, la tira no cabe en 390 px */}
+                <span className="max-[479px]:sr-only">{nombre}</span>
               </Button>
             )
           })}

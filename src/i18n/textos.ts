@@ -219,6 +219,9 @@ const es = {
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapaControles: 'Controles del mapa',
+  compartir: 'Compartir esta vista',
+  enlaceCopiado: 'Enlace copiado',
+  compartirManual: 'Copia el enlace para compartir esta vista:',
   mapa2dAria: 'Mapa del Perú en 2D',
   noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
   tipVal: (nombre: string, v: string, u: string, estado: string) =>
@@ -448,6 +451,9 @@ const en: Textos = {
   selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
   mapaControles: 'Map controls',
+  compartir: 'Share this view',
+  enlaceCopiado: 'Link copied',
+  compartirManual: 'Copy the link to share this view:',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
   tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,

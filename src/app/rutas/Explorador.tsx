@@ -14,6 +14,7 @@ import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Popover } from 'radix-ui'
+import { BotonCompartir } from '@/components/BotonCompartir'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
 
@@ -164,6 +165,7 @@ export function Explorador() {
           />
         </svg>
       </Button>
+      <BotonCompartir className={boton} />
     </>
   )
 

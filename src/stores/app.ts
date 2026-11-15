@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Idioma } from '@/i18n/textos'
+import { cargarIdioma, type Idioma } from '@/i18n/textos'
 import { hayWebgl } from '@/utils/webgl'
 import { SIN_MARGEN, type Margen } from '@/utils/margenMapa'
 
@@ -77,7 +77,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   setGirando: (girando) => set({ girando }),
   fuente: null,
   fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
-  setIdioma: (idioma) => set({ idioma }),
+  // El inglés es un chunk aparte: el idioma cambia cuando ya está cargado
+  setIdioma: (idioma) => void cargarIdioma(idioma).then(() => set({ idioma })),
   setInformeMin: (informeMin) => set({ informeMin }),
   alternarTema: () => {
     const actual = get().tema ?? temaDelSistema()

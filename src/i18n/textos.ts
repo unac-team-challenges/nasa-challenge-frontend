@@ -80,6 +80,8 @@ const es = {
       : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? ' de ~50 km' : ''}`,
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
+  /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
+  avisoFijo: null as ((variable: Variable, lag1: number | null) => string) | null,
   status: {
     real: 'Cambio real',
     posible_casualidad: 'Posible casualidad',
@@ -235,6 +237,17 @@ const en: Textos = {
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
+  // Mismas reglas que el pipeline: IMERG 2014 siempre en lluvia, y lag1 > 0.5
+  avisoFijo: (variable, lag1) =>
+    [
+      variable === 'lluvia' &&
+        'IMERG switches satellite constellation in 2014 (TRMM → GPM): the rainfall trend may be biased downward, so it is not marked as real.',
+      lag1 != null &&
+        lag1 > 0.5 &&
+        'Years very similar to each other (high lag1): the trend may look more certain than it is.',
+    ]
+      .filter(Boolean)
+      .join(' '),
   status: {
     real: 'Real change',
     posible_casualidad: 'Possibly chance',

@@ -67,12 +67,18 @@ export function ComoLoSabemos({ zona: d, variable, idioma, api, m, abierto }: Pr
             api.fuente
           ) : (
             <a
-              href="https://power.larc.nasa.gov/"
+              href={
+                variable === 'vegetacion'
+                  ? 'https://lpdaac.usgs.gov/products/mod13a3v061/'
+                  : 'https://power.larc.nasa.gov/'
+              }
               target="_blank"
               rel="noopener"
               className="text-accent-text"
             >
-              NASA POWER ({parametroDe(variable)}, MERRA-2)
+              {variable === 'vegetacion'
+                ? 'MODIS MOD13A3 (NDVI)'
+                : `NASA POWER (${parametroDe(variable)}, MERRA-2)`}
             </a>
           )}
         </dd>

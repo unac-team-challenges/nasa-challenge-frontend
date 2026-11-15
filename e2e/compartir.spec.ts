@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 const URL_VISTA = '/zona/08?sinwebgl&variable=temperatura&anio=2010&perfil=estudiante'
 

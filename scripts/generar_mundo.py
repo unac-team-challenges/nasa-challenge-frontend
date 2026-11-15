@@ -10,17 +10,17 @@ Fuentes (públicas, sin cuenta):
 - Ríos y lagos: Natural Earth 1:50m v5.1.2 (ne_50m_rivers_lake_centerlines, ne_50m_lakes).
 
 Salida:
-- mundo.png (RGB, 1024×1024, equirectangular en la caja WORLD_BOX)
+- mundo.webp (RGB, WebP sin pérdida, 1024×1024, equirectangular en la caja WORLD_BOX)
     R = en tierra: sombreado del relieve (0 oscuro, 1 claro); en el mar: profundidad (0 somero, 1 fosa)
     G = máscara de tierra levemente difuminada (la costa está donde G cruza 0,5)
     B = máscara de tierra muy difuminada (aguas someras y sombra)
-- mundo2.png (RGB, misma caja)
+- mundo2.webp (RGB, misma caja)
     R = en tierra: elevación / 6000 m; en el mar: profundidad / 8500 m (cada dominio usa los 8 bits
         completos: ~24 m por nivel en tierra, ~33 m en el mar). Da el relieve 3D, el color por altitud
         y las curvas de nivel
     G = agua continental: ríos y lagos de Natural Earth 1:50m (Amazonas, Titicaca...)
     B = fronteras entre países
-(la caja también está en MUNDO, en src/features/mapa/escena/escena.ts) (las fronteras ya van dibujadas en mundo2.png).
+(la caja también está en MUNDO, en src/features/mapa/escena/escena.ts) (las fronteras ya van dibujadas en mundo2.webp).
 
 Uso (desde la raíz del repo; necesita numpy, scipy y pillow):
     python3 scripts/generar_mundo.py
@@ -174,14 +174,14 @@ def main():
     G = ndimage.gaussian_filter(tierra, 1.2)
     B = ndimage.gaussian_filter(tierra, 7.0)
     img = (np.dstack([R, G, B]) * 255 + 0.5).clip(0, 255).astype(np.uint8)
-    Image.fromarray(img, "RGB").save(AQUI / "mundo.png", optimize=True)
+    Image.fromarray(img, "RGB").save(AQUI / "mundo.webp", lossless=True, method=6, quality=100)  # sin pérdida: los canales son datos
     fr = fronteras()
     es = ndimage.gaussian_filter(e, 0.8)
     elev = np.where(tierra > 0, np.clip(es, 0, 6000) / 6000, np.clip(-es, 0, 8500) / 8500)
     ag = agua() * tierra
     fb = rasterizar([(l, 1.0) for l in fr], [], 1.6 * SS) * tierra
     img2 = (np.dstack([np.clip(elev, 0, 1), ag, fb]) * 255 + 0.5).clip(0, 255).astype(np.uint8)
-    Image.fromarray(img2, "RGB").save(AQUI / "mundo2.png", optimize=True)
+    Image.fromarray(img2, "RGB").save(AQUI / "mundo2.webp", lossless=True, method=6, quality=100)  # sin pérdida: los canales son datos
     # Controles: Lima es tierra, el mar frente a Lima es mar y la fosa Perú-Chile es honda
     def celda(lon, lat):
         return int((LAT1 - lat) / (LAT1 - LAT0) * (H - 1)), int((lon - LON0) / (LON1 - LON0) * (W - 1))
@@ -190,8 +190,8 @@ def main():
     assert e[celda(-71.4, -24.0)] < -6000, "la fosa Perú-Chile frente a Antofagasta pasa de 6000 m"
     assert e[celda(-69.4, -15.8)] > 3500, "el Titicaca está a más de 3500 m"
     assert ag[celda(-69.4, -15.8)] > 0.5, "el Titicaca debería estar en la capa de agua"
-    print(f"mundo2.png {(AQUI / 'mundo2.png').stat().st_size // 1024} KB; agua {ag.mean():.3%} de la caja")
-    print(f"mundo.png {W}x{H}, {(AQUI / 'mundo.png').stat().st_size // 1024} KB; elevación {e.min():.0f}..{e.max():.0f} m; "
+    print(f"mundo2.webp {(AQUI / 'mundo2.webp').stat().st_size // 1024} KB; agua {ag.mean():.3%} de la caja")
+    print(f"mundo.webp {W}x{H}, {(AQUI / 'mundo.webp').stat().st_size // 1024} KB; elevación {e.min():.0f}..{e.max():.0f} m; "
           f"fronteras {len(fr)} líneas, {sum(map(len, fr))} puntos")
 
 

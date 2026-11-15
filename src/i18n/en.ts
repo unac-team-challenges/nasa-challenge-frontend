@@ -13,7 +13,7 @@ export const textos: Textos = {
   variableLbl: 'Variable',
   perfilLbl: 'Profile',
   periodoLbl: 'Period',
-  variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
+  variables: { lluvia: 'Rainfall', temperatura: 'Temperature', vegetacion: 'Vegetation' },
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
@@ -28,7 +28,11 @@ export const textos: Textos = {
   ocean: 'Pacific Ocean',
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
-  mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
+  mapH: {
+    lluvia: 'Annual rainfall',
+    temperatura: 'Mean temperature',
+    vegetacion: 'Vegetation (NDVI)',
+  },
   mapSub: 'Change per decade',
   mapSubAnio: 'Each department vs its own average',
   mapModoTendencia: (a, b) => `trend ${a}–${b}`,
@@ -45,12 +49,21 @@ export const textos: Textos = {
       ['Flat', 'no change'],
       ['Sinks', 'cooler'],
     ],
+    vegetacion: [
+      ['Rises', 'greener'],
+      ['Flat', 'no change'],
+      ['Sinks', 'less green'],
+    ],
   },
   noChange: 'no change',
   texReal: 'Solid: real change',
   texCas: 'Dotted: possibly chance',
   texFew: 'Outline: not enough data',
-  calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
+  calorCosa: {
+    lluvia: 'annual rainfall',
+    temperatura: 'mean temperature',
+    vegetacion: 'greenness (NDVI)',
+  },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
   calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
   legAltura: {
@@ -72,7 +85,7 @@ export const textos: Textos = {
   legMax: (v) => `max. ${v}`,
   legSeguro: 'How sure it is',
   legCuadros: 'The 5 squares: their trend',
-  vegetacionBtn: 'Vegetation',
+  vegetacionBtn: 'Measured places',
   vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
   mapHVeg: 'Vegetation measured by satellite',
   mapSubVeg: 'MODIS, 2001–2024 · all of Peru and 5 places',
@@ -106,11 +119,11 @@ export const textos: Textos = {
   railHint: 'Tap an area',
   kind: (r) =>
     `${({ costa: 'Coastal', sierra: 'Highland', selva: 'Rainforest' } as Record<Region, string>)[r]} department`,
-  unitAxis: { lluvia: 'mm/yr', temperatura: '°C' },
+  unitAxis: { lluvia: 'mm/yr', temperatura: '°C', vegetacion: 'NDVI' },
   src: (variable, celdas, fuente, local) =>
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
-      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : variable === 'vegetacion' ? 'greenness (NDVI)' : 'temperature'} averaged over ${celdas} ${local ? (variable === 'vegetacion' ? '~27 km ' : '~50 km ') : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
   avisoFijo: (_variable, lag1, motivo) =>
@@ -161,15 +174,18 @@ export const textos: Textos = {
   campoFrase: {
     lluvia: (valor, sube) => `Every 10 years it rains ${valor} ${sube ? 'more' : 'less'}`,
     temperatura: (valor, sube) => `Every 10 years it gets ${valor} ${sube ? 'warmer' : 'cooler'}`,
+    vegetacion: (valor, sube) => `Every 10 years greenness ${sube ? 'rises' : 'falls'} ${valor}`,
   },
   campoSinCambio: {
     lluvia: 'No clear change in rainfall',
     temperatura: 'No clear change in heat',
+    vegetacion: 'No clear change in greenness',
   },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
+    vegetacion: ['Less green', 'Greener'],
   },
   medIgual: 'Same',
   medAria: (valor, a, b) => `Change per decade: ${valor}; likely range between ${a} and ${b}`,
@@ -180,12 +196,14 @@ export const textos: Textos = {
   campoPeores: {
     lluvia: (anios) => `The driest years: ${anios}.`,
     temperatura: (anios) => `The hottest years: ${anios}.`,
+    vegetacion: (anios) => `The years with least greenness: ${anios}.`,
   },
   anomH: 'Each year compared with normal',
-  anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal' },
+  anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal', vegetacion: 'NDVI vs normal' },
   anomLeyenda: {
     lluvia: ['Rainy year', 'Dry year'],
     temperatura: ['Hotter year', 'Cooler year'],
+    vegetacion: ['Greener year', 'Less green year'],
   },
   nino: 'El Niño',
   anomCap: (a, b, lluvia, sinNino) =>
@@ -194,6 +212,7 @@ export const textos: Textos = {
   anomTip: {
     lluvia: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} rain than normal`,
     temperatura: (valor, sube) => `${valor} ${sube ? 'hotter' : 'cooler'} than normal`,
+    vegetacion: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} greenness than normal`,
   },
   anomTipValor: (v) => `${v} in the year`,
   serieH: 'The series year by year',
@@ -211,6 +230,7 @@ export const textos: Textos = {
   malosH: {
     lluvia: 'Are dry years coming more often?',
     temperatura: 'Are hot years coming more often?',
+    vegetacion: 'Are low-greenness years coming more often?',
   },
   malosResumen: {
     lluvia: (v, antes, ahora) =>
@@ -225,12 +245,20 @@ export const textos: Textos = {
         : v === 'menos'
           ? `There are fewer hot years now than before (${ahora} vs ${antes}).`
           : `About the same as before (${ahora} vs ${antes}).`,
+    vegetacion: (v, antes, ahora) =>
+      v === 'mas'
+        ? `There are more low-greenness years now than before (${ahora} vs ${antes}).`
+        : v === 'menos'
+          ? `There are fewer low-greenness years now than before (${ahora} vs ${antes}).`
+          : `About the same as before (${ahora} vs ${antes}).`,
   },
   malosDef: {
     lluvia: 'Dry year: 20 % or more below the normal rainfall of the first years of the period.',
     temperatura: 'Hot year: 0.3 °C or more above the normal of the first years of the period.',
+    vegetacion:
+      'Low-greenness year: NDVI below the normal of the first years of the period by 0.01 or by how much this department usually varies, whichever is larger.',
   },
-  malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year' },
+  malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year', vegetacion: 'Low-greenness year' },
   malosOtro: 'Other year',
   malosAntes: 'Before',
   malosAhora: 'Now',
@@ -249,6 +277,8 @@ export const textos: Textos = {
       `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than expected for those years.`,
     temperatura: (zona, anios, valor, sube) =>
       `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than expected for those years.`,
+    vegetacion: (zona, anios, valor, sube) =>
+      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} greenness than expected for those years.`,
   },
   ninoSinAnios: 'With the El Niño years removed, we cannot show what it brings here.',
   ninoEnfen: 'See the El Niño alert status (ENFEN)',
@@ -348,6 +378,7 @@ export const textos: Textos = {
   verb: {
     lluvia: ['rainfall rises', 'rainfall falls'],
     temperatura: ['temperature rises', 'temperature falls'],
+    vegetacion: ['greenness rises', 'greenness falls'],
   },
   howH: 'How we know',
   howMethod: 'Method',
@@ -374,6 +405,8 @@ export const textos: Textos = {
     lluvia: "You'll see how much its rainfall changed and whether the change is real or chance.",
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
+    vegetacion:
+      "You'll see how much its greenness changed and whether the change is real or chance.",
   },
   timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',

@@ -31,6 +31,28 @@
         }
       }
     },
+    "/api/vegetacion": {
+      "get": {
+        "tags": ["api"],
+        "summary": "Vegetación (NDVI de MODIS) de los valles irrigados de la costa, para el Caso 2: cada zona con su\nserie anual (`ndvi_anual`, `area_verde_km2`), su tendencia y su `unidad_geografica` (un recuadro\nsobre el valle, **no** el promedio del departamento).",
+        "operationId": "vegetacion",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZonaVegetacion"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/zonas": {
       "get": {
         "tags": ["api"],
@@ -137,6 +159,24 @@
   },
   "components": {
     "schemas": {
+      "AnioVegetacion": {
+        "type": "object",
+        "description": "Medidas de un año completo (12 meses válidos).",
+        "required": ["ndvi_anual", "area_verde_km2"],
+        "properties": {
+          "area_verde_km2": {
+            "type": "number",
+            "format": "double",
+            "description": "Área con NDVI medio del año mayor que `umbral_verde_ndvi`, en km²."
+          },
+          "ndvi_anual": {
+            "type": "number",
+            "format": "double",
+            "description": "NDVI medio del año en el recuadro (−1 a 1)."
+          }
+        },
+        "additionalProperties": false
+      },
       "ErrorRespuesta": {
         "type": "object",
         "description": "Cuerpo de los errores 400 y 404.",
@@ -376,6 +416,100 @@
             "type": "string"
           }
         }
+      },
+      "ZonaVegetacion": {
+        "type": "object",
+        "description": "`GET /api/vegetacion`: una zona (recuadro sobre un valle) con su serie anual y su tendencia.",
+        "required": [
+          "id",
+          "nombre",
+          "departamento",
+          "ubigeo",
+          "tipo",
+          "unidad_geografica",
+          "bbox",
+          "lat",
+          "lon",
+          "pixeles",
+          "fuente",
+          "umbral_verde_ndvi",
+          "tendencia_de",
+          "anios",
+          "stats"
+        ],
+        "properties": {
+          "anios": {
+            "type": "object",
+            "description": "Por año (\"2001\", ...): solo años completos.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AnioVegetacion"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "bbox": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "`[oeste, sur, este, norte]` en grados."
+          },
+          "departamento": {
+            "type": "string",
+            "description": "Departamento donde está el recuadro."
+          },
+          "fuente": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "description": "Identificador del recuadro, p. ej. \"chavimochic\"."
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lon": {
+            "type": "number",
+            "format": "double"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "pixeles": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Píxeles MODIS (~1 km) del recuadro.",
+            "minimum": 0
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "tendencia_de": {
+            "type": "string",
+            "description": "Sobre qué campo de `anios` se calcula `stats` (hoy, \"ndvi_anual\")."
+          },
+          "tipo": {
+            "type": "string",
+            "description": "P. ej. \"valle irrigado\"."
+          },
+          "ubigeo": {
+            "type": "string",
+            "description": "Ubigeo del departamento, como texto (\"01\"–\"25\")."
+          },
+          "umbral_verde_ndvi": {
+            "type": "number",
+            "format": "double",
+            "description": "NDVI desde el que un píxel cuenta como área verde."
+          },
+          "unidad_geografica": {
+            "type": "string",
+            "description": "Qué área se promedia: un recuadro, **no** el departamento. La ficha debe mostrarlo."
+          }
+        },
+        "additionalProperties": false
       }
     }
   }

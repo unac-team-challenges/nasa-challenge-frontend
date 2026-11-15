@@ -1,5 +1,5 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
-import type { Estado, Periodo, Region, Variable } from '../data/datos'
+import type { Estado, Region, Variable } from '../data/datos'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -15,7 +15,6 @@ const es = {
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
   variables: { lluvia: 'Lluvia', temperatura: 'Temperatura' } as PorVariable<string>,
-  periodos: { largo: 'Desde 1981', reciente: 'Desde 2001' } as Record<Periodo, string>,
   heroH: '¿Qué está cambiando en tu zona del Perú?',
   heroLead: (a: number, b: number) =>
     `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
@@ -83,6 +82,16 @@ const es = {
     pocos_datos: 'Pocos datos',
   } as Record<Estado, string>,
   perDecade: 'por década',
+  /** Ficha del 3D al pasar el puntero */
+  vsPromedio: 'frente a su promedio',
+  ic95: 'IC 95 %',
+  anios: 'años',
+  /** Presentación breve al elegir un departamento */
+  introDepto: {
+    costa: 'Departamento de la costa del Perú',
+    sierra: 'Departamento de la sierra del Perú',
+    selva: 'Departamento de la selva del Perú',
+  } as Record<Region, string>,
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
   fewCeldas: (n: number, fuente: string, local: boolean) =>
@@ -188,7 +197,6 @@ const en: Textos = {
   perfilLbl: 'Profile',
   periodoLbl: 'Period',
   variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
-  periodos: { largo: 'Since 1981', reciente: 'Since 2001' },
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
@@ -259,6 +267,14 @@ const en: Textos = {
     pocos_datos: 'Not enough data',
   },
   perDecade: 'per decade',
+  vsPromedio: 'vs. its average',
+  ic95: '95% CI',
+  anios: 'years',
+  introDepto: {
+    costa: "A department on Peru's coast",
+    sierra: "A department in Peru's Andes",
+    selva: "A department in Peru's Amazon",
+  },
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
   fewCeldas: (n, fuente, local) =>
@@ -403,6 +419,8 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
     oso: ['Oso de anteojos · Cajamarca', 'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.'],
     cocodrilo: ['Cocodrilo americano · Tumbes', 'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.'],
     caballo: ['Caballo peruano de paso · Lima', 'Su andar suave, el «paso llano», es patrimonio cultural de la nación.'],
+    shipibo: ['Mujer shipibo-konibo · Ucayali', 'Pueblo amazónico del río Ucayali. Sus diseños kené, pintados y bordados, son Patrimonio Cultural de la Nación desde 2008.'],
+    danzante: ['Danzante de tijeras · Huancavelica', 'El danzaq baila al ritmo de unas tijeras de metal. La UNESCO la declaró Patrimonio Cultural Inmaterial de la Humanidad en 2010.'],
   },
   en: {
     alpaca: ['Alpaca · Puno', 'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.'],
@@ -422,6 +440,8 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
     oso: ['Spectacled bear · Cajamarca', "South America's only bear; its pale face markings differ in every individual."],
     cocodrilo: ['American crocodile · Tumbes', "Peru's only crocodile lives in Tumbes' mangroves and rivers."],
     caballo: ['Peruvian Paso horse · Lima', "Its smooth gait, the 'paso llano', is part of Peru's national heritage."],
+    shipibo: ['Shipibo-Konibo woman · Ucayali', 'An Amazonian people of the Ucayali River. Their kené designs, painted and embroidered, have been National Cultural Heritage of Peru since 2008.'],
+    danzante: ['Scissors dancer · Huancavelica', 'The danzaq dances to the beat of metal scissors. UNESCO listed it as Intangible Cultural Heritage of Humanity in 2010.'],
   },
 }
 
@@ -434,7 +454,7 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
     inicio: {
       titulo: 'Detective del Perú · ¿Qué está cambiando en tu zona?',
       descripcion:
-        'Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde 2001, y si el cambio es real o casualidad.',
+        'Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde {desde}, y si el cambio es real o casualidad.',
     },
     explorar: {
       titulo: 'Explorador del clima del Perú · Detective del Perú',
@@ -451,7 +471,7 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
     inicio: {
       titulo: 'Peru Trend Detective · What is changing in your area?',
       descripcion:
-        '3D map of Peru with NASA data: how much rainfall and temperature changed in each department since 2001, and whether the change is real or chance.',
+        '3D map of Peru with NASA data: how much rainfall and temperature changed in each department since {desde}, and whether the change is real or chance.',
     },
     explorar: {
       titulo: 'Peru climate explorer · Peru Trend Detective',
@@ -473,7 +493,14 @@ interface Metodologia {
   intro: string
   fuentesH: string
   tablaCols: [string, string, string, string]
-  fuentes: { variable: string; fuente: string; resolucion: string; anios: string; enlace: Enlace }[]
+  fuentes: {
+    variable: string
+    fuente: string
+    resolucion: string
+    anios?: string
+    rango?: 'lluvia' | 'temperatura' | 'local'
+    enlace: Enlace
+  }[]
   fuentesNota: string
   calculoH: string
   pasos: [titulo: string, texto: string][]
@@ -506,14 +533,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         variable: 'Lluvia',
         fuente: 'GPM IMERG v07 (NASA), promedio mensual',
         resolucion: '≈ 10 km',
-        anios: '2001–2024',
+        rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
       },
       {
         variable: 'Temperatura',
         fuente: 'MERRA-2 (NASA) vía POWER: temperatura del aire a 2 m (T2M)',
         resolucion: '≈ 50 × 60 km',
-        anios: '2001–2024',
+        rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -521,7 +548,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente:
           'NASA POWER (MERRA-2): lluvia y temperatura. La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
         resolucion: '≈ 50 × 60 km',
-        anios: '1981–2024',
+        rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -627,14 +654,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         variable: 'Rainfall',
         fuente: 'GPM IMERG v07 (NASA), monthly mean',
         resolucion: '≈ 10 km',
-        anios: '2001–2024',
+        rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
       },
       {
         variable: 'Temperature',
         fuente: 'MERRA-2 (NASA) via POWER: air temperature at 2 m (T2M)',
         resolucion: '≈ 50 × 60 km',
-        anios: '2001–2024',
+        rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
@@ -642,7 +669,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente:
           'NASA POWER (MERRA-2): rainfall and temperature. The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
         resolucion: '≈ 50 × 60 km',
-        anios: '1981–2024',
+        rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {

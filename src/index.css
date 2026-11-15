@@ -217,6 +217,219 @@ h3 {
   box-shadow: 0 6px 18px var(--shadow, rgba(0, 0, 0, 0.2));
 }
 
+/* Ficha técnica del 3D al pasar el puntero por un departamento (la llena la escena; texto, nunca
+   HTML). La posición la escribe la escena en .ficha3d; la entrada y salida se animan en la caja
+   con opacity y transform, que no recalculan el layout. */
+.ficha3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.ficha3d-caja {
+  min-width: 190px;
+  max-width: 240px;
+  padding: 9px 12px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 10px 28px var(--shadow, rgba(0, 0, 0, 0.2));
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition:
+    opacity 0.14s ease-out,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ficha3d.on .ficha3d-caja {
+  opacity: 1;
+  transform: none;
+}
+.ficha3d-nombre {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+.ficha3d-valor {
+  margin-top: 2px;
+}
+.ficha3d-valor strong {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ficha3d-valor small {
+  margin-left: 5px;
+  color: var(--muted);
+}
+.ficha3d-estado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-weight: 600;
+}
+/* Punto como la leyenda: pleno = real, anillo = posible casualidad, gris = pocos datos */
+.ficha3d-estado::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fase, var(--muted));
+}
+.ficha3d[data-clave='up'] {
+  --fase: var(--map-up);
+}
+.ficha3d[data-clave='down'] {
+  --fase: var(--map-down);
+}
+.ficha3d[data-clave='green'] {
+  --fase: var(--map-green);
+}
+.ficha3d[data-estado='posible_casualidad'] .ficha3d-estado::before {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--fase);
+}
+.ficha3d[data-estado='pocos_datos'] {
+  --fase: var(--muted);
+}
+/* Rango probable (IC 95 %) frente al cero: la línea del medio es el cero */
+.ficha3d-ic {
+  position: relative;
+  height: 12px;
+  margin: 8px 0 5px;
+  background:
+    linear-gradient(var(--muted), var(--muted)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat;
+}
+.ficha3d-ic[hidden] {
+  display: none;
+}
+.ficha3d-rango {
+  position: absolute;
+  top: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fase, var(--muted)) 70%, transparent);
+}
+.ficha3d-punto {
+  position: absolute;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 1.5px solid var(--panel);
+}
+.ficha3d-meta {
+  color: var(--muted);
+  white-space: pre-line;
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ficha3d-caja {
+    transition: none;
+  }
+}
+
+/* Paneles sobre el mapa de fondo: cada bloque de texto con su fondo y su borde, para que se lea
+   encima del mapa animado. Sin backdrop-filter: el desenfoque se recalcularía en cada cuadro. */
+.vidrio {
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes entrada-suave {
+  from {
+    opacity: 0;
+  }
+}
+.entrada {
+  animation: entrada 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) var(--retraso, 0s) both;
+}
+/* Solo opacidad: con transform, el bloque sería el contenedor de sus hijos absolutos */
+.entrada-suave {
+  animation: entrada-suave 0.7s ease-out var(--retraso, 0s) both;
+}
+.saliendo {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition:
+    opacity 0.32s ease-in,
+    transform 0.32s ease-in;
+}
+
+/* Presentación del departamento elegido: el nombre entra lento al centro y se va (1,9 s) */
+@keyframes presentacion {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.32em;
+    transform: translateY(8px);
+  }
+  28%,
+  72% {
+    opacity: 1;
+    letter-spacing: 0.14em;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 0.1em;
+    transform: translateY(-6px);
+  }
+}
+.presentacion {
+  pointer-events: none;
+}
+.presentacion > div {
+  animation: presentacion 1.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.presentacion-nombre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 6vw, 84px);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow:
+    0 0 18px var(--bg),
+    0 0 42px var(--bg);
+}
+.presentacion-sub {
+  margin: 10px 0 0;
+  font-size: clamp(13px, 1.4vw, 16px);
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+  text-shadow:
+    0 0 10px var(--bg),
+    0 0 24px var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada,
+  .entrada-suave,
+  .presentacion > div {
+    animation: none;
+  }
+  .saliendo {
+    transition: none;
+  }
+}
+
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;
@@ -226,4 +439,32 @@ h3 {
   font-size: 11px;
   letter-spacing: 0.08em;
   opacity: 0.5;
+}
+
+/* Mapa 2D: colores y bordes cambian suave; la zona bajo el puntero se levanta con una sombra,
+   y el zoom a la zona elegida se desliza (Mapa2D.zoomA) */
+.zona2d {
+  transition:
+    fill 0.4s ease,
+    stroke 0.2s ease,
+    filter 0.25s ease;
+}
+.zona2d.encima {
+  filter: drop-shadow(0 0.08px 0.18px var(--shadow)) brightness(1.08);
+}
+.zoom2d {
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* el suelo (canvas) y el SVG se agrandan en la tarjeta gráfica, sin volver a pintarse */
+  will-change: transform;
+}
+/* Etiquetas del 2D: se deslizan con el zoom (las del 3D las mueve la escena cada cuadro) */
+.lbl2d {
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .zona2d,
+  .zoom2d,
+  .lbl2d {
+    transition: none;
+  }
 }

@@ -55,4 +55,26 @@ describe('modo Vegetación del mapa', () => {
     const informe = await screen.findByRole('complementary', { name: /informe/i })
     expect(await within(informe).findByText(/Lima no tiene vegetación medida/)).toBeVisible()
   })
+
+  it('en la portada ?capa=vegetacion no marca el botón: el modo es del explorador', async () => {
+    renderRuta('/?capa=vegetacion')
+    const grupo = await screen.findByRole('group', { name: 'Variable' })
+    expect(within(grupo).getByRole('button', { name: 'Vegetación' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(within(grupo).getByRole('button', { name: 'Lluvia' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('un ?anio suelto no se aplica en el modo y se suelta al volver a Lluvia', async () => {
+    const router = renderRuta('/explorar?capa=vegetacion&anio=2017')
+    const grupo = await screen.findByRole('group', { name: 'Variable' })
+    expect(screen.queryByRole('group', { name: /máquina del tiempo/i })).toBeNull()
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Lluvia' }))
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty('capa'))
+    expect(router.state.location.search).not.toHaveProperty('anio')
+  })
 })

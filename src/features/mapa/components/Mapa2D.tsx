@@ -368,7 +368,7 @@ export function Mapa2D({ interactivo = true }: Props) {
     // Modo Vegetación: el nombre y, si lo tiene, su lugar medido (sin lluvia ni temperatura)
     if (vegetacion) {
       const l = lugarDe(id)
-      return l ? `${NOMBRE[id]}, ${t.vegetacionBtn.toLowerCase()}: ${l.nombre}` : NOMBRE[id]
+      return l ? `${NOMBRE[id]}, ${t.vegConLugar(l.nombre)}` : NOMBRE[id]
     }
     const d = zonas[id]
     const valorAnio = an?.porId[id]?.[anio ?? 0]

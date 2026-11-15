@@ -64,6 +64,7 @@ const es = {
     'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   // Modo «Vegetación» del mapa: los 5 recuadros medidos (no hay datos de los 25 departamentos)
   vegetacionBtn: 'Vegetación',
+  vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
   mapHVeg: 'Vegetación medida con satélite',
   mapSubVeg: 'MODIS, 2001–2024 · 5 lugares',
   vegSube: 'Más vegetación',
@@ -305,6 +306,7 @@ const en: Textos = {
   calorNota:
     'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
   vegetacionBtn: 'Vegetation',
+  vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
   mapHVeg: 'Vegetation measured by satellite',
   mapSubVeg: 'MODIS, 2001–2024 · 5 places',
   vegSube: 'More vegetation',

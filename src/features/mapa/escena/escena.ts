@@ -985,12 +985,13 @@ export class EscenaPeru {
   setVegetacion(on: boolean) {
     if (this.veg === on) return
     this.veg = on
-    for (const c of this.cajasVeg) c.caja.visible = c.borde.visible = on
+    this.ubicarCajasVeg()
     this.pintar()
     this.alturas(false)
     this.textosEtiquetas()
     this.actualizarParticulas()
     this.llenarTarjeta()
+    this.sucio = true
   }
 
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
@@ -1616,6 +1617,7 @@ export class EscenaPeru {
     this.pasoParticulas(fondo ? dt : 0)
     this.fauna.paso(fondo ? dt : 0) // con «reducir movimiento» quedan quietos sobre su zona
     if (fondo) this.mar.material.uniforms.uTime.value += dt
+    this.ubicarCajasVeg()
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)
     this.ubicarEtiquetas()
@@ -1653,6 +1655,16 @@ export class EscenaPeru {
     T.raiz.style.transform = tf
   }
 
+  /** Recuadros de vegetación sobre la cara de su departamento; va antes de dibujar (no después). */
+  private ubicarCajasVeg() {
+    const conVeg = this.veg && this.modo === 'explorar'
+    for (const c of this.cajasVeg) {
+      const m = this.porId.get(c.lugar.departamento)
+      c.caja.visible = c.borde.visible = conVeg && !!m
+      if (m) c.caja.position.y = c.borde.position.y = m.position.z + m.scale.z + 0.04
+    }
+  }
+
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
@@ -1687,12 +1699,6 @@ export class EscenaPeru {
     }
     // Modo Vegetación (solo en el explorador): recuadros y nombres sobre la cara de su departamento
     const conVeg = this.veg && this.modo === 'explorar'
-    for (const c of this.cajasVeg) {
-      const m = malla(c.lugar.departamento)
-      const visible = conVeg && !!m
-      c.caja.visible = c.borde.visible = visible
-      if (m) c.caja.position.y = c.borde.position.y = m.position.z + m.scale.z + 0.04
-    }
     for (const mv of this.marcasVeg) {
       if (mv.el.hidden === conVeg) mv.el.hidden = !conVeg
       const m = malla(mv.departamento)

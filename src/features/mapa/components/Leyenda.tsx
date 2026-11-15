@@ -8,6 +8,7 @@ import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
 import { PARADAS_CALOR, tieneAnio } from '@/features/mapa/utils/calor'
+import { COLOR_TENDENCIA, type TendenciaVegetacion } from '@/features/mapa/utils/vegetacion'
 
 /** Frío → calor, los mismos tokens que pinta el mapa de calor (PARADAS_CALOR). */
 const RAMPA = `linear-gradient(to right, ${PARADAS_CALOR.map((v) => `var(${v})`).join(', ')})`
@@ -31,7 +32,6 @@ function guardarEleccion(abierta: boolean) {
     /* sin almacenamiento (modo privado): vuelve al valor por defecto */
   }
 }
-import { COLOR_TENDENCIA, type TendenciaVegetacion } from '@/features/mapa/utils/vegetacion'
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {

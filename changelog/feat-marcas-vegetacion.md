@@ -8,13 +8,16 @@ Solo hay datos de vegetación de **5 recuadros** (3 valles y 2 zonas de selva), 
 ## Qué cambia
 - **Botón «Vegetación»** (con ícono de hoja) en el mismo grupo que Lluvia y Temperatura (`Cabecera.tsx`).
   - Va en la URL como `?capa=vegetacion` (`lib/busqueda.ts`) y no cambia el tipo `Variable`: lluvia y temperatura siguen igual.
+  - Con `?capa=vegetacion` el `?anio` no se aplica (no hay máquina del tiempo); al salir con Lluvia o Temperatura se suelta.
+  - Solo vale en el explorador (`/explorar`, `/zona/:id`): en la portada, `?capa=vegetacion` no cambia el mapa ni marca el botón.
   - Al entrar se apaga la máquina del tiempo; desde la portada lleva al explorador. Lluvia o Temperatura sacan del modo.
 - **Mapa 3D** (`escena.ts`, `setVegetacion`):
   - departamentos planos y atenuados;
   - los 5 recuadros a tamaño real (unos 25 km), con borde;
   - sin etiquetas de lluvia, sin partículas y sin la tarjeta del puntero;
+  - los recuadros se colocan antes de dibujar el cuadro (`ubicarCajasVeg`), para no ir un cuadro atrasados;
   - el nombre de cada lugar va sobre su recuadro, con el punto del color de su tendencia.
-- **Mapa 2D** (`Mapa2D.tsx`): lo mismo. La etiqueta accesible de cada departamento dice si tiene vegetación medida.
+- **Mapa 2D** (`Mapa2D.tsx`): lo mismo. La etiqueta accesible de cada departamento dice si tiene vegetación medida (`t.vegConLugar`).
 - **Colores** (`COLOR_TENDENCIA`):
   - verde: más vegetación (Chavimochic, Ica y Olmos);
   - ocre: menos árboles (La Pampa);
@@ -31,12 +34,14 @@ Solo hay datos de vegetación de **5 recuadros** (3 valles y 2 zonas de selva), 
 
 ## Pruebas
 - `app/vegetacion.test.ts`: cada recuadro tiene su ficha, y el color de cada recuadro dice lo mismo que su ficha (Caso 2: el NDVI sube; selva: el rango probable).
-- `mapa/utils/vegetacion.test.ts`: cada recuadro cae dentro de su departamento.
-- `app/rutas/PanelVegetacion.test.tsx` (4):
+- `mapa/utils/vegetacion.test.ts`: el centro y las 4 esquinas de cada recuadro caen dentro de su departamento, salvo la esquina suroeste de Chavimochic (valle de la costa, cae al mar: el backend mide 847 de 900 píxeles ahí). La excepción está escrita en el test.
+- `app/rutas/PanelVegetacion.test.tsx` (6):
   - el botón entra al modo, lo escribe en la URL y quita la máquina del tiempo;
   - la lista de los 5 lugares;
   - elegir La Pampa abre los árboles de la selva, y Lluvia saca del modo;
-  - Lima, sin vegetación medida.
+  - Lima, sin vegetación medida;
+  - en la portada, `?capa=vegetacion` no marca el botón;
+  - un `?anio` suelto no se aplica en el modo y se suelta al volver a Lluvia.
 - En el navegador:
   - 3D y 2D, tema oscuro y claro, español e inglés;
   - al volver a Lluvia reaparecen las etiquetas con valores y la barra de tiempo;

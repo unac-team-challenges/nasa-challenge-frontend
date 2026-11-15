@@ -1,4 +1,4 @@
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useRouterState, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VARIABLES, type Variable } from '@/data/datos'
 import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
@@ -50,6 +50,11 @@ export function useBusqueda() {
   const s = useSearch({ strict: false }) as Busqueda
   const { id } = useParams({ strict: false }) as { id?: string }
   const navigate = useNavigate()
+  // El modo Vegetación es del explorador: en la portada o en la metodología, ?capa no cambia nada
+  const enMapa = useRouterState({
+    select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
+  })
+  const vegetacion = enMapa && s.capa === 'vegetacion'
   const poner = (cambio: Partial<Busqueda>) =>
     navigate({
       to: '.',
@@ -61,12 +66,14 @@ export function useBusqueda() {
     variable: s.variable ?? 'lluvia',
     perfil: s.perfil ?? 'agricultor',
     sel: id ?? null,
-    anio: s.anio ?? null,
+    // En el modo Vegetación no hay máquina del tiempo: un ?anio suelto no se aplica
+    anio: vegetacion ? null : (s.anio ?? null),
     /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
-    vegetacion: s.capa === 'vegetacion',
+    vegetacion,
     setVariable: (variable: Variable) => {
       useApp.getState().setSinNino(false)
-      return poner({ variable, capa: undefined })
+      // Al salir del modo Vegetación también se suelta un ?anio que no se veía
+      return poner({ variable, capa: undefined, ...(s.capa ? { anio: undefined } : {}) })
     },
     /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
     setVegetacion: () => {

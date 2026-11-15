@@ -11,32 +11,42 @@ export function promedio(pts: Punto[]) {
 }
 
 /**
- * Filas del gráfico de la serie: el valor de cada año, la recta de Sen (pivote en el año central
- * con el promedio) y la banda del rango probable (IC 95 %), que se abre hacia los extremos.
+ * Filas del gráfico de la serie: el valor de cada año, la recta de Sen (`intercept + pendiente × año`,
+ * la que calculó el pipeline) y la banda del rango probable (IC 95 %). La banda es el rango de la
+ * pendiente girando sobre el año central, no un IC del valor: se abre hacia los extremos.
+ * Sin `intercept` (zona sin cifras) la recta pasa por (año central, promedio).
  */
-export function filasSerie(pts: Punto[], d: Pick<Zona, 'slope_per_decade' | 'ci_low' | 'ci_high'>) {
+export function filasSerie(
+  pts: Punto[],
+  d: Pick<Zona, 'slope_per_decade' | 'ci_low' | 'ci_high' | 'intercept'>,
+) {
   if (pts.length < 2) return []
   const xc = (pts[0].y + pts[pts.length - 1].y) / 2
   const yc = promedio(pts)
-  const recta = (s: number, y: number) => yc + (s / 10) * (y - xc)
+  const sen = (y: number) =>
+    d.intercept != null
+      ? d.intercept + (d.slope_per_decade / 10) * y
+      : yc + (d.slope_per_decade / 10) * (y - xc)
+  // Centro de la banda: la propia recta de Sen en el año central.
+  const pivote = sen(xc)
+  const gira = (s: number, y: number) => pivote + (s / 10) * (y - xc)
   return pts.map((p) => {
-    const a = recta(d.ci_low, p.y)
-    const b = recta(d.ci_high, p.y)
+    const a = gira(d.ci_low, p.y)
+    const b = gira(d.ci_high, p.y)
     return {
       y: p.y,
       v: p.v,
-      tendencia: recta(d.slope_per_decade, p.y),
+      tendencia: sen(p.y),
       banda: [Math.min(a, b), Math.max(a, b)] as [number, number],
     }
   })
 }
 
 /**
- * Cada año frente a lo normal (el promedio de la serie). Lluvia: en % del promedio, que se entiende
+ * Cada año frente a lo normal (el promedio de la serie, o `media` si se da otra línea base). Lluvia: en % del promedio, que se entiende
  * mejor que los milímetros; temperatura: en °C.
  */
-export function anomalias(pts: Punto[], variable: Variable) {
-  const media = promedio(pts)
+export function anomalias(pts: Punto[], variable: Variable, media = promedio(pts)) {
   return pts.map((p) => ({
     y: p.y,
     v: p.v,
@@ -111,12 +121,15 @@ export function esMalo(anomalia: number, variable: Variable) {
 
 /**
  * Los años malos en dos mitades del periodo (antes / ahora), para ver si vienen más seguido.
+ * «Normal» es el promedio de la primera mitad, una línea base fija: medido contra el promedio de
+ * todo el periodo, una tendencia haría que los años recientes salgan «malos» por construcción.
  * Cada mitad trae sus años con su anomalía y si fue malo.
  */
 export function aniosMalosPorMitad(pts: Punto[], variable: Variable) {
-  const filas = anomalias(pts, variable)
-  if (filas.length < 4) return null
-  const corte = Math.floor((filas[0].y + filas[filas.length - 1].y) / 2)
+  if (pts.length < 4) return null
+  const corte = Math.floor((pts[0].y + pts[pts.length - 1].y) / 2)
+  const base = promedio(pts.filter((p) => p.y <= corte))
+  const filas = anomalias(pts, variable, base)
   const mitad = (f: typeof filas) => ({
     desde: f[0].y,
     hasta: f[f.length - 1].y,
@@ -130,11 +143,41 @@ export function aniosMalosPorMitad(pts: Punto[], variable: Variable) {
 }
 
 /**
- * Cuánto se apartan de lo normal, en promedio, los años de El Niño de la serie (lluvia en %,
- * temperatura en °C). null si la serie no tiene años de El Niño (o se quitaron).
+ * ¿Hay más años malos ahora que antes? Compara la proporción de cada mitad (no los conteos: sin
+ * los años de El Niño las mitades pueden tener distinto largo); 0,15 ≈ 2 años de cada 12.
  */
-export function efectoNino(pts: Punto[], variable: Variable, nino: number[]) {
-  const enNino = anomalias(pts, variable).filter((f) => nino.includes(f.y))
+export function compararMalos(
+  antes: { malos: number; anios: unknown[] },
+  ahora: { malos: number; anios: unknown[] },
+): 'mas' | 'menos' | 'igual' {
+  const d = ahora.malos / ahora.anios.length - antes.malos / antes.anios.length
+  return d >= 0.15 ? 'mas' : d <= -0.15 ? 'menos' : 'igual'
+}
+
+/**
+ * Cuánto se apartan de lo esperado, en promedio, los años de El Niño de la serie (lluvia en %,
+ * temperatura en °C). Lo esperado es la recta de Sen de la zona: esos años caen al final de la
+ * serie y, contra el promedio, se mezclarían con la tendencia. Sin `intercept`, el promedio.
+ * null si la serie no tiene años de El Niño (o se quitaron).
+ */
+export function efectoNino(
+  pts: Punto[],
+  variable: Variable,
+  nino: number[],
+  d?: Pick<Zona, 'slope_per_decade' | 'intercept'>,
+) {
+  const media = promedio(pts)
+  const esperado = (y: number) =>
+    d?.intercept != null ? d.intercept + (d.slope_per_decade / 10) * y : media
+  const enNino = pts
+    .filter((p) => nino.includes(p.y))
+    .map((p) => {
+      const e = esperado(p.y)
+      return {
+        y: p.y,
+        a: variable === 'lluvia' ? (e ? ((p.v - e) / e) * 100 : 0) : p.v - e,
+      }
+    })
   if (!enNino.length) return null
   return {
     anios: enNino.map((f) => f.y),

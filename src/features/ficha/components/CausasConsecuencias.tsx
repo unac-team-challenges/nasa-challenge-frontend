@@ -16,7 +16,7 @@ export function CausasConsecuencias({ zona: d, perfil }: { zona: Zona; perfil: P
   const { variable } = useBusqueda()
   const t = TEXTOS[idioma]
   const textos = CAUSAS_TEXTOS[idioma]
-  const entradas = entradasPara(d.id, variable, d.slope_per_decade >= 0)
+  const entradas = entradasPara(d.id, variable, d.slope_per_decade >= 0, d.status === 'real')
   const campo = perfil === 'agricultor'
   const grupos = [
     { tipo: 'causa' as const, titulo: t.causasCausa, icono: Lightbulb },
@@ -31,6 +31,9 @@ export function CausasConsecuencias({ zona: d, perfil }: { zona: Zona; perfil: P
       <h3 id="causas-h" className="m-0 text-sm font-semibold">
         {t.causasH}
       </h3>
+      {d.status !== 'real' && entradas.length > 0 && (
+        <p className="m-0 text-sm text-muted">{t.causasContexto}</p>
+      )}
       {entradas.length === 0 && <p className="m-0 text-sm">{t.causasNada}</p>}
       {grupos.map(({ tipo, titulo, icono: Icono }) => {
         const lista = entradas.filter((e) => e.tipo === tipo)

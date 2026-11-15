@@ -16,14 +16,14 @@ describe('causas y consecuencias', () => {
   })
 
   it('Piura (lluvia): El Niño en la costa norte y sus inundaciones', () => {
-    expect(entradasPara('20', 'lluvia', true).map((e) => e.id)).toEqual([
+    expect(entradasPara('20', 'lluvia', true, true).map((e) => e.id)).toEqual([
       'ninoNorte',
       'inundaciones',
     ])
   })
 
   it('Puno (temperatura que sube): calentamiento y glaciares', () => {
-    expect(entradasPara('21', 'temperatura', true).map((e) => e.id)).toEqual([
+    expect(entradasPara('21', 'temperatura', true, true).map((e) => e.id)).toEqual([
       'calentamientoAndes',
       'calentamientoRegion',
       'glaciares',
@@ -32,8 +32,25 @@ describe('causas y consecuencias', () => {
   })
 
   it('lo que depende del sentido no sale si la tendencia va al revés', () => {
-    expect(entradasPara('21', 'temperatura', false)).toEqual([])
-    expect(entradasPara('16', 'lluvia', true).map((e) => e.id)).not.toContain('bosque')
-    expect(entradasPara('16', 'lluvia', false).map((e) => e.id)).toContain('bosque')
+    expect(entradasPara('21', 'temperatura', false, true)).toEqual([])
+    expect(entradasPara('16', 'lluvia', true, true).map((e) => e.id)).not.toContain('bosque')
+    expect(entradasPara('16', 'lluvia', false, true).map((e) => e.id)).toContain('bosque')
+  })
+
+  it('si el cambio puede ser casualidad, solo queda el contexto sin sentido', () => {
+    expect(entradasPara('16', 'lluvia', false, false).map((e) => e.id)).not.toContain('bosque')
+    expect(entradasPara('16', 'lluvia', false, false).map((e) => e.id)).not.toContain('menosAgua')
+    expect(entradasPara('21', 'temperatura', true, false)).toEqual([])
+    expect(entradasPara('20', 'lluvia', true, false).map((e) => e.id)).toEqual([
+      'ninoNorte',
+      'inundaciones',
+    ])
+  })
+
+  it('las referencias APA no abrevian autores con «et al.» y llevan enlace', () => {
+    for (const f of Object.values(FUENTES)) {
+      expect(f.apa).not.toMatch(/\bet al\./)
+      expect(f.apa).toMatch(/\(\d{4}\)/)
+    }
   })
 })

@@ -126,7 +126,7 @@ export const Ficha = memo(function Ficha() {
       )}
       {!campo && (
         <>
-          <EstLimitaciones anios={d.n_years} />
+          {d.n_years > 0 && <EstLimitaciones anios={d.n_years} />}
           <EstRecursos />
         </>
       )}

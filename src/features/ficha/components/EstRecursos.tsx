@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, Copy, Download, ExternalLink } from 'lucide-react'
 import { GENERADO, NOMBRE, parametroDe } from '@/data/datos'
 import { REPOS, TEXTOS } from '@/i18n/textos'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { API_URL } from '@/api/cliente'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -10,12 +10,13 @@ import { descargarTexto, tablaCsv } from '@/features/ficha/utils/estudiante'
 import { Button } from '@/components/ui/button'
 
 /** Bloque de texto copiable (cita APA, BibTeX, consulta a la API). */
-function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
+function Copiable({ texto, etiqueta, nota }: { texto: string; etiqueta: string; nota?: string }) {
   const t = TEXTOS[useApp((s) => s.idioma)]
   const [copiado, setCopiado] = useState(false)
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted">{etiqueta}</span>
+      {nota && <span className="text-xs text-muted">{nota}</span>}
       <div className="flex items-start gap-2">
         <pre className="m-0 min-w-0 flex-1 overflow-x-auto rounded-s border border-line bg-panel-2 p-2 font-mono text-[11.5px] leading-snug whitespace-pre-wrap break-words">
           {texto}
@@ -24,14 +25,20 @@ function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
           size="icon"
           aria-label={copiado ? t.citarCopiado : `${t.citarCopiar}: ${etiqueta}`}
           onClick={() =>
-            navigator.clipboard?.writeText(texto).then(() => {
-              setCopiado(true)
-              setTimeout(() => setCopiado(false), 1500)
-            })
+            navigator.clipboard
+              ?.writeText(texto)
+              .then(() => {
+                setCopiado(true)
+                setTimeout(() => setCopiado(false), 1500)
+              })
+              .catch(() => {})
           }
         >
           {copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
         </Button>
+        <span role="status" className="sr-only">
+          {copiado ? t.citarCopiado : ''}
+        </span>
       </div>
     </div>
   )
@@ -39,7 +46,7 @@ function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
 
 /**
  * Estudiante: llevarse los datos (tabla de los 25 en CSV), citar (APA y BibTeX, con el enlace a
- * esta vista exacta) y reproducir el cálculo (la consulta a la API y los repositorios).
+ * esta zona) y reproducir el cálculo (la consulta a la API y los repositorios).
  */
 export function EstRecursos() {
   const idioma = useApp((s) => s.idioma)
@@ -47,8 +54,11 @@ export function EstRecursos() {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { api, rango } = useVista()
+  // Se suscribe al año para que el enlace copiado no quede con el año anterior al mover la barra.
+  useAnio()
   if (!sel) return null
-  const anio = new Date().getFullYear()
+  // Año de la cita: el de los datos (no cambia cada 1 de enero).
+  const anio = Number(GENERADO.slice(0, 4))
   const enlace = location.href
   const param = parametroDe(variable)
   const apa = [
@@ -60,13 +70,14 @@ export function EstRecursos() {
   title = {{POWER Project}: ${param}, ${rango.year_start}--${rango.year_end}},
   year = {${anio}},
   howpublished = {\\url{https://power.larc.nasa.gov/}},
-  note = {Datos generados el ${GENERADO}}
+  note = {${idioma === 'en' ? 'Data generated on' : 'Datos generados el'} ${GENERADO}}
 }
-@software{detective_peru,
+@misc{detective_peru,
   author = {{UNAC Team Challenges}},
   title = {Detective del Per\\'u},
   year = {${anio}},
-  url = {${enlace}}
+  howpublished = {\\url{${REPOS[0][1]}}},
+  note = {Software}
 }`
   const consulta = `GET ${API_URL || ''}/api/zonas/${sel}?variable=${variable}`
 
@@ -103,7 +114,11 @@ export function EstRecursos() {
         </h3>
         <Copiable etiqueta="APA" texto={apa} />
         <Copiable etiqueta="BibTeX" texto={bib} />
-        <Copiable etiqueta={`${t.citarEnlace} (${NOMBRE[sel]})`} texto={enlace} />
+        <Copiable
+          etiqueta={`${t.citarEnlace} (${NOMBRE[sel]})`}
+          nota={t.citarEnlaceNota}
+          texto={enlace}
+        />
       </section>
 
       <section

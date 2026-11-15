@@ -21,8 +21,7 @@ export function DescargarFigura({ nombre }: { nombre: string }) {
           onClick={(e) => {
             const svg = svgDe(e)
             if (!svg) return
-            if (f === 'svg') exportarSvg(svg, nombre)
-            else exportarPng(svg, nombre)
+            void (f === 'svg' ? exportarSvg(svg, nombre) : exportarPng(svg, nombre))
           }}
         >
           <ImageDown aria-hidden="true" />

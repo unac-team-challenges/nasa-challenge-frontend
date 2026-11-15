@@ -3,7 +3,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
 /** Pronósticos y avisos oficiales del tiempo en el Perú. */
-const SENAMHI = 'https://www.senamhi.gob.pe/'
+const SENAMHI = 'https://www.gob.pe/senamhi'
 /** Comunicados oficiales de la Comisión ENFEN sobre El Niño. */
 const ENFEN = 'https://enfen.imarpe.gob.pe/comunicados/'
 

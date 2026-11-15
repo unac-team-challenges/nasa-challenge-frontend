@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { CircleCheck, CircleQuestionMark, CircleX } from 'lucide-react'
 import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
@@ -24,8 +25,8 @@ export function EstRobustez() {
   )
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
-  if (!sel) return null
-  const r = robustez(sel, variable)
+  const r = useMemo(() => (sel ? robustez(sel, variable) : null), [sel, variable])
+  if (!sel || !r) return null
   const { icono: Sello, color } = SELLO[r.veredicto]
   const [cCaso, cPend, cQ, cEstado] = t.robCols
 

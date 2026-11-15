@@ -4,7 +4,7 @@ import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { useDetalle } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
-import { aniosMalosPorMitad } from '@/features/ficha/utils/serie'
+import { aniosMalosPorMitad, compararMalos } from '@/features/ficha/utils/serie'
 
 /**
  * Agricultor: «¿los años malos vienen más seguido?». Arriba, la respuesta en dos cifras (antes →
@@ -49,7 +49,9 @@ export function CampoAniosMalos() {
         ))}
         <ArrowRight className="col-start-2 row-start-1 size-5 text-muted" aria-hidden="true" />
       </div>
-      <p className="m-0 font-semibold">{t.malosResumen[variable](antes.malos, ahora.malos)}</p>
+      <p className="m-0 font-semibold">
+        {t.malosResumen[variable](compararMalos(antes, ahora), antes.malos, ahora.malos)}
+      </p>
 
       {/* Cada año, una casilla con su número */}
       <div className="flex flex-col gap-2">
@@ -66,7 +68,7 @@ export function CampoAniosMalos() {
                   className="flex h-7 items-center justify-center rounded-[4px] border text-[11px] font-semibold tabular-nums"
                   style={
                     a.malo
-                      ? { background: color, borderColor: color, color: 'var(--bg)' }
+                      ? { background: color, borderColor: color, color: 'var(--panel)' }
                       : { borderColor: 'var(--line)', color: 'var(--muted)' }
                   }
                 >

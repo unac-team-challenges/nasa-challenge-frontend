@@ -36,7 +36,7 @@ describe('Caso 2 y selva en la ficha (copia local)', () => {
     for (const dep of ['13', '11']) {
       const { unmount } = ver(dep, 'agricultor')
       expect(screen.getByRole('heading', { name: 'No todo cambio es el clima' })).toBeVisible()
-      expect(screen.getByText(/No es por la lluvia: es por el riego/)).toBeVisible()
+      expect(screen.getByText(/Se explica sobre todo por el riego/)).toBeVisible()
       expect(screen.getByText(/^Fuente:/)).toBeVisible()
       unmount()
     }
@@ -46,7 +46,7 @@ describe('Caso 2 y selva en la ficha (copia local)', () => {
     for (const perfil of ['agricultor', 'estudiante'] as const) {
       const { unmount } = ver('14', perfil)
       expect(screen.queryByRole('heading', { name: 'No todo cambio es el clima' })).toBeNull()
-      expect(screen.queryByText(/es por el riego/)).toBeNull()
+      expect(screen.queryByText(/por el riego/)).toBeNull()
       expect(screen.getByText(/El Niño \(2015–2017 y 2023\)/)).toBeVisible()
       unmount()
     }

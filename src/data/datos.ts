@@ -34,6 +34,8 @@ export interface Zona {
   slope_per_decade: number
   ci_low: number
   ci_high: number
+  /** Intercepto de la recta de Sen en años calendario: valor ≈ intercept + slope/10 × año. */
+  intercept: number | null
   pct_change_per_decade: number | null
   p_value: number | null
   q_value: number | null
@@ -51,6 +53,7 @@ interface ZonaCruda {
   slope_per_decade?: number
   ci_low?: number
   ci_high?: number
+  intercept?: number
   pct_change_per_decade?: number
   p_value?: number
   q_value?: number
@@ -143,6 +146,7 @@ function normalizar(z: ZonaCruda): Zona {
     slope_per_decade: z.slope_per_decade ?? 0,
     ci_low: z.ci_low ?? 0,
     ci_high: z.ci_high ?? 0,
+    intercept: z.intercept ?? null,
     pct_change_per_decade: z.pct_change_per_decade ?? null,
     p_value: z.p_value ?? null,
     q_value: z.q_value ?? null,

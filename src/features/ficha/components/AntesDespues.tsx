@@ -33,7 +33,7 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
   }
   // En español manda el aviso de la API; en inglés (o sin API), la copia traducida
   const aviso = idioma === 'es' && api ? api.aviso : local.aviso?.[idioma]
-  const pct = Math.round(((v.areaDespues - v.areaAntes) / v.areaAntes) * 100)
+  const pct = v.areaAntes ? Math.round(((v.areaDespues - v.areaAntes) / v.areaAntes) * 100) : 0
   // Solo donde el riego está documentado se dice «no es la lluvia, es el riego»
   const riego = !!CAUSA_VERDE[departamento]
   const src = (anio: number) => `${import.meta.env.BASE_URL}caso2/${v.imagen}_${anio}.png`

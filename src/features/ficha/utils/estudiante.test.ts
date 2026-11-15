@@ -42,4 +42,12 @@ describe('ficha del estudiante', () => {
     expect(csv).toHaveLength(Object.keys(zonas).length + 1)
     expect(csv.find((l) => l.startsWith('21,'))).toMatch(/^21,"Puno",sierra,140\.7038,/)
   })
+
+  it('CSV: una zona sin datos (Callao) sale con pendiente e IC vacíos, no en cero', () => {
+    const zonas = zonasDe('lluvia', 'reciente')
+    const fila = tablaCsv(zonas, 'lluvia')
+      .split('\n')
+      .find((l) => l.startsWith('07,'))
+    expect(fila).toMatch(/^07,"Callao",costa,,,,/)
+  })
 })

@@ -4,7 +4,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtPct, num } from '@/utils/formato'
-import { useDetalle, useVista } from '@/hooks/useZonas'
+import { useDetalle, useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { efectoNino } from '@/features/ficha/utils/serie'
 import { listaAnios } from '@/features/ficha/utils/campo'
@@ -13,8 +13,8 @@ import { listaAnios } from '@/features/ficha/utils/campo'
 const ENFEN = 'https://enfen.imarpe.gob.pe/comunicados/'
 
 /**
- * Agricultor: «¿qué trae El Niño aquí?». Cuánto se apartaron de lo normal, en promedio, los años
- * de El Niño en esta zona: en el norte suele llover mucho más; en el sur andino, a veces menos.
+ * Agricultor: «¿qué trae El Niño aquí?». Cuánto se apartaron de lo esperado (la tendencia), en
+ * promedio, los años de El Niño en esta zona: en el norte suele llover mucho más; en el sur andino, a veces menos.
  */
 export function CampoNino() {
   const idioma = useApp((s) => s.idioma)
@@ -22,8 +22,9 @@ export function CampoNino() {
   const t = TEXTOS[idioma]
   const { rango } = useVista()
   const { serie: pts } = useDetalle(sel)
+  const zonas = useZonas()
   if (!pts || !sel) return null
-  const e = efectoNino(pts, variable, ninoEn(rango))
+  const e = efectoNino(pts, variable, ninoEn(rango), zonas[sel])
   const lluvia = variable === 'lluvia'
 
   return (

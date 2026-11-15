@@ -42,13 +42,30 @@ describe('explorador con la URL', () => {
     expect(within(informe).queryByRole('link', { name: /WhatsApp/ })).toBeNull()
   })
 
+  it('si el cambio puede ser casualidad, el titular del agricultor no afirma una dirección', async () => {
+    renderRuta('/zona/20?perfil=agricultor')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    expect(await within(informe).findByText('No se ve un cambio claro en la lluvia')).toBeVisible()
+    expect(within(informe).queryByText(/Cada 10 años llueve/)).toBeNull()
+    expect(within(informe).queryByText('Seguro')).toBeNull()
+  })
+
+  it('las causas con sentido no salen si el cambio puede ser casualidad (Amazonas, lluvia)', async () => {
+    renderRuta('/zona/01?perfil=agricultor')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    await within(informe).findByRole('heading', { name: 'Posibles causas y consecuencias' })
+    // sin causas con sentido queda el aviso de «no lo afirmamos»
+    expect(within(informe).getByText(/así que no lo afirmamos/)).toBeVisible()
+    expect(within(informe).queryByText(/se pierde bosque/i)).toBeNull()
+  })
+
   it('el estudiante ve robustez, ranking, limitaciones, descargas y cita, sin los bloques del agricultor', async () => {
     renderRuta('/zona/20?perfil=estudiante')
     const informe = await screen.findByRole('complementary', { name: /informe/i })
     await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] })
     for (const h of [
       '¿Se sostiene el resultado?',
-      'Frente a los 25 departamentos',
+      'Frente a los demás departamentos',
       'Limitaciones',
       'Llévatelo',
       'Cómo citar',

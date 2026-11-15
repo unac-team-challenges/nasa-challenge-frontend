@@ -11,6 +11,7 @@ const zona = (z: Partial<Zona>): Zona => ({
   slope_per_decade: -44,
   ci_low: -73,
   ci_high: -13,
+  intercept: null,
   pct_change_per_decade: -10,
   p_value: 0.01,
   q_value: 0.024,

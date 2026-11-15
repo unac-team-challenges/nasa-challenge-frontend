@@ -6,6 +6,8 @@ export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
 
 type PorVariable<T> = Record<Variable, T>
+/** Si hay más, menos o igual de años malos ahora que antes (ver compararMalos). */
+type Veredicto = 'mas' | 'menos' | 'igual'
 
 const es = {
   marca: 'Detective del Perú',
@@ -121,7 +123,7 @@ const es = {
   // Ficha: el mismo dato, contado para el agricultor o para el estudiante
   /** Confianza en palabras de campo: [título, explicación] */
   confCampo: {
-    real: ['Seguro', 'Pasa año tras año: no es suerte.'],
+    real: ['Cambio claro', 'Es poco probable que sea solo suerte.'],
     posible_casualidad: [
       'Puede ser casualidad',
       'Hay años buenos y años malos, pero todavía no se ve un cambio claro.',
@@ -135,6 +137,11 @@ const es = {
     temperatura: (valor: string, sube: boolean) =>
       `Cada 10 años hace ${valor} ${sube ? 'más de calor' : 'más de frío'}`,
   } as PorVariable<(valor: string, sube: boolean) => string>,
+  /** Titular cuando el cambio no es claro: no se afirma ni dirección ni cifra */
+  campoSinCambio: {
+    lluvia: 'No se ve un cambio claro en la lluvia',
+    temperatura: 'No se ve un cambio claro en el calor',
+  } as PorVariable<string>,
   campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
@@ -145,7 +152,7 @@ const es = {
     `Cambio por década: ${valor}; rango probable entre ${a} y ${b}`,
   medCampoPie: 'La aguja marca el cambio. La zona clara, hasta dónde podría llegar.',
   medTecPie: (pct: boolean) =>
-    `Pendiente de Sen y su IC 95 %${pct ? ', en % del promedio de cada departamento' : ''}, en la misma escala para los 25 departamentos.`,
+    `Pendiente de Sen y su IC 95 %${pct ? ', en % del promedio de cada departamento' : ''}, en la misma escala para los departamentos con datos.`,
   formula: 'Sen: la mediana de las pendientes entre todos los pares de años.',
   campoPeores: {
     lluvia: (anios: string) => `Los años más secos: ${anios}.`,
@@ -190,22 +197,23 @@ const es = {
     temperatura: '¿Los años calurosos vienen más seguido?',
   } as PorVariable<string>,
   malosResumen: {
-    lluvia: (antes: number, ahora: number) =>
-      ahora - antes > 1
+    lluvia: (v: Veredicto, antes: number, ahora: number) =>
+      v === 'mas'
         ? `Ahora hay más años secos que antes (${ahora} frente a ${antes}).`
-        : antes - ahora > 1
+        : v === 'menos'
           ? `Ahora hay menos años secos que antes (${ahora} frente a ${antes}).`
           : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-    temperatura: (antes: number, ahora: number) =>
-      ahora - antes > 1
+    temperatura: (v: Veredicto, antes: number, ahora: number) =>
+      v === 'mas'
         ? `Ahora hay más años calurosos que antes (${ahora} frente a ${antes}).`
-        : antes - ahora > 1
+        : v === 'menos'
           ? `Ahora hay menos años calurosos que antes (${ahora} frente a ${antes}).`
           : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-  } as PorVariable<(antes: number, ahora: number) => string>,
+  } as PorVariable<(v: Veredicto, antes: number, ahora: number) => string>,
   malosDef: {
-    lluvia: 'Año seco: llovió 20 % o más por debajo de lo normal.',
-    temperatura: 'Año caluroso: 0,3 °C o más por encima de lo normal.',
+    lluvia: 'Año seco: llovió 20 % o más por debajo de lo normal de los primeros años del periodo.',
+    temperatura:
+      'Año caluroso: 0,3 °C o más por encima de lo normal de los primeros años del periodo.',
   } as PorVariable<string>,
   malosPunto: { lluvia: 'Año seco', temperatura: 'Año caluroso' } as PorVariable<string>,
   malosOtro: 'Otro año',
@@ -224,17 +232,17 @@ const es = {
   /** valor sin signo: "81 %" o "0,5 °C" */
   ninoAqui: {
     lluvia: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), en ${zona} llovió en promedio ${valor} ${sube ? 'más' : 'menos'} que lo normal.`,
+      `En los años de El Niño (${anios}), en ${zona} llovió en promedio ${valor} ${sube ? 'más' : 'menos'} que lo esperado en esos años.`,
     temperatura: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), ${zona} estuvo en promedio ${valor} ${sube ? 'más caluroso' : 'más frío'} que lo normal.`,
+      `En los años de El Niño (${anios}), ${zona} estuvo en promedio ${valor} ${sube ? 'más caluroso' : 'más frío'} que lo esperado en esos años.`,
   } as PorVariable<(zona: string, anios: string, valor: string, sube: boolean) => string>,
   ninoSinAnios: 'Con los años de El Niño quitados, aquí no se puede ver lo que trae.',
   ninoEnfen: 'Ver el estado de alerta de El Niño (ENFEN)',
   normalH: 'Un año normal aquí',
   normalLluvia: (mm: string, bajo: string, alto: string) =>
-    `${mm} de lluvia al año. La mayoría de años, entre ${bajo} y ${alto}.`,
+    `${mm} de lluvia al año. La mitad de los años, entre ${bajo} y ${alto}.`,
   normalTemp: (c: string, bajo: string, alto: string) =>
-    `${c} de temperatura promedio en el año. La mayoría de años, entre ${bajo} y ${alto}.`,
+    `${c} de temperatura promedio en el año. La mitad de los años, entre ${bajo} y ${alto}.`,
   normalAgua: (m3: string) => `Esa lluvia son unos ${m3} m³ de agua por hectárea.`,
   normalNota: 'Es el promedio de una zona amplia, no de tu chacra: tu campo puede ser distinto.',
   seguirH: 'Dónde seguir',
@@ -256,12 +264,13 @@ const es = {
   robActual: 'el que estás viendo',
   robFuente:
     'Calculado con la copia local de NASA POWER, la única que trae los 4 casos; la ficha de arriba puede venir de la API.',
-  rankH: 'Frente a los 25 departamentos',
+  rankH: 'Frente a los demás departamentos',
   rankPuesto: (p: number, n: number, nombre: string) =>
     `${nombre} está en el puesto ${p} de ${n} departamentos con datos (1 = el que más sube).`,
   rankCap:
     'Punto: pendiente de Sen por década. Línea: su IC 95 %. Ordenados de mayor a menor. Toca uno para ir a su ficha.',
   rankAria: 'Pendiente de cada departamento con su IC 95 %',
+  rankLista: 'Ver como lista (teclado y lector de pantalla)',
   tecCorreccion: 'Corrección por pruebas múltiples',
   tecCorreccionV: (m: number) => `Benjamini-Hochberg entre ${m} zonas, α = 0,05`,
   tecCriterio: 'Criterio de «cambio real»',
@@ -282,7 +291,9 @@ const es = {
   citarH: 'Cómo citar',
   citarCopiar: 'Copiar',
   citarCopiado: 'Copiado',
-  citarEnlace: 'Enlace a esta vista exacta',
+  citarEnlace: 'Enlace a esta zona, variable y año',
+  citarEnlaceNota:
+    'No guarda el periodo ni «sin El Niño»: se eligen de nuevo al abrirlo (los años de los datos van en la cita).',
   reproH: 'Reprodúcelo',
   reproApi: 'La API devuelve estos mismos números:',
   reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
@@ -295,17 +306,19 @@ const es = {
     'Nuestros datos muestran qué cambió, no por qué. Las causas y consecuencias vienen de los estudios citados.',
   causasFuente: 'Fuente',
   causasRefs: 'Referencias',
+  causasContexto:
+    'Contexto de la zona, no una explicación: el cambio de aquí puede ser casualidad, así que no lo atribuimos a nada.',
   causasNada:
     'No encontramos estudios que expliquen este caso con seguridad, así que no lo afirmamos.',
   verdeH: 'No todo cambio es el clima',
   verdeSub: 'La costa que reverdece',
   verdeCampo: (valle: string, a: number, b: number) =>
-    `En ${valle} hay ${b - a} km² más de campo verde que en 2001. No es por la lluvia: es por el riego.`,
+    `En ${valle} hay ${b - a} km² más de campo verde que en 2001. Se explica sobre todo por el riego, no por la lluvia.`,
   /** Recuadros sin causa documentada (Olmos): solo las cifras, sin atribuir el cambio */
   verdeNeutro: (valle: string, a: number, b: number, pct: number) =>
-    `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (+${pct} %).`,
+    `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
   verdeEst: (valle: string, a: number, b: number, pct: number) =>
-    `En ${valle}, el área con NDVI anual mayor que 0,3 pasó de ${a} km² en 2001 a ${b} km² en 2024 (+${pct} %). El aumento se explica por el riego, un cambio de uso del suelo, y no por la tendencia de la lluvia: atribuirlo al clima sería confundir las causas.`,
+    `En ${valle}, el área con NDVI anual mayor que 0,3 pasó de ${a} km² en 2001 a ${b} km² en 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %). El aumento se explica sobre todo por la expansión del riego, un cambio de uso del suelo, y no por la tendencia de la lluvia; las fuentes citadas no cuantifican cuánto pesa cada factor.`,
   verdeCausa: {
     '13': 'El agua viene del río Santa, que el Proyecto Especial Chavimochic lleva por canal hasta estos valles.',
     '11': 'El riego sale sobre todo de pozos, y su expansión ha generado escasez de agua subterránea en Ica y Villacurí.',
@@ -534,7 +547,7 @@ const en: Textos = {
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
   confCampo: {
-    real: ['Certain', 'It happens year after year: it is not luck.'],
+    real: ['Clear change', 'It is unlikely to be just luck.'],
     posible_casualidad: [
       'May be chance',
       'There are good years and bad years, but no clear change yet.',
@@ -545,6 +558,10 @@ const en: Textos = {
     lluvia: (valor, sube) => `Every 10 years it rains ${valor} ${sube ? 'more' : 'less'}`,
     temperatura: (valor, sube) => `Every 10 years it gets ${valor} ${sube ? 'warmer' : 'cooler'}`,
   },
+  campoSinCambio: {
+    lluvia: 'No clear change in rainfall',
+    temperatura: 'No clear change in heat',
+  },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
@@ -554,7 +571,7 @@ const en: Textos = {
   medAria: (valor, a, b) => `Change per decade: ${valor}; likely range between ${a} and ${b}`,
   medCampoPie: 'The needle marks the change. The light area, how far it could go.',
   medTecPie: (pct) =>
-    `Sen’s slope and its 95 % CI${pct ? ', as % of each department’s average' : ''}, on the same scale for all 25 departments.`,
+    `Sen’s slope and its 95 % CI${pct ? ', as % of each department’s average' : ''}, on the same scale for the departments with data.`,
   formula: 'Sen: the median of the slopes between every pair of years.',
   campoPeores: {
     lluvia: (anios) => `The driest years: ${anios}.`,
@@ -592,22 +609,22 @@ const en: Textos = {
     temperatura: 'Are hot years coming more often?',
   },
   malosResumen: {
-    lluvia: (antes, ahora) =>
-      ahora - antes > 1
+    lluvia: (v, antes, ahora) =>
+      v === 'mas'
         ? `There are more dry years now than before (${ahora} vs ${antes}).`
-        : antes - ahora > 1
+        : v === 'menos'
           ? `There are fewer dry years now than before (${ahora} vs ${antes}).`
           : `About the same as before (${ahora} vs ${antes}).`,
-    temperatura: (antes, ahora) =>
-      ahora - antes > 1
+    temperatura: (v, antes, ahora) =>
+      v === 'mas'
         ? `There are more hot years now than before (${ahora} vs ${antes}).`
-        : antes - ahora > 1
+        : v === 'menos'
           ? `There are fewer hot years now than before (${ahora} vs ${antes}).`
           : `About the same as before (${ahora} vs ${antes}).`,
   },
   malosDef: {
-    lluvia: 'Dry year: 20 % or more below normal rainfall.',
-    temperatura: 'Hot year: 0.3 °C or more above normal.',
+    lluvia: 'Dry year: 20 % or more below the normal rainfall of the first years of the period.',
+    temperatura: 'Hot year: 0.3 °C or more above the normal of the first years of the period.',
   },
   malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year' },
   malosOtro: 'Other year',
@@ -625,17 +642,17 @@ const en: Textos = {
   ninoAquiH: 'What does El Niño bring here?',
   ninoAqui: {
     lluvia: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than normal.`,
+      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than expected for those years.`,
     temperatura: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than normal.`,
+      `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than expected for those years.`,
   },
   ninoSinAnios: 'With the El Niño years removed, we cannot show what it brings here.',
   ninoEnfen: 'See the El Niño alert status (ENFEN)',
   normalH: 'A normal year here',
   normalLluvia: (mm, bajo, alto) =>
-    `${mm} of rain a year. Most years, between ${bajo} and ${alto}.`,
+    `${mm} of rain a year. Half of the years, between ${bajo} and ${alto}.`,
   normalTemp: (c, bajo, alto) =>
-    `${c} average temperature over the year. Most years, between ${bajo} and ${alto}.`,
+    `${c} average temperature over the year. Half of the years, between ${bajo} and ${alto}.`,
   normalAgua: (m3) => `That rain is about ${m3} m³ of water per hectare.`,
   normalNota: 'It is the average of a wide area, not of your field: your farm may differ.',
   seguirH: 'Where to follow up',
@@ -656,12 +673,13 @@ const en: Textos = {
   robActual: 'the one you are viewing',
   robFuente:
     'Computed with the local copy of NASA POWER, the only one with all 4 cases; the report above may come from the API.',
-  rankH: 'Compared with the 25 departments',
+  rankH: 'Compared with the other departments',
   rankPuesto: (p, n, nombre) =>
     `${nombre} ranks ${p} of ${n} departments with data (1 = the largest increase).`,
   rankCap:
     'Dot: Sen’s slope per decade. Line: its 95 % CI. Sorted from largest to smallest. Tap one to open its report.',
   rankAria: 'Slope of each department with its 95 % CI',
+  rankLista: 'View as a list (keyboard and screen reader)',
   tecCorreccion: 'Multiple-testing correction',
   tecCorreccionV: (m) => `Benjamini-Hochberg across ${m} areas, α = 0.05`,
   tecCriterio: '“Real change” criterion',
@@ -682,7 +700,9 @@ const en: Textos = {
   citarH: 'How to cite',
   citarCopiar: 'Copy',
   citarCopiado: 'Copied',
-  citarEnlace: 'Link to this exact view',
+  citarEnlace: 'Link to this area, variable and year',
+  citarEnlaceNota:
+    'It does not save the period or “without El Niño”: choose them again when opening it (the data years are in the citation).',
   reproH: 'Reproduce it',
   reproApi: 'The API returns these same numbers:',
   reproSinApi: 'This session uses the local copy; with the project API, the query is:',
@@ -694,15 +714,17 @@ const en: Textos = {
     'Our data show what changed, not why. The causes and consequences come from the cited studies.',
   causasFuente: 'Source',
   causasRefs: 'References',
+  causasContexto:
+    'Context for the area, not an explanation: the change here may be chance, so we do not attribute it to anything.',
   causasNada: 'We found no studies that reliably explain this case, so we do not claim one.',
   verdeH: 'Not every change is the climate',
   verdeSub: 'The coast that turns green',
   verdeCampo: (valle, a, b) =>
-    `${valle} has ${b - a} km² more green farmland than in 2001. It is not the rain: it is irrigation.`,
+    `${valle} has ${b - a} km² more green farmland than in 2001. It is explained mostly by irrigation, not by the rain.`,
   verdeNeutro: (valle, a, b, pct) =>
-    `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (+${pct} %).`,
+    `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
   verdeEst: (valle, a, b, pct) =>
-    `In ${valle}, the area with annual NDVI above 0.3 went from ${a} km² in 2001 to ${b} km² in 2024 (+${pct} %). The increase is explained by irrigation, a land-use change, not by the rainfall trend: attributing it to climate would confuse the causes.`,
+    `In ${valle}, the area with annual NDVI above 0.3 went from ${a} km² in 2001 to ${b} km² in 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %). The increase is explained mostly by the expansion of irrigation, a land-use change, and not by the rainfall trend; the cited sources do not quantify how much each factor weighs.`,
   verdeCausa: {
     '13': 'The water comes from the Santa River, which the Chavimochic Special Project carries by canal to these valleys.',
     '11': 'Irrigation comes mostly from wells, and its expansion has caused groundwater scarcity in Ica and Villacurí.',
@@ -842,9 +864,9 @@ export const CAUSAS_TEXTOS: Record<
   es: {
     ninoNorte: {
       campo:
-        'Los años de El Niño traen lluvias muy fuertes a la costa norte: por eso aquí la lluvia cambia tanto de un año a otro.',
+        'Los El Niño fuertes traen lluvias muy fuertes a la costa norte: por eso aquí la lluvia cambia tanto de un año a otro.',
       estudiante:
-        'Lavado y Espinoza (2014), con 155 estaciones (1965–2007), muestran que los El Niño extraordinarios de 1983 y 1998 dominan la variabilidad de la lluvia (primer modo, 37 % de la varianza), con lluvias intensas en la vertiente norte del Pacífico. Sulca et al. (2018) precisan que es El Niño del Pacífico oriental (como el costero de 2017) el que moja la costa norte, al correr hacia el sur la zona de lluvias del Pacífico. Una tendencia aquí depende mucho de qué años de El Niño caen en el periodo.',
+        'Lavado y Espinoza (2014), con 155 estaciones (1965–2007), muestran que los El Niño extraordinarios de 1983 y 1998 dominan la variabilidad de la lluvia (primer modo, 37 % de la varianza), con lluvias intensas en la vertiente norte del Pacífico. Sulca et al. (2018) precisan que es El Niño del Pacífico oriental el que moja la costa norte, al correr hacia el sur la zona de lluvias del Pacífico. Una tendencia aquí depende mucho de qué años de El Niño caen en el periodo.',
     },
     ninoSur: {
       campo: 'En los años de El Niño fuerte suele llover menos en la sierra sur y el altiplano.',
@@ -855,7 +877,7 @@ export const CAUSAS_TEXTOS: Record<
       campo:
         'Donde se pierde bosque llueve menos: se ha medido con satélites en la Amazonía y otras selvas.',
       estudiante:
-        'Smith et al. (2023) comparan, con satélites (2003–2017), zonas deforestadas con zonas vecinas de bosque en la Amazonía, el Congo y el sudeste asiático: la lluvia baja tras la deforestación, y baja más cuanto mayor es el área perdida. Para esta zona es una hipótesis; nuestros datos no la prueban.',
+        'Smith et al. (2023) comparan, con satélites (2003–2017), zonas deforestadas con zonas vecinas de bosque en la Amazonía, el Congo y el sudeste asiático: la lluvia baja tras la deforestación, y baja más cuanto mayor es el área perdida. El efecto es robusto a escalas mayores de 50 km y las estaciones en tierra no lo detectan. Para esta zona es una hipótesis; nuestros datos no la prueban.',
     },
     calentamientoAndes: {
       campo:
@@ -864,14 +886,13 @@ export const CAUSAS_TEXTOS: Record<
         'Vuille et al. (2018) relacionan el retroceso glaciar de los Andes tropicales con el aumento observado de la temperatura del aire en altura.',
     },
     calentamientoRegion: {
-      campo:
-        'Es parte del calentamiento del planeta: en Sudamérica la temperatura promedio ya subió.',
+      campo: 'Es parte del calentamiento del planeta: en la región hay cada vez más calor extremo.',
       estudiante:
-        'El IPCC (2022, cap. 12) evalúa que la temperatura media ha aumentado en las subregiones de Centro y Sudamérica. Nuestra pendiente es local: atribuirla al calentamiento global exige un estudio de atribución.',
+        'El IPCC (2022, cap. 12) evalúa como probable que en varias subregiones de Sudamérica hayan aumentado los extremos cálidos y disminuido los fríos, y que el calentamiento global ha hecho perder a los glaciares andinos entre el 30 % y más del 50 % de su área desde los años 1980. Nuestra pendiente es local: atribuirla al calentamiento global exige un estudio de atribución.',
     },
     inundaciones: {
       campo:
-        'Cuando llueve mucho en la costa norte vienen inundaciones y huaicos: en 2017, El Niño costero causó una emergencia en Piura y el norte.',
+        'Cuando llueve mucho en la costa norte vienen inundaciones: en 2017, El Niño costero causó una emergencia por lluvias e inundaciones en Piura y el norte.',
       estudiante:
         'La OPS (2017) documenta la emergencia por las lluvias e inundaciones de El Niño costero de 2017 en el norte del país, incluida Piura.',
     },
@@ -879,25 +900,25 @@ export const CAUSAS_TEXTOS: Record<
       campo:
         'Con más calor los glaciares se derriten: el Perú ya perdió el 56 % de su superficie de glaciares en casi 60 años. Al principio eso da más agua a los ríos, pero con los años habrá menos en época seca.',
       estudiante:
-        'El inventario nacional de 2023 (INAIGEM), con imágenes de 2020, registra la pérdida del 56 % de la superficie glaciar en 58 años; esos glaciares abastecen de agua al 62 % de la población. Vuille et al. (2018) explican que el deshielo aumenta por un tiempo el caudal de estiaje, pero que la reducción proyectada de los glaciares lo bajará a largo plazo.',
+        'El inventario nacional de 2023 (INAIGEM), con imágenes de 2020, registra la pérdida del 56 % de la superficie glaciar en 58 años; esos glaciares abastecen de agua, directa o indirectamente, al 62 % de la población. Vuille et al. (2018) explican que el deshielo aumenta por un tiempo el caudal de estiaje, pero que la reducción proyectada de los glaciares lo bajará a largo plazo.',
     },
     cultivosCalor: {
       campo: 'Más calor puede afectar las cosechas y la producción de alimentos.',
       estudiante:
-        'El IPCC (2022, cap. 12) identifica riesgos para la producción agrícola y la seguridad alimentaria en la región por el aumento de la temperatura y los cambios en la lluvia.',
+        'El IPCC (2022, cap. 12) concluye con confianza alta que los cambios en la lluvia y las temperaturas extremas ya afectan la producción agrícola de la región, y cuenta entre sus riesgos clave la inseguridad alimentaria por sequías.',
     },
     menosAgua: {
       campo: 'Si llueve menos, hay menos agua para el riego, los pastos y el consumo.',
       estudiante:
-        'El IPCC (2022, cap. 12) señala la disponibilidad de agua como uno de los riesgos clave para la región ante la disminución de la lluvia.',
+        'El IPCC (2022, cap. 12) incluye entre los riesgos clave de la región la inseguridad hídrica por la menor cobertura de nieve, el retroceso de glaciares y la variabilidad de la lluvia, y proyecta mayor escasez de agua (confianza alta).',
     },
   },
   en: {
     ninoNorte: {
       campo:
-        'El Niño years bring very heavy rain to the northern coast: that is why rainfall here changes so much from year to year.',
+        'Strong El Niño events bring very heavy rain to the northern coast: that is why rainfall here changes so much from year to year.',
       estudiante:
-        'Lavado and Espinoza (2014), using 155 stations (1965–2007), show that the extraordinary El Niño events of 1983 and 1998 dominate rainfall variability (first mode, 37 % of variance), with intense rain on the northern Pacific slope. Sulca et al. (2018) specify that it is the eastern Pacific El Niño (like the 2017 coastal event) that wets the northern coast, by shifting the Pacific rain belt south. A trend here depends heavily on which El Niño years fall in the period.',
+        'Lavado and Espinoza (2014), using 155 stations (1965–2007), show that the extraordinary El Niño events of 1983 and 1998 dominate rainfall variability (first mode, 37 % of variance), with intense rain on the northern Pacific slope. Sulca et al. (2018) specify that it is the eastern Pacific El Niño that wets the northern coast, by shifting the Pacific rain belt south. A trend here depends heavily on which El Niño years fall in the period.',
     },
     ninoSur: {
       campo:
@@ -909,7 +930,7 @@ export const CAUSAS_TEXTOS: Record<
       campo:
         'Where forest is lost it rains less: it has been measured by satellite in the Amazon and other rainforests.',
       estudiante:
-        'Smith et al. (2023) compare, by satellite (2003–2017), deforested areas with nearby forest in the Amazon, the Congo and Southeast Asia: rainfall drops after deforestation, and drops more the larger the area lost. For this area it is a hypothesis; our data do not prove it.',
+        'Smith et al. (2023) compare, by satellite (2003–2017), deforested areas with nearby forest in the Amazon, the Congo and Southeast Asia: rainfall drops after deforestation, and drops more the larger the area lost. The effect is robust at scales above 50 km, and ground stations do not detect it. For this area it is a hypothesis; our data do not prove it.',
     },
     calentamientoAndes: {
       campo:
@@ -918,14 +939,13 @@ export const CAUSAS_TEXTOS: Record<
         'Vuille et al. (2018) link glacier retreat in the tropical Andes with the observed rise in high-elevation air temperature.',
     },
     calentamientoRegion: {
-      campo:
-        'It is part of the planet warming: in South America the average temperature has already risen.',
+      campo: 'It is part of the planet warming: in the region there is more and more extreme heat.',
       estudiante:
-        'The IPCC (2022, ch. 12) assesses that mean temperature has increased across the subregions of Central and South America. Our slope is local: attributing it to global warming requires an attribution study.',
+        'The IPCC (2022, ch. 12) assesses as likely that warm extremes have increased and cold extremes decreased in several South American subregions, and that global warming has caused Andean glaciers to lose 30% to more than 50% of their area since the 1980s. Our slope is local: attributing it to global warming requires an attribution study.',
     },
     inundaciones: {
       campo:
-        'When it rains a lot on the northern coast, floods and mudslides follow: in 2017 the coastal El Niño caused an emergency in Piura and the north.',
+        'When it rains a lot on the northern coast, floods follow: in 2017 the coastal El Niño caused an emergency from rains and floods in Piura and the north.',
       estudiante:
         'PAHO (2017) documents the emergency caused by the rains and floods of the 2017 coastal El Niño in northern Peru, including Piura.',
     },
@@ -933,17 +953,17 @@ export const CAUSAS_TEXTOS: Record<
       campo:
         'With more heat glaciers melt: Peru has already lost 56 % of its glacier surface in almost 60 years. At first that gives rivers more water, but over the years there will be less in the dry season.',
       estudiante:
-        'The 2023 national inventory (INAIGEM), based on 2020 imagery, records the loss of 56 % of the glacier surface in 58 years; these glaciers supply water to 62 % of the population. Vuille et al. (2018) explain that melt temporarily increases dry-season flow, but projected glacier shrinkage will reduce it in the long term.',
+        'The 2023 national inventory (INAIGEM), based on 2020 imagery, records the loss of 56 % of the glacier surface in 58 years; these glaciers supply water, directly or indirectly, to 62 % of the population. Vuille et al. (2018) explain that melt temporarily increases dry-season flow, but projected glacier shrinkage will reduce it in the long term.',
     },
     cultivosCalor: {
       campo: 'More heat can affect harvests and food production.',
       estudiante:
-        'The IPCC (2022, ch. 12) identifies risks to agricultural production and food security in the region from rising temperature and changes in rainfall.',
+        'The IPCC (2022, ch. 12) concludes with high confidence that changes in rainfall and extreme temperatures are already affecting agricultural production in the region, and lists food insecurity due to droughts among its key risks.',
     },
     menosAgua: {
       campo: 'If it rains less, there is less water for irrigation, pastures and drinking.',
       estudiante:
-        'The IPCC (2022, ch. 12) points to water availability as one of the key risks for the region as rainfall decreases.',
+        "The IPCC (2022, ch. 12) lists water insecurity from declining snow cover, shrinking glaciers and rainfall variability among the region's key risks, and projects increasing water scarcity (high confidence).",
     },
   },
 }

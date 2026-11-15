@@ -63,9 +63,9 @@ export function MedidorTendencia({ zona: d, variable, idioma, escala, modo }: Pr
               className="absolute top-1/2 h-px -translate-y-1/2"
               style={{ left: `${a}%`, width: `${b - a}%`, background: `var(${color})` }}
             />
-            {[a, b].map((p) => (
+            {[a, b].map((p, i) => (
               <span
-                key={p}
+                key={i}
                 className="absolute top-1/2 h-4 w-px -translate-y-1/2"
                 style={{ left: `${p}%`, background: `var(${color})` }}
               />

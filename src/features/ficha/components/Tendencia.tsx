@@ -26,15 +26,16 @@ export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
   const escala = escalaTendencia(Object.values(zonas), variable)
 
   if (perfil === 'agricultor') {
+    const claro = d.status === 'real'
     const cifra = cifraCampo(d, variable, idioma)
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span
             className="font-display text-[28px] leading-[1.1] font-[750] tracking-[-0.015em] min-[521px]:text-[32px]"
-            style={{ color: `var(${color})` }}
+            style={{ color: claro ? `var(${color})` : 'var(--muted)' }}
           >
-            {t.campoFrase[variable](cifra, sube)}
+            {claro ? t.campoFrase[variable](cifra, sube) : t.campoSinCambio[variable]}
           </span>
           <span className="text-[13px] text-muted">
             {t.campoPeriodo(rango.year_start, rango.year_end)}

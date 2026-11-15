@@ -27,6 +27,17 @@ PR: base `developer`. Solo frontend; no toca el contrato (`openapi.json`).
   (`features/ficha/data/causas.ts`).
 - Cálculos con tests en `features/ficha/utils/` (`serie.ts`, `campo.ts`, `estudiante.ts`) y `data/causas.ts`.
 
+## Corregido tras la revisión técnica
+- La recta de Sen del gráfico usa el `intercept` del pipeline (nuevo campo de `Zona`, también desde la API); antes pasaba por el promedio.
+- Con «posible casualidad» el agricultor ve «No se ve un cambio claro…» en gris, sin cifra con dirección; el sello «Seguro» es «Cambio claro». Las causas con sentido (bosque, calentamiento, menos agua…) solo salen si el cambio es real; si no, queda el contexto y un aviso.
+- «Años secos/calurosos» se miden contra el promedio de la primera mitad (línea base fija) y se comparan por proporción; «¿Qué trae El Niño?», contra la recta de Sen.
+- Enlace de la cita: «a esta zona, variable y año» (no guarda periodo ni «sin El Niño»; sigue el año al mover la barra). Año de la cita tomado de los datos; BibTeX en `@misc`.
+- CSV con BOM (Excel) y celdas vacías, no ceros, para zonas sin datos. Quitado `placeholderData` de `useDetalle` (mostraba la serie de otra variable).
+- Figuras SVG/PNG con la fuente de la interfaz incrustada y el fondo del panel; un solo `xmlns`.
+- Fuentes contrastadas con el original: APA completas (Vuille, IPCC, Smith), año de Chavimochic (2020), textos de Sulca, IPCC, OPS y Smith ajustados a lo que dicen; enlace de SENAMHI a `gob.pe/senamhi`.
+- Texto del riego (La Libertad, Ica) suavizado: «se explica sobre todo por el riego»; «−0» ya no sale; lista accesible del ranking; contraste de las casillas.
+- Tests nuevos: `exportar`, `campo`, `ejes`, `formato`, línea base de años malos, El Niño contra la recta, CSV de zonas sin datos, causas con casualidad.
+
 ## Rendimiento
 - Arrastrar la barra de tiempo ya no redibuja toda la ficha: `useAnio()` aparte en `lib/busqueda.ts`,
   `useBusqueda()` con selectores, `Ficha` con `memo`, bloques que leen solo lo que usan del store y datos de

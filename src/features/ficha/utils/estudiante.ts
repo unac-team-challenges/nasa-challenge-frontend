@@ -82,9 +82,8 @@ export function tablaCsv(zonas: Record<string, Zona>, variable: Variable) {
         z.id,
         `"${NOMBRE[z.id]}"`,
         REGION[z.id],
-        n(z.slope_per_decade),
-        n(z.ci_low),
-        n(z.ci_high),
+        // Zona sin datos: celdas vacías, no un «0» que se lea como pendiente cero
+        ...(z.n_years > 0 ? [n(z.slope_per_decade), n(z.ci_low), n(z.ci_high)] : ['', '', '']),
         n(z.pct_change_per_decade, 2),
         n(z.p_value, 6),
         n(z.q_value, 6),
@@ -100,10 +99,13 @@ export function tablaCsv(zonas: Record<string, Zona>, variable: Variable) {
 
 /** Baja un texto como archivo (se arma en el navegador; no pide nada a la API). */
 export function descargarTexto(nombre: string, texto: string, tipo = 'text/csv;charset=utf-8') {
-  const url = URL.createObjectURL(new Blob([texto], { type: tipo }))
+  // BOM: sin él Excel lee el CSV como Latin-1 y rompe «Áncash», «Junín»…
+  const url = URL.createObjectURL(
+    new Blob([tipo.startsWith('text/csv') ? '\uFEFF' : '', texto], { type: tipo }),
+  )
   const a = document.createElement('a')
   a.href = url
   a.download = nombre
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

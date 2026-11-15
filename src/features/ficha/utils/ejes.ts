@@ -7,7 +7,7 @@ const tick = { fill: 'var(--muted)', fontSize: 11 }
 export function ejeX(y0: number, y1: number) {
   const paso = y1 - y0 > 30 ? 10 : 5
   const ticks: number[] = []
-  for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += paso) ticks.push(y)
+  for (let y = Math.ceil(y0 / paso) * paso; y <= y1; y += paso) ticks.push(y)
   return {
     type: 'number' as const,
     domain: [y0 - 0.5, y1 + 0.5],

@@ -79,7 +79,7 @@ export function SerieZona({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
             <Button
               onClick={() =>
                 descargarTexto(
-                  `${NOMBRE[d.id]}-${variable}-${pts[0].y}-${pts[pts.length - 1].y}.csv`,
+                  `${NOMBRE[d.id]}-${variable}${sinNino && lluvia ? '-sin-nino' : ''}-${pts[0].y}-${pts[pts.length - 1].y}.csv`,
                   serieCsv(pts, variable),
                 )
               }

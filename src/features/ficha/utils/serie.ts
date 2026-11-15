@@ -119,16 +119,27 @@ export function esMalo(anomalia: number, variable: Variable) {
     : anomalia >= UMBRAL_MALO.temperatura
 }
 
+/** Mediana: el valor del medio, al que no lo arrastra un año fuera de lo común. */
+export function mediana(vals: number[]) {
+  const v = [...vals].sort((x, y) => x - y)
+  const m = Math.floor(v.length / 2)
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2
+}
+
 /**
  * Los años malos en dos mitades del periodo (antes / ahora), para ver si vienen más seguido.
- * «Normal» es el promedio de la primera mitad, una línea base fija: medido contra el promedio de
- * todo el periodo, una tendencia haría que los años recientes salgan «malos» por construcción.
- * Cada mitad trae sus años con su anomalía y si fue malo.
+ * «Lo de siempre» es una línea base fija de la primera mitad: medido contra todo el periodo, una
+ * tendencia haría que los años recientes salgan «malos» por construcción. Es la mediana de esa
+ * mitad sin los años de El Niño (`nino`): en la costa norte el Niño de 1983 o 1998 multiplica la
+ * lluvia y, con el promedio, un año típico salía «seco». Cada mitad trae sus años con su anomalía
+ * frente a esa base y si fue malo.
  */
-export function aniosMalosPorMitad(pts: Punto[], variable: Variable) {
+export function aniosMalosPorMitad(pts: Punto[], variable: Variable, nino: number[] = []) {
   if (pts.length < 4) return null
   const corte = Math.floor((pts[0].y + pts[pts.length - 1].y) / 2)
-  const base = promedio(pts.filter((p) => p.y <= corte))
+  const primera = pts.filter((p) => p.y <= corte)
+  const sinNino = primera.filter((p) => !nino.includes(p.y))
+  const base = mediana((sinNino.length ? sinNino : primera).map((p) => p.v))
   const filas = anomalias(pts, variable, base)
   const mitad = (f: typeof filas) => ({
     desde: f[0].y,
@@ -152,6 +163,77 @@ export function compararMalos(
 ): 'mas' | 'menos' | 'igual' {
   const d = ahora.malos / ahora.anios.length - antes.malos / antes.anios.length
   return d >= 0.15 ? 'mas' : d <= -0.15 ? 'menos' : 'igual'
+}
+
+/**
+ * La respuesta del titular. Solo se afirma («sí» / «no») si la tendencia de la zona es un cambio
+ * real y va hacia el mismo lado (menos lluvia = más años secos; más calor = más años calurosos).
+ * Si no, se dice lo que pasó sin llamarlo costumbre: así no contradice a la tarjeta de confianza,
+ * que en ese caso dice que todavía no se ve un cambio claro.
+ */
+export type RespuestaMalos = 'si' | 'no' | 'masSinSeguro' | 'menosSinSeguro' | 'igual'
+
+export function respuestaMalos(
+  veredicto: 'mas' | 'menos' | 'igual',
+  d: Pick<Zona, 'status' | 'slope_per_decade'>,
+  variable: Variable,
+): RespuestaMalos {
+  if (veredicto === 'igual') return 'igual'
+  // Hacia dónde empuja la tendencia: +1 = más años malos, −1 = menos
+  const empuja = Math.sign(d.slope_per_decade) * (variable === 'lluvia' ? -1 : 1)
+  const seguro = d.status === 'real' && empuja === (veredicto === 'mas' ? 1 : -1)
+  if (veredicto === 'mas') return seguro ? 'si' : 'masSinSeguro'
+  return seguro ? 'no' : 'menosSinSeguro'
+}
+
+/**
+ * Cada cuánto viene un año malo, como se dice en el campo: «ni uno», «casi todos los años»,
+ * «2 de cada 3», «un año sí y otro no», «uno cada N años» o, si cae a medio camino, «uno cada 2 o
+ * 3 años» (5 de 12 no es «un año sí y otro no»: no se redondea a favor de nada).
+ */
+export type Frecuencia =
+  | { tipo: 'ninguno' }
+  | { tipo: 'casiTodos' }
+  | { tipo: 'dosDeTres' }
+  | { tipo: 'unoSiUnoNo' }
+  | { tipo: 'cada'; cada: number }
+  | { tipo: 'cadaEntre'; de: number; a: number }
+
+export function frecuencia(malos: number, anios: number): Frecuencia {
+  if (!malos) return { tipo: 'ninguno' }
+  const r = anios / malos
+  if (r < 1.25) return { tipo: 'casiTodos' }
+  if (r < 1.75) return { tipo: 'dosDeTres' }
+  if (r < 2.25) return { tipo: 'unoSiUnoNo' }
+  const resto = r - Math.floor(r)
+  if (resto >= 0.25 && resto <= 0.75)
+    return { tipo: 'cadaEntre', de: Math.floor(r), a: Math.floor(r) + 1 }
+  return { tipo: 'cada', cada: Math.round(r) }
+}
+
+/**
+ * El año malo para recordar: el peor de la mitad reciente (el que el agricultor tiene fresco) o,
+ * si ahí no hubo ninguno, el peor de antes. null si no hubo años malos.
+ */
+type AnioMalo = { y: number; a: number; malo: boolean }
+
+export function anioParaRecordar(
+  mitades: { antes: { anios: AnioMalo[] }; ahora: { anios: AnioMalo[] } },
+  variable: Variable,
+) {
+  const peor = (anios: AnioMalo[]) =>
+    anios
+      .filter((x) => x.malo)
+      .sort((p, q) => (variable === 'lluvia' ? p.a - q.a : q.a - p.a))[0] ?? null
+  return peor(mitades.ahora.anios) ?? peor(mitades.antes.anios)
+}
+
+/** Cuánta lluvia faltó, en palabras: un año 30 % bajo lo de siempre es «como un tercio». */
+export type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
+
+export function cuantoFalto(pct: number): Falta {
+  const p = Math.abs(pct)
+  return p < 29 ? 'cuarto' : p < 42 ? 'tercio' : p < 58 ? 'mitad' : 'masMitad'
 }
 
 /**

@@ -28,11 +28,11 @@ describe('explorador con la URL', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('el agricultor ve años secos, El Niño, año normal y dónde seguir, sin fuentes ni WhatsApp', async () => {
+  it('el agricultor ve años de seca, El Niño, año normal y dónde seguir, sin fuentes ni WhatsApp', async () => {
     renderRuta('/zona/20?perfil=agricultor')
     const informe = await screen.findByRole('complementary', { name: /informe/i })
     for (const h of [
-      '¿Los años secos vienen más seguido?',
+      '¿Ahora hay más años de seca?',
       '¿Qué trae El Niño aquí?',
       'Un año normal aquí',
       'Posibles causas y consecuencias',

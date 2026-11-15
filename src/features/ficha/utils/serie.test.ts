@@ -10,7 +10,12 @@ import {
   escalaTendencia,
   medida,
   aniosMalosPorMitad,
+  anioParaRecordar,
   compararMalos,
+  cuantoFalto,
+  frecuencia,
+  mediana,
+  respuestaMalos,
   efectoNino,
   anioNormal,
   m3PorHectarea,
@@ -115,6 +120,22 @@ describe('ficha del agricultor', () => {
     expect(r.ahora.malos).toBe(4)
   })
 
+  it('años secos: lo de siempre es la mediana sin El Niño, no el promedio inflado por el Niño', () => {
+    // 2003 es Niño (300 mm). Con el promedio de la primera mitad (150), 85 mm saldría seco (−43 %);
+    // contra la mediana sin el Niño (100) es −15 %: un año flojo, no de seca.
+    const r = aniosMalosPorMitad(serie([100, 100, 300, 100, 85, 85, 85, 85]), 'lluvia', [2003])!
+    expect(r.ahora.malos).toBe(0)
+    // Sin decirle cuál es el Niño, la mediana igual lo aguanta mejor que el promedio
+    expect(
+      aniosMalosPorMitad(serie([100, 100, 300, 100, 85, 85, 85, 85]), 'lluvia')!.ahora.malos,
+    ).toBe(0)
+  })
+
+  it('mediana: el valor del medio', () => {
+    expect(mediana([3, 1, 2])).toBe(2)
+    expect(mediana([4, 1, 3, 2])).toBe(2.5)
+  })
+
   it('años calurosos: 0,3 °C o más sobre lo normal', () => {
     const r = aniosMalosPorMitad(serie([10, 10, 10, 10, 10.5, 9.5]), 'temperatura')!
     expect(r.ahora.malos).toBe(1)
@@ -156,5 +177,63 @@ describe('compararMalos', () => {
     expect(compararMalos(m(3, 12), m(4, 12))).toBe('igual')
     // mitades desiguales (sin El Niño): 4 de 8 es más que 3 de 12 aunque la diferencia en conteo sea 1
     expect(compararMalos(m(3, 12), m(4, 8))).toBe('mas')
+  })
+})
+
+describe('respuestaMalos', () => {
+  const z = (status: 'real' | 'posible_casualidad', slope: number) => ({
+    status,
+    slope_per_decade: slope,
+  })
+  it('afirma solo si la tendencia es real y va hacia el mismo lado', () => {
+    expect(respuestaMalos('mas', z('real', -20), 'lluvia')).toBe('si')
+    expect(respuestaMalos('menos', z('real', 20), 'lluvia')).toBe('no')
+    expect(respuestaMalos('mas', z('real', 0.2), 'temperatura')).toBe('si')
+  })
+  it('si puede ser casualidad, no lo llama costumbre (no contradice a la confianza)', () => {
+    expect(respuestaMalos('mas', z('posible_casualidad', -20), 'lluvia')).toBe('masSinSeguro')
+    expect(respuestaMalos('menos', z('posible_casualidad', 20), 'lluvia')).toBe('menosSinSeguro')
+  })
+  it('si la tendencia real va al otro lado, tampoco afirma', () => {
+    expect(respuestaMalos('mas', z('real', 20), 'lluvia')).toBe('masSinSeguro')
+  })
+  it('igual es igual, sea cual sea la tendencia', () => {
+    expect(respuestaMalos('igual', z('real', -20), 'lluvia')).toBe('igual')
+  })
+})
+
+describe('frecuencia', () => {
+  it('cada cuánto viene un año malo, en palabras de campo', () => {
+    expect(frecuencia(0, 22)).toEqual({ tipo: 'ninguno' })
+    expect(frecuencia(20, 22)).toEqual({ tipo: 'casiTodos' })
+    expect(frecuencia(14, 22)).toEqual({ tipo: 'dosDeTres' })
+    expect(frecuencia(11, 22)).toEqual({ tipo: 'unoSiUnoNo' })
+    expect(frecuencia(4, 22)).toEqual({ tipo: 'cadaEntre', de: 5, a: 6 })
+    expect(frecuencia(5, 12)).toEqual({ tipo: 'cadaEntre', de: 2, a: 3 })
+    expect(frecuencia(3, 12)).toEqual({ tipo: 'cada', cada: 4 })
+    expect(frecuencia(1, 12)).toEqual({ tipo: 'cada', cada: 12 })
+  })
+})
+
+describe('anioParaRecordar y cuantoFalto', () => {
+  const a = (y: number, v: number, malo: boolean) => ({ y, a: v, malo })
+  it('el peor año malo reciente; si no hay, el peor de antes', () => {
+    const antes = { anios: [a(2001, -40, true), a(2002, 5, false)] }
+    expect(
+      anioParaRecordar(
+        { antes, ahora: { anios: [a(2003, -22, true), a(2004, -30, true)] } },
+        'lluvia',
+      )?.y,
+    ).toBe(2004)
+    expect(anioParaRecordar({ antes, ahora: { anios: [a(2003, 3, false)] } }, 'lluvia')?.y).toBe(
+      2001,
+    )
+    expect(anioParaRecordar({ antes: { anios: [] }, ahora: { anios: [] } }, 'lluvia')).toBeNull()
+  })
+  it('cuánta lluvia faltó, en fracciones', () => {
+    expect(cuantoFalto(-22)).toBe('cuarto')
+    expect(cuantoFalto(-33)).toBe('tercio')
+    expect(cuantoFalto(-50)).toBe('mitad')
+    expect(cuantoFalto(-70)).toBe('masMitad')
   })
 })

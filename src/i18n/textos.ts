@@ -6,8 +6,18 @@ export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
 
 type PorVariable<T> = Record<Variable, T>
-/** Si hay más, menos o igual de años malos ahora que antes (ver compararMalos). */
-type Veredicto = 'mas' | 'menos' | 'igual'
+/** Respuesta a «¿hay más años malos?» (ver respuestaMalos en features/ficha/utils/serie.ts). */
+type RespuestaMalos = 'si' | 'no' | 'masSinSeguro' | 'menosSinSeguro' | 'igual'
+/** Cada cuánto viene un año malo (ver frecuencia). */
+type Frecuencia =
+  | { tipo: 'ninguno' }
+  | { tipo: 'casiTodos' }
+  | { tipo: 'dosDeTres' }
+  | { tipo: 'unoSiUnoNo' }
+  | { tipo: 'cada'; cada: number }
+  | { tipo: 'cadaEntre'; de: number; a: number }
+/** Cuánta lluvia faltó (ver cuantoFalto). */
+type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
 
 const es = {
   marca: 'Detective del Perú',
@@ -217,33 +227,68 @@ const es = {
   cmpUmbral: 'Área verde: píxeles con NDVI anual mayor que 0,3. Tendencia del NDVI con TFPW y Sen.',
   // Ficha del agricultor: años malos, El Niño, año normal, compartir y dónde seguir
   malosH: {
-    lluvia: '¿Los años secos vienen más seguido?',
-    temperatura: '¿Los años calurosos vienen más seguido?',
+    lluvia: '¿Ahora hay más años de seca?',
+    temperatura: '¿Ahora hay más años de calor fuerte?',
   } as PorVariable<string>,
-  malosResumen: {
-    lluvia: (v: Veredicto, antes: number, ahora: number) =>
-      v === 'mas'
-        ? `Ahora hay más años secos que antes (${ahora} frente a ${antes}).`
-        : v === 'menos'
-          ? `Ahora hay menos años secos que antes (${ahora} frente a ${antes}).`
-          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-    temperatura: (v: Veredicto, antes: number, ahora: number) =>
-      v === 'mas'
-        ? `Ahora hay más años calurosos que antes (${ahora} frente a ${antes}).`
-        : v === 'menos'
-          ? `Ahora hay menos años calurosos que antes (${ahora} frente a ${antes}).`
-          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-  } as PorVariable<(v: Veredicto, antes: number, ahora: number) => string>,
+  /** El titular: solo dice «sí» o «no» si la tendencia es un cambio claro y va hacia ese lado */
+  malosRespuesta: {
+    lluvia: {
+      si: 'Sí, la seca está viniendo más seguido que antes.',
+      no: 'No, al revés: ahora la seca viene menos seguido que antes.',
+      masSinSeguro:
+        'Han caído más años secos que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años secos que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: la seca no viene ni más ni menos seguido.',
+    },
+    temperatura: {
+      si: 'Sí, los años de calor fuerte vienen más seguido que antes.',
+      no: 'No, al revés: ahora los años de calor fuerte vienen menos seguido.',
+      masSinSeguro:
+        'Han caído más años de calor fuerte que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años de calor fuerte que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: el calor fuerte no viene ni más ni menos seguido.',
+    },
+  } as PorVariable<Record<RespuestaMalos, string>>,
+  malosFrec: (f: Frecuencia) =>
+    f.tipo === 'ninguno'
+      ? 'Ni uno'
+      : f.tipo === 'casiTodos'
+        ? 'Casi todos los años'
+        : f.tipo === 'dosDeTres'
+          ? '2 de cada 3 años'
+          : f.tipo === 'unoSiUnoNo'
+            ? 'Un año sí y otro no'
+            : f.tipo === 'cada'
+              ? `Uno cada ${f.cada} años`
+              : `Uno cada ${f.de} o ${f.a} años`,
+  malosCuenta: (malos: number, n: number) => `${malos} de ${n} años`,
+  malosRecuerdaLluvia: (anio: number, falta: Falta) =>
+    `¿Te acuerdas de ${anio}? Ese año faltó ${
+      {
+        cuarto: 'como un cuarto',
+        tercio: 'como un tercio',
+        mitad: 'como la mitad',
+        masMitad: 'más de la mitad',
+      }[falta]
+    } de la lluvia de siempre.`,
+  /** grados sin signo: "0,6 °C" */
+  malosRecuerdaCalor: (anio: number, grados: string) =>
+    `¿Te acuerdas de ${anio}? Ese año hizo ${grados} más de calor que lo de siempre.`,
   malosDef: {
-    lluvia: 'Año seco: llovió 20 % o más por debajo de lo normal de los primeros años del periodo.',
-    temperatura:
-      'Año caluroso: 0,3 °C o más por encima de lo normal de los primeros años del periodo.',
+    lluvia: 'Año de seca: faltó una quinta parte de la lluvia de siempre, o más.',
+    temperatura: 'Año de calor fuerte: 0,3 °C o más por encima de lo de siempre.',
   } as PorVariable<string>,
-  malosPunto: { lluvia: 'Año seco', temperatura: 'Año caluroso' } as PorVariable<string>,
-  malosOtro: 'Otro año',
+  malosPunto: { lluvia: 'Año de seca', temperatura: 'Año de calor fuerte' } as PorVariable<string>,
+  malosOtro: {
+    lluvia: 'Año normal o lluvioso',
+    temperatura: 'Año normal o más fresco',
+  } as PorVariable<string>,
   malosAntes: 'Antes',
   malosAhora: 'Ahora',
-  malosDe: (n: number) => `de ${n} años`,
+  malosBase: (a: number, b: number) =>
+    `«Lo de siempre» es un año típico de ${a} a ${b}, sin contar los años de El Niño.`,
   malosLeer: 'Cada casilla es un año: «05» es 2005.',
   dosVeredicto: {
     coinciden: 'Sí coinciden',
@@ -655,32 +700,58 @@ const en: Textos = {
   dosTip: (v, a, b) => `${v} per decade (between ${a} and ${b})`,
   cmpUmbral: 'Green area: pixels with annual NDVI above 0.3. NDVI trend with TFPW and Sen.',
   malosH: {
-    lluvia: 'Are dry years coming more often?',
-    temperatura: 'Are hot years coming more often?',
+    lluvia: 'Are there more drought years now?',
+    temperatura: 'Are there more scorching years now?',
   },
-  malosResumen: {
-    lluvia: (v, antes, ahora) =>
-      v === 'mas'
-        ? `There are more dry years now than before (${ahora} vs ${antes}).`
-        : v === 'menos'
-          ? `There are fewer dry years now than before (${ahora} vs ${antes}).`
-          : `About the same as before (${ahora} vs ${antes}).`,
-    temperatura: (v, antes, ahora) =>
-      v === 'mas'
-        ? `There are more hot years now than before (${ahora} vs ${antes}).`
-        : v === 'menos'
-          ? `There are fewer hot years now than before (${ahora} vs ${antes}).`
-          : `About the same as before (${ahora} vs ${antes}).`,
+  malosRespuesta: {
+    lluvia: {
+      si: 'Yes, drought is coming more often than before.',
+      no: 'No, the other way round: drought is coming less often than before.',
+      masSinSeguro:
+        'There have been more dry years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer dry years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: drought isn’t coming more or less often.',
+    },
+    temperatura: {
+      si: 'Yes, scorching years are coming more often than before.',
+      no: 'No, the other way round: scorching years are coming less often.',
+      masSinSeguro:
+        'There have been more scorching years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer scorching years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: scorching years aren’t coming more or less often.',
+    },
   },
+  malosFrec: (f) =>
+    f.tipo === 'ninguno'
+      ? 'Not one'
+      : f.tipo === 'casiTodos'
+        ? 'Almost every year'
+        : f.tipo === 'dosDeTres'
+          ? '2 out of 3 years'
+          : f.tipo === 'unoSiUnoNo'
+            ? 'Every other year'
+            : f.tipo === 'cada'
+              ? `One every ${f.cada} years`
+              : `One every ${f.de} or ${f.a} years`,
+  malosCuenta: (malos, n) => `${malos} of ${n} years`,
+  malosRecuerdaLluvia: (anio, falta) =>
+    `Remember ${anio}? That year about ${
+      { cuarto: 'a quarter', tercio: 'a third', mitad: 'half', masMitad: 'more than half' }[falta]
+    } of the usual rain was missing.`,
+  malosRecuerdaCalor: (anio, grados) =>
+    `Remember ${anio}? That year was ${grados} hotter than usual.`,
   malosDef: {
-    lluvia: 'Dry year: 20 % or more below the normal rainfall of the first years of the period.',
-    temperatura: 'Hot year: 0.3 °C or more above the normal of the first years of the period.',
+    lluvia: 'Drought year: a fifth or more of the usual rain was missing.',
+    temperatura: 'Scorching year: 0.3 °C or more above usual.',
   },
-  malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year' },
-  malosOtro: 'Other year',
+  malosPunto: { lluvia: 'Drought year', temperatura: 'Scorching year' },
+  malosOtro: { lluvia: 'Normal or rainy year', temperatura: 'Normal or cooler year' },
   malosAntes: 'Before',
   malosAhora: 'Now',
-  malosDe: (n) => `of ${n} years`,
+  malosBase: (a, b) =>
+    `“Usual” is a typical year from ${a} to ${b}, leaving out the El Niño years.`,
   malosLeer: 'Each box is a year: “05” is 2005.',
   dosVeredicto: {
     coinciden: 'They agree',

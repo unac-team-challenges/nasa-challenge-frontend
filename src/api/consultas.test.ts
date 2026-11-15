@@ -167,3 +167,53 @@ describe('detalleDeApi', () => {
     expect(await detalleDeApi('99', 'lluvia')).toBeNull()
   })
 })
+
+/** Zona de /api/vegetacion como la sirve el backend: `serie` en lista, ubigeo como texto. */
+const valleApi = (ubigeo: string, a01: number, a24: number, anios = [2001, 2024]) => ({
+  id: 'valle-' + ubigeo,
+  ubigeo,
+  serie: anios.map((anio) => ({
+    anio,
+    ndvi_anual: 0.2,
+    area_verde_km2: anio === 2001 ? a01 : a24,
+  })),
+  stats: { slope_per_decade: 0.0535, status: 'real' },
+})
+
+describe('vegetacionDeApi (Caso 2)', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+  const simular = (cuerpo: unknown, status = 200) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(cuerpo, status)),
+    )
+
+  it('toma el área de 2001 y 2024 de la serie, por ubigeo', async () => {
+    simular([valleApi('13', 188.9, 355.5), valleApi('11', 117.6, 221.5)])
+    const { vegetacionDeApi } = await cargar()
+    expect(await vegetacionDeApi()).toEqual({
+      '13': { areaAntes: 189, areaDespues: 356, sen: 0.0535 },
+      '11': { areaAntes: 118, areaDespues: 222, sen: 0.0535 },
+    })
+  })
+
+  it('un valle sin 2001 o 2024 en la serie se omite (queda la copia local)', async () => {
+    simular([valleApi('13', 1, 2, [2001, 2023]), valleApi('11', 117.6, 221.5)])
+    const { vegetacionDeApi } = await cargar()
+    expect(Object.keys((await vegetacionDeApi())!)).toEqual(['11'])
+  })
+
+  it('sin API, con error o sin valles usables devuelve null', async () => {
+    simular({ error: 'no existe' }, 404)
+    const { vegetacionDeApi } = await cargar()
+    expect(await vegetacionDeApi()).toBeNull()
+    simular([])
+    expect(await (await cargar()).vegetacionDeApi()).toBeNull()
+    vi.stubEnv('VITE_API_URL', '')
+    expect(await (await cargar()).vegetacionDeApi()).toBeNull()
+  })
+})

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
-import { esUbigeo, useAnio, useBusqueda } from '@/lib/busqueda'
+import { esUbigeo, useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
@@ -22,7 +22,8 @@ export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, tema, conWebgl, periodo } = useApp()
+  const { idioma, tema, conWebgl } = useApp()
+  const periodo = usePeriodo()
   const busqueda = useBusqueda()
   const { variable, sel, vegetacion } = busqueda
   const anio = useAnio()

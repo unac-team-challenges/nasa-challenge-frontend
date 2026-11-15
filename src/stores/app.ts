@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import type { Periodo } from '@/data/datos'
 import type { Idioma } from '@/i18n/textos'
 import { hayWebgl } from '@/utils/webgl'
 import { SIN_MARGEN, type Margen } from '@/utils/margenMapa'
@@ -36,11 +35,6 @@ interface EstadoApp {
   idioma: Idioma
   reproduciendo: boolean
   setReproduciendo: (r: boolean) => void
-  /** largo = 1981–2024, reciente = 2001–2024 */
-  periodo: Periodo
-  setPeriodo: (p: Periodo) => void
-  /** Quitar los años de El Niño (solo lluvia) */
-  sinNino: boolean
   /** El informe empieza minimizado y se abre al tocar una zona (v10) */
   informeMin: boolean
   /** La última zona elegida salió de un toque en el mapa (y no de la Pista o de la URL) */
@@ -62,19 +56,14 @@ interface EstadoApp {
   fuente: Fuente | null
   fijarFuente: (f: Fuente) => void
   setIdioma: (i: Idioma) => void
-  setSinNino: (s: boolean) => void
   setInformeMin: (m: boolean) => void
   alternarTema: () => void
 }
 
 export const useApp = create<EstadoApp>((set, get) => ({
   idioma: idiomaInicial(),
-  // 2001–2024 por defecto: el periodo decidido el 14 nov (backend, docs/tendencias.md) y el que sirve la API.
-  periodo: 'reciente',
-  setPeriodo: (periodo) => set({ periodo, reproduciendo: false }),
   reproduciendo: false,
   setReproduciendo: (reproduciendo) => set({ reproduciendo }),
-  sinNino: false,
   informeMin: !zonaEnUrl(),
   zonaDesdeMapa: false,
   margenMapa: SIN_MARGEN,
@@ -89,7 +78,6 @@ export const useApp = create<EstadoApp>((set, get) => ({
   fuente: null,
   fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
   setIdioma: (idioma) => set({ idioma }),
-  setSinNino: (sinNino) => set({ sinNino }),
   setInformeMin: (informeMin) => set({ informeMin }),
   alternarTema: () => {
     const actual = get().tema ?? temaDelSistema()

@@ -24,6 +24,13 @@ describe('validarBusqueda (lo que va en la URL)', () => {
     expect(validarBusqueda({ lang: 'en' })).toEqual({ lang: 'en' })
     expect(validarBusqueda({ lang: 'fr' })).toEqual({})
   })
+  it('periodo y «sin El Niño» van en la URL; lo inválido se ignora', () => {
+    expect(validarBusqueda(parseSearch('?periodo=largo&sinnino=1'))).toEqual({
+      periodo: 'largo',
+      sinnino: '1',
+    })
+    expect(validarBusqueda({ periodo: '1990', sinnino: '0' })).toEqual({})
+  })
   it('sin parámetros no inventa nada (los valores por defecto los pone el hook)', () => {
     expect(validarBusqueda({})).toEqual({})
   })

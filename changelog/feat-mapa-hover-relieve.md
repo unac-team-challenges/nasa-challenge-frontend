@@ -108,3 +108,128 @@ Qué mirar:
 - **En la máquina del tiempo**, `q` y los años de la ficha son de la tendencia, no del año.
 - **Ancho fijo de la ficha:** evitaría medirla en cada cambio de hover (los ~12 layouts/s).
 - **Revisar con el equipo el tono de la nieve en el tema claro:** se confunde un poco con la tierra alta.
+
+---
+
+# Segunda parte: interfaz continua, presentación del departamento, 2D, relieve y fauna
+
+Pedido del 14 nov:
+
+- mejorar el 2D;
+- que recentrar quite la zona elegida;
+- que elegir un departamento no parpadee;
+- responsive;
+- más relieve y detalle en la fauna y la gente;
+- el nombre del departamento al centro antes de su información;
+- la portada con el mapa de fondo y el Perú a la derecha;
+- «Explorar el mapa» fluido.
+
+## Commits
+
+| Commit | Qué hace |
+|---|---|
+| `feat(interfaz): un solo mapa de fondo para la portada y el explorador, sin recargas ni parpadeo` | Mapa persistente en `App`, `EscenaPeru.setModo`, `setViewOffset`, informe superpuesto, recentrar sin selección, portada con paneles |
+| `feat(explorador): presentación del departamento elegido antes de su información` | «LORETO / Departamento de la selva del Perú» al centro durante 1,9 s; luego entra el informe |
+| `feat(mapa): relieve real del Perú sobre las columnas y vecinos más altos` | Sombreado SRTM en la cara superior de cada departamento; vecinos ×15 |
+| `feat(fauna): personajes más detallados, sombra de contacto y dos figuras culturales nuevas` | Geometría suave, ojos, sombras, balanceo; shipibo-konibo y danzante de tijeras |
+| `feat(mapa2d): ficha técnica, resaltado suave y zoom a la zona elegida` | Misma ficha que el 3D (`lib/tarjeta.ts`), hover con sombra, zoom de 0,9 s |
+
+## Qué causaba cada problema y cómo se resolvió
+
+### El parpadeo al elegir un departamento
+
+**Causa:** al abrir el informe, la grilla del explorador pasaba de `1fr 56px` a `62fr 38fr`. El lienzo 3D cambiaba de tamaño de golpe y el navegador mostraba un cuadro en blanco antes de que la escena volviera a dibujar.
+
+**Solución:**
+
+- El mapa ocupa siempre todo el fondo y el informe **se desliza encima** (`transform`, 0,5 s). El lienzo ya no cambia de tamaño.
+- La cámara corre el Perú a la izquierda del informe con `camera.setViewOffset`, animado cuadro a cuadro (`EscenaPeru.setPanel`).
+- Cuando el lienzo sí cambia de tamaño (ventana, rotación del celular), se dibuja en el mismo callback del `ResizeObserver`, antes de que el navegador pinte.
+
+### «Explorar el mapa» se sentía forzado
+
+**Causa:** la portada y el explorador tenían cada uno su `Mapa3D`. Al cambiar de pantalla se destruía la escena y se creaba otra: texturas, mallas y fauna desde cero.
+
+**Solución:**
+
+- Hay **un solo mapa en `App`**. Al cambiar de ruta, `EscenaPeru.setModo` hace volar la cámara 1,6 s a la vista del explorador y el Perú se desliza desde la derecha hasta su lugar.
+- El texto de la portada sale primero (0,32 s, `.saliendo`) y los controles del explorador entran con un fundido.
+- **Medido:** el número de lienzos creados no cambia al pasar de la portada al explorador ni al elegir una zona. Antes se creaba una escena nueva.
+
+### Recentrar dejaba marcada la última zona
+
+`recentrar()` solo movía la cámara. Ahora el botón también:
+
+- quita la zona elegida;
+- cierra el informe;
+- funciona en 2D, donde vuelve a la vista completa.
+
+### Portada
+
+- El mapa es el fondo de toda la pantalla, con el Perú corrido a la derecha (24 % del ancho).
+- A la izquierda, cada bloque va en su propio panel con fondo y borde (`.vidrio`) para que se lea sobre el mapa animado: pregunta, franjas, perfiles y botón.
+- **Sin `backdrop-filter`:** el desenfoque se recalcularía en cada cuadro del mapa.
+- Los paneles entran escalonados (0, 80, 160 y 240 ms).
+
+### Presentación del departamento
+
+Al elegir una zona:
+
+1. Su nombre entra lento al centro del mapa: el espaciado de letras se cierra, aparece y se va. Debajo dice «Departamento de la costa/sierra/selva del Perú».
+2. Mientras tanto, la cámara vuela hacia la zona.
+3. Si el informe estaba cerrado, se abre a los 1,1 s, junto con la zona del mapa. Si estaba abierto, su contenido entra con un fundido a los 1,3 s.
+
+Con «reducir movimiento» no hay presentación ni demoras.
+
+### Responsive
+
+- **Celular (≤ 900 px):** el mapa va arriba (60 vh, mínimo 320 px) y el texto o el informe debajo. Las dos pantallas usan la misma altura, así que el mapa no cambia de tamaño al navegar ni al elegir.
+- **Escritorio:** el mapa es el fondo y el informe mide `clamp(340px, 38vw, 560px)`.
+
+### Relieve
+
+- La cara superior de cada departamento lleva el sombreado real del relieve (SRTM, `mundo.png`): se ven los Andes, los valles interandinos y la llanura amazónica. **La altura sigue siendo solo el dato.**
+- Los vecinos suben más (exageración ×15) y con un sombreado más marcado.
+
+### Fauna y gente
+
+- **Geometría suave:** esferas, conos y cilindros con más caras y sus propias normales. Antes eran icosaedros de 20 caras con `flatShading`.
+- **Ojos en todos.** Detalles: faja de la pastora, pañuelo del agricultor y hocico del lobo marino.
+- **Sombra de contacto** bajo los que andan por el suelo (una malla instanciada); se achica cuando saltan.
+- **Movimiento:** al caminar se balancean y cabecean; quietos, respiran.
+- **Nuevas figuras:**
+  - mujer **shipibo-konibo** (Ucayali), con el kené en la falda;
+  - **danzante de tijeras** (Huancavelica), con zapateo y giros.
+- **Revisar los textos antes de la demo** (`FAUNA_TEXTOS`):
+  - kené: Patrimonio Cultural de la Nación, 2008;
+  - danza de tijeras: Patrimonio Cultural Inmaterial de la Humanidad (UNESCO), 2010.
+
+### 2D
+
+- **Misma ficha técnica que el 3D.** El contenido sale de `src/lib/tarjeta.ts`, que comparten las dos vistas; tiene 4 pruebas en `tarjeta.test.ts`.
+- **Resaltado:** la zona bajo el puntero se levanta con borde y sombra; colores y bordes cambian con transición.
+- **Zoom:** al elegir una zona, el mapa se desliza y la agranda (0,9 s, entre ×1 y ×2,6).
+- **Recentrar** vuelve a la vista completa.
+- El 2D se dibuja en la parte que no tapa el informe.
+
+**Choca con el #15 de Favio**, que reescribe `Mapa2D.tsx`. El que se mezcle segundo resuelve el conflicto. Los cambios de esta rama en ese archivo son pocos y están marcados: `CAJAS`, `zoomA`, el `<g class="zoom2d">`, el borde con hover y la ficha.
+
+## Medido (GPU real, AMD integrada, `bench.mjs` contra `developer`)
+
+| Fase | `developer` | Esta rama |
+|---|---|---|
+| Quieto | 44 % CPU | 49 % CPU |
+| Mouse sobre el mapa | 67 % | 75 % |
+| Zona elegida | 28 % | 31 % |
+| Reposo largo | 28 % | 27 % |
+
+- **Reposo largo:** igual.
+- **Quieto (+5 puntos):** viene de la fauna, que tiene más caras y sombras, y del relieve.
+- **Zona elegida:** los ~10 layouts/s son de la presentación (1,9 s) y del informe que entra; luego bajan a 0.
+
+## Pruebas
+
+- `pnpm lint` y `pnpm build`: pasan.
+- `pnpm test`: 20 pruebas (16 de antes y 4 de la ficha).
+- `pnpm e2e`: 4 de 4.
+- Sin errores de WebGL ni de shader en tema claro y oscuro, en escritorio (1440 × 860) y en celular (390 × 844).

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { NOMBRE } from '../data/datos'
+import { NOMBRE, REGION } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { ALTO_MAPA_CELULAR } from '../lib/disposicion'
 import { fmtValor } from '../lib/formato'
@@ -14,9 +14,15 @@ import { Leyenda } from './Leyenda'
 const boton =
   'presionable inline-flex size-10 cursor-pointer items-center justify-center rounded-s border border-line-2 bg-panel/92 hover:border-fg'
 
+const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 /** Ancho del informe abierto en escritorio y de su franja minimizada. */
 const ANCHO_INFORME = 'clamp(340px, 38vw, 560px)'
 const FRANJA = 56
+/** Presentación del departamento elegido: entra, se queda y sale (ms, igual que en index.css). */
+const PRESENTACION_MS = 1900
+/** La información aparece cuando la presentación ya se está yendo. */
+const RETRASO_INFO_S = 1.3
+
 /**
  * Explorador: el mapa es el fondo de toda la pantalla y el informe se desliza encima, a la
  * derecha. Antes el informe cambiaba las columnas de la grilla: el lienzo 3D cambiaba de
@@ -35,6 +41,26 @@ export function Explorador() {
   const informe = useRef<HTMLElement>(null)
   const [anchoInforme, setAnchoInforme] = useState(0)
 
+  // Presentación breve del departamento elegido; luego aparece su información. Se decide al
+  // renderizar (patrón «ajustar estado cuando cambia una prop»), no en un efecto.
+  const [intro, setIntro] = useState<{ id: string; n: number } | null>(null)
+  const [abrirTarde, setAbrirTarde] = useState(false)
+  const [previa, setPrevia] = useState({ sel, informeMin })
+  if (sel !== previa.sel || informeMin !== previa.informeMin) {
+    setPrevia({ sel, informeMin })
+    if (sel !== previa.sel) {
+      const animar = !!sel && !reducido()
+      setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
+      // si el informe estaba cerrado, se abre cuando la presentación termina
+      setAbrirTarde(animar && previa.informeMin)
+    }
+  }
+  useEffect(() => {
+    if (!intro) return
+    const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
+    return () => clearTimeout(fin)
+  }, [intro])
+
   // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
   useEffect(() => {
     const el = informe.current
@@ -52,6 +78,8 @@ export function Explorador() {
     setInformeMin(true)
     escenaActiva.current?.recentrar()
   }
+  // El informe y la zona del mapa se mueven juntos, cuando la presentación ya se va
+  const demoraPanel = !informeMin && abrirTarde ? `${RETRASO_INFO_S - 0.2}s` : '0s'
   const estilo = {
     '--ancho-informe': ANCHO_INFORME,
     '--tapa': informeMin ? `${FRANJA}px` : 'var(--ancho-informe)',
@@ -66,7 +94,20 @@ export function Explorador() {
       {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
       <div
         className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:left-0 min-[901px]:right-[var(--tapa)] min-[901px]:h-auto min-[901px]:transition-[right] min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
+        style={{ transitionDelay: demoraPanel }}
       >
+        {intro && (
+          <div
+            key={intro.n}
+            className="presentacion absolute inset-0 z-[4] grid place-items-center px-4 text-center"
+            aria-hidden="true"
+          >
+            <div>
+              <p className="presentacion-nombre">{NOMBRE[intro.id]}</p>
+              <p className="presentacion-sub">{t.introDepto[REGION[intro.id]]}</p>
+            </div>
+          </div>
+        )}
         <div className="entrada-suave">
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
@@ -161,6 +202,7 @@ export function Explorador() {
         className={`pointer-events-auto relative flex min-w-0 overflow-hidden border-line bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           informeMin ? 'min-[901px]:translate-x-[calc(100%-56px)]' : ''
         }`}
+        style={{ transitionDelay: demoraPanel }}
         aria-label={etiquetaInforme}
       >
         <button
@@ -208,7 +250,12 @@ export function Explorador() {
             className="min-w-0 flex-1 px-4 pt-5.5 pb-7 min-[901px]:overflow-y-auto min-[901px]:px-5.5"
             aria-live="polite"
           >
-            <div key={sel ?? 'ninguna'} className="entrada">
+            {/* La información entra suave cuando termina la presentación del departamento */}
+            <div
+              key={sel ?? 'ninguna'}
+              className="entrada"
+              style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
+            >
               <Ficha />
             </div>
           </div>

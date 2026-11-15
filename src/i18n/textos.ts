@@ -90,6 +90,12 @@ const es = {
   vsPromedio: 'frente a su promedio',
   ic95: 'IC 95 %',
   anios: 'años',
+  /** Presentación breve al elegir un departamento */
+  introDepto: {
+    costa: 'Departamento de la costa del Perú',
+    sierra: 'Departamento de la sierra del Perú',
+    selva: 'Departamento de la selva del Perú',
+  } as Record<Region, string>,
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
   fewCeldas: (n: number, fuente: string, local: boolean) =>
@@ -248,6 +254,11 @@ const en: Textos = {
   vsPromedio: 'vs. its average',
   ic95: '95% CI',
   anios: 'years',
+  introDepto: {
+    costa: "A department on Peru's coast",
+    sierra: "A department in Peru's Andes",
+    selva: "A department in Peru's Amazon",
+  },
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
   fewCeldas: (n, fuente, local) =>

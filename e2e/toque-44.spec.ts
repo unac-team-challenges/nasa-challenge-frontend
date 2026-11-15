@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 /** ¿Qué elemento recibe el toque a `dy` px del borde de arriba (negativo) o de abajo (positivo)? */
 async function recibeToque(page: Page, c: Locator, lado: 'arriba' | 'abajo', fuera: number) {

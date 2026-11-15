@@ -19,6 +19,7 @@ function cargar(src: string) {
   return new Promise<HTMLImageElement>((ok, mal) => {
     const img = new Image()
     img.decoding = 'async'
+    img.crossOrigin = 'anonymous' // igual que el TextureLoader del 3D: reutiliza la precarga de index.html
     img.onload = () => ok(img)
     img.onerror = mal
     img.src = src

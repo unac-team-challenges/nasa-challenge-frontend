@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 test('un enlace compartido abre la misma zona, variable y año', async ({ page }) => {
   await page.goto('/zona/20?variable=temperatura&anio=2010&perfil=estudiante')
@@ -25,9 +26,10 @@ test('un enlace con ?lang=en se abre en inglés y el cambio de idioma queda en l
   )
   await page.getByRole('button', { name: /Español/ }).click()
   await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
-  await expect(page).not.toHaveURL(/lang=/)
+  // El inglés es el idioma por defecto: solo el español queda en la URL
+  await expect(page).toHaveURL(/lang=es/)
   await page.getByRole('button', { name: /English/ }).click()
-  await expect(page).toHaveURL(/lang=en/)
+  await expect(page).not.toHaveURL(/lang=/)
 })
 
 test('el idioma de la URL sobrevive al ir a la metodología', async ({ page }) => {
@@ -48,13 +50,13 @@ test('elegir una zona actualiza la URL y se puede recargar', async ({ page }) =>
   await expect(page.locator('#informe')).toContainText('Cusco')
 })
 
-test('metodología desde la cabecera y ruta inexistente', async ({ page }) => {
+test('metodología desde el botón flotante y ruta inexistente', async ({ page }) => {
   const errores: string[] = []
   page.on('pageerror', (e) => errores.push(e.message))
   await page.goto('/')
   await page.getByRole('button', { name: 'Metodología' }).click()
   await page.getByRole('menuitem', { name: /Ver la metodología completa/ }).click()
-  await expect(page).toHaveURL(/\/metodologia$/)
+  await expect(page).toHaveURL(/\/metodologia(\?lang=es)?$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Metodología')
   await expect(page).toHaveTitle(/Metodología/)
 

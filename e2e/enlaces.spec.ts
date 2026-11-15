@@ -6,7 +6,9 @@ test('un enlace compartido abre la misma zona, variable y año', async ({ page }
   await expect(
     page.getByRole('group', { name: 'Variable' }).getByRole('button', { name: 'Temperatura' }),
   ).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('#perfil')).toHaveValue('estudiante')
+  await expect(
+    page.getByRole('group', { name: 'Perfil' }).getByRole('button', { name: 'Estudiante' }),
+  ).toHaveAttribute('aria-pressed', 'true')
   await expect(
     page.getByRole('group', { name: 'Máquina del tiempo' }).getByRole('slider', { name: 'Año' }),
   ).toHaveAttribute('aria-valuetext', '2010')

@@ -36,6 +36,14 @@
   --calor-3: #f57c2b;
   --calor-4: #d9382a;
   --calor-5: #96172a;
+  /* Mapa de lluvia: seco (ocre, como «menos lluvia») → verde oliva → turquesa → azul → azul profundo → violeta, igual en claro y oscuro */
+  --lluvia-0: #c8975a;
+  --lluvia-1: #a3b55f;
+  --lluvia-2: #3fa98f;
+  --lluvia-3: #2b84c9;
+  --lluvia-4: #2a56b5;
+  --lluvia-5: #3a2f98;
+  --lluvia-6: #6c2a8c;
   --accent: #a8285a;
   --accent-text: #a8285a;
   --accent-fg: #ffffff;
@@ -463,9 +471,22 @@ h3 {
     0 0 24px var(--bg);
 }
 
+/* Entrada al desplazarse: el bloque aparece mientras sube por la pantalla. Sin JavaScript y solo
+   donde el navegador sabe de líneas de tiempo de desplazamiento; en los demás se ve normal. */
+@supports (animation-timeline: view()) {
+  .aparece,
+  .aparece-hijos > :not(:first-child) {
+    animation: entrada linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .entrada,
   .entrada-suave,
+  .aparece,
+  .aparece-hijos > :not(:first-child),
   .presentacion > div {
     animation: none;
   }

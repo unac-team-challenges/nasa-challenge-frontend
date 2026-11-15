@@ -589,9 +589,6 @@ interface Vuelo {
   dur: number
 }
 
-/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
-export const escenaActiva: { current: EscenaPeru | null } = { current: null }
-
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()

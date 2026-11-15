@@ -1,4 +1,4 @@
-import type { Variable, Zona } from '@/data/datos'
+import { GENERADO, parametroDe, type Variable, type Zona } from '@/data/datos'
 import type { DatosApi } from '@/api/consultas'
 import { TEXTOS, type Idioma } from '@/i18n/textos'
 import { fmtP, fmtValor, num } from '@/utils/formato'
@@ -46,6 +46,17 @@ export function ComoLoSabemos({ zona: d, variable, idioma, api, m, abierto }: Pr
         <dt className="text-muted">{t.howLag}</dt>
         <dd className="m-0">{d.lag1 == null ? '—' : num(d.lag1, 2, idioma)}</dd>
         <dd className="col-span-full m-0 text-[13px] text-muted">{t.lagExpl}</dd>
+        {/* Ficha técnica: lo que pide la sección de método de una tesis */}
+        <dt className="text-muted">{t.tecCorreccion}</dt>
+        <dd className="m-0">{t.tecCorreccionV(m)}</dd>
+        <dt className="text-muted">{t.tecCriterio}</dt>
+        <dd className="m-0">{t.tecCriterioV}</dd>
+        {!api && (
+          <>
+            <dt className="text-muted">{t.tecGenerado}</dt>
+            <dd className="m-0">{GENERADO}</dd>
+          </>
+        )}
         <dt className="text-muted">{t.howDatos}</dt>
         <dd className="m-0">{api ? t.datosApi : t.datosLocal}</dd>
         <dt className="text-muted">{t.howSrc}</dt>
@@ -59,7 +70,7 @@ export function ComoLoSabemos({ zona: d, variable, idioma, api, m, abierto }: Pr
               rel="noopener"
               className="text-accent-text"
             >
-              NASA POWER ({variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})
+              NASA POWER ({parametroDe(variable)}, MERRA-2)
             </a>
           )}
         </dd>

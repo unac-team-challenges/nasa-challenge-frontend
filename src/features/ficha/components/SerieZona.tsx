@@ -9,6 +9,8 @@ import { useApp } from '@/stores/app'
 import { Figura } from '@/features/ficha/components/Figura'
 import { peoresAnios, serieCsv } from '@/features/ficha/utils/serie'
 import { listaAnios } from '@/features/ficha/utils/campo'
+import { descargarTexto } from '@/features/ficha/utils/estudiante'
+import { DescargarFigura } from '@/features/ficha/components/DescargarFigura'
 import { Button } from '@/components/ui/button'
 
 // Recharts y los gráficos se descargan aparte, al abrir la primera ficha
@@ -20,16 +22,6 @@ const GraficoAnomalias = lazy(() =>
 const GraficoSerie = lazy(() =>
   import('@/features/ficha/components/GraficoSerie').then((m) => ({ default: m.GraficoSerie })),
 )
-
-/** Baja la serie como CSV (se arma en el navegador; no pide nada a la API). */
-function descargar(nombre: string, texto: string) {
-  const url = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nombre
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 /**
  * La serie año por año (la misma para los dos perfiles). Agricultor: cada año frente a lo normal
@@ -80,10 +72,10 @@ export function SerieZona({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
       extra={
         pts &&
         pts.length > 1 && (
-          <div>
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() =>
-                descargar(
+                descargarTexto(
                   `${NOMBRE[d.id]}-${variable}-${pts[0].y}-${pts[pts.length - 1].y}.csv`,
                   serieCsv(pts, variable),
                 )
@@ -92,6 +84,7 @@ export function SerieZona({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
               <Download aria-hidden="true" />
               {t.csvBtn}
             </Button>
+            <DescargarFigura nombre={`${NOMBRE[d.id]}-${variable}-serie`} />
           </div>
         )
       }

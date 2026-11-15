@@ -234,3 +234,8 @@ export function anomaliasAnio(variable: Variable, periodo: Periodo, rango: Rango
   const max = todos[Math.floor(todos.length * 0.95)] || 1
   return (CACHE_ANOM[clave] = { porId, max })
 }
+
+/** Parámetro de NASA POWER de cada variable (PRECTOTCORR, T2M), para la ficha técnica. */
+export function parametroDe(variable: Variable) {
+  return DATOS.variables[variable].parametro
+}

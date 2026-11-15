@@ -40,10 +40,21 @@ describe('explorador con la URL', () => {
     expect(within(informe).queryByRole('link', { name: /WhatsApp/ })).toBeNull()
   })
 
-  it('el estudiante no ve los bloques del agricultor', async () => {
+  it('el estudiante ve robustez, ranking, limitaciones, descargas y cita, sin los bloques del agricultor', async () => {
     renderRuta('/zona/20?perfil=estudiante')
     const informe = await screen.findByRole('complementary', { name: /informe/i })
     await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] })
+    for (const h of [
+      '¿Se sostiene el resultado?',
+      'Frente a los 25 departamentos',
+      'Limitaciones',
+      'Llévatelo',
+      'Cómo citar',
+      'Reprodúcelo',
+    ])
+      expect(await within(informe).findByRole('heading', { name: h })).toBeVisible()
+    // Piura cambia de sentido entre periodos: la tabla lo avisa
+    expect(within(informe).getByText(/Depende del caso/)).toBeVisible()
     expect(within(informe).queryByRole('heading', { name: '¿Qué trae El Niño aquí?' })).toBeNull()
   })
 

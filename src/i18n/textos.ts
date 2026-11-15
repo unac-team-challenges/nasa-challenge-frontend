@@ -232,6 +232,52 @@ const es = {
   seguirSenamhi: 'Pronósticos y avisos del tiempo (SENAMHI)',
   seguirEnfen: 'Comunicados oficiales sobre El Niño (ENFEN)',
   enlaceNueva: '(se abre en otra pestaña)',
+  // Ficha del estudiante: robustez, ranking, ficha técnica, limitaciones, descargas, cita
+  robH: '¿Se sostiene el resultado?',
+  robCols: ['Caso', 'Pendiente', 'q', 'Estado'],
+  robCaso: (a: number, b: number, sinNino: boolean) => `${a}–${b}${sinNino ? ', sin El Niño' : ''}`,
+  robVer: {
+    robusto: 'Robusto: «cambio real» en los 4 casos y siempre en el mismo sentido.',
+    nunca: 'En ningún caso llega a «cambio real»: no hay base para afirmar una tendencia.',
+    depende:
+      'Depende del caso: el resultado cambia con el periodo o con El Niño. Tómalo con cuidado.',
+    pocos: 'No hay datos suficientes para comparar casos.',
+  },
+  robSigno: 'Ojo: el sentido del cambio se invierte entre casos.',
+  robActual: 'el que estás viendo',
+  robFuente:
+    'Calculado con la copia local de NASA POWER, la única que trae los 4 casos; la ficha de arriba puede venir de la API.',
+  rankH: 'Frente a los 25 departamentos',
+  rankPuesto: (p: number, n: number, nombre: string) =>
+    `${nombre} está en el puesto ${p} de ${n} departamentos con datos (1 = el que más sube).`,
+  rankCap:
+    'Punto: pendiente de Sen por década. Línea: su IC 95 %. Ordenados de mayor a menor. Toca uno para ir a su ficha.',
+  rankAria: 'Pendiente de cada departamento con su IC 95 %',
+  tecCorreccion: 'Corrección por pruebas múltiples',
+  tecCorreccionV: (m: number) => `Benjamini-Hochberg entre ${m} zonas, α = 0,05`,
+  tecCriterio: 'Criterio de «cambio real»',
+  tecCriterioV: 'q < 0,05, IC 95 % que no cruza el cero y lag1 ≤ 0,5',
+  tecGenerado: 'Datos generados el',
+  limH: 'Limitaciones',
+  lim: (n: number) => [
+    `Series cortas: con ${n} años, la prueba tiene poca potencia y un cambio real puede no detectarse.`,
+    'Resolución gruesa: cada celda de NASA POWER mide unos 50 km; el promedio no representa un punto exacto.',
+    'Es un reanálisis (modelo con observaciones), no una estación meteorológica.',
+    'La autocorrelación se corrige con TFPW, pero no todas las dependencias entre años.',
+    'Describe lo que ya cambió: no es un pronóstico.',
+  ],
+  llevarH: 'Llévatelo',
+  csvTablaBtn: 'Tabla de los 25 departamentos (CSV)',
+  figSvg: 'Figura (SVG)',
+  figPng: 'Figura (PNG)',
+  citarH: 'Cómo citar',
+  citarCopiar: 'Copiar',
+  citarCopiado: 'Copiado',
+  citarEnlace: 'Enlace a esta vista exacta',
+  reproH: 'Reprodúcelo',
+  reproApi: 'La API devuelve estos mismos números:',
+  reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
+  reproRepos: 'Código del cálculo (backend) y de esta página (frontend):',
   dosH: '¿Coinciden dos fuentes de NASA?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'modelo, la del mapa' },
@@ -536,6 +582,51 @@ const en: Textos = {
   seguirSenamhi: 'Weather forecasts and warnings (SENAMHI)',
   seguirEnfen: 'Official El Niño communiqués (ENFEN)',
   enlaceNueva: '(opens in a new tab)',
+  robH: 'Does the result hold?',
+  robCols: ['Case', 'Slope', 'q', 'Status'],
+  robCaso: (a, b, sinNino) => `${a}–${b}${sinNino ? ', without El Niño' : ''}`,
+  robVer: {
+    robusto: 'Robust: “real change” in all 4 cases and always in the same direction.',
+    nunca: 'No case reaches “real change”: there is no basis to claim a trend.',
+    depende:
+      'It depends on the case: the result changes with the period or El Niño. Use with care.',
+    pocos: 'Not enough data to compare cases.',
+  },
+  robSigno: 'Careful: the direction of change flips between cases.',
+  robActual: 'the one you are viewing',
+  robFuente:
+    'Computed with the local copy of NASA POWER, the only one with all 4 cases; the report above may come from the API.',
+  rankH: 'Compared with the 25 departments',
+  rankPuesto: (p, n, nombre) =>
+    `${nombre} ranks ${p} of ${n} departments with data (1 = the largest increase).`,
+  rankCap:
+    'Dot: Sen’s slope per decade. Line: its 95 % CI. Sorted from largest to smallest. Tap one to open its report.',
+  rankAria: 'Slope of each department with its 95 % CI',
+  tecCorreccion: 'Multiple-testing correction',
+  tecCorreccionV: (m) => `Benjamini-Hochberg across ${m} areas, α = 0.05`,
+  tecCriterio: '“Real change” criterion',
+  tecCriterioV: 'q < 0.05, 95 % CI not crossing zero and lag1 ≤ 0.5',
+  tecGenerado: 'Data generated on',
+  limH: 'Limitations',
+  lim: (n) => [
+    `Short series: with ${n} years the test has low power and a real change may go undetected.`,
+    'Coarse resolution: each NASA POWER cell is about 50 km; the average is not an exact point.',
+    'It is a reanalysis (a model with observations), not a weather station.',
+    'Autocorrelation is corrected with TFPW, but not every dependence between years.',
+    'It describes what has already changed: it is not a forecast.',
+  ],
+  llevarH: 'Take it with you',
+  csvTablaBtn: 'Table of the 25 departments (CSV)',
+  figSvg: 'Figure (SVG)',
+  figPng: 'Figure (PNG)',
+  citarH: 'How to cite',
+  citarCopiar: 'Copy',
+  citarCopiado: 'Copied',
+  citarEnlace: 'Link to this exact view',
+  reproH: 'Reproduce it',
+  reproApi: 'The API returns these same numbers:',
+  reproSinApi: 'This session uses the local copy; with the project API, the query is:',
+  reproRepos: 'Code of the calculation (backend) and of this page (frontend):',
   dosH: 'Do two NASA sources agree?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'model, the one on the map' },
@@ -865,7 +956,8 @@ interface Metodologia {
   creditosNasa: string
 }
 
-const REPOS: Enlace[] = [
+/** Repositorios del proyecto (metodología y ficha del estudiante). */
+export const REPOS: Enlace[] = [
   ['nasa-challenge-frontend', 'https://github.com/unac-team-challenges/nasa-challenge-frontend'],
   ['nasa-challenge-backend', 'https://github.com/unac-team-challenges/nasa-challenge-backend'],
 ]

@@ -12,6 +12,10 @@ import { CampoSeguir } from '@/features/ficha/components/CampoSeguir'
 import { ComoLoSabemos } from '@/features/ficha/components/ComoLoSabemos'
 import { Confianza } from '@/features/ficha/components/Confianza'
 import { DosFuentes } from '@/features/ficha/components/DosFuentes'
+import { EstLimitaciones } from '@/features/ficha/components/EstLimitaciones'
+import { EstRanking } from '@/features/ficha/components/EstRanking'
+import { EstRecursos } from '@/features/ficha/components/EstRecursos'
+import { EstRobustez } from '@/features/ficha/components/EstRobustez'
 import { PistaContraste } from '@/features/ficha/components/PistaContraste'
 import { SerieZona } from '@/features/ficha/components/SerieZona'
 import { Tendencia } from '@/features/ficha/components/Tendencia'
@@ -23,6 +27,7 @@ import { Tendencia } from '@/features/ficha/components/Tendencia'
  * agricultor, la estadística para el estudiante), nunca qué dato muestra. El agricultor suma
  * lecturas de esa misma serie pensadas para su campaña (años malos, El Niño, año normal) y
  * a dónde ir por avisos oficiales; «¿Coinciden dos fuentes?» queda solo para el estudiante.
+ * El estudiante suma lo que pide una tesis: robustez, ranking, limitaciones, descargas y cita.
  */
 export function Ficha() {
   const idioma = useApp((s) => s.idioma)
@@ -93,6 +98,13 @@ export function Ficha() {
       ) : (
         <SerieZona zona={d} perfil={perfil} />
       )}
+      {/* Solo el estudiante: lo que necesita para defender el resultado en una tesis */}
+      {!campo && !pocos && (
+        <>
+          <EstRobustez />
+          <EstRanking />
+        </>
+      )}
       {/* Solo el estudiante: al agricultor no le sirve comparar fuentes */}
       {dos && !campo && <DosFuentes power={d} imerg={dos} idioma={idioma} />}
       <AntesDespues departamento={sel} perfil={perfil} />
@@ -107,6 +119,12 @@ export function Ficha() {
           m={zonasProbadas(zonas)}
           abierto={perfil === 'estudiante'}
         />
+      )}
+      {!campo && (
+        <>
+          <EstLimitaciones anios={d.n_years} />
+          <EstRecursos />
+        </>
       )}
 
       <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>

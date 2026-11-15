@@ -1,12 +1,27 @@
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { NOMBRE, ninoEn, type Variable, type Zona } from '@/data/datos'
 import { TEXTOS, type Idioma } from '@/i18n/textos'
-import { fmtValor, num } from '@/utils/formato'
+import { fmtValor, num, numConSigno } from '@/utils/formato'
+import { filasSerie, type Punto } from '@/features/ficha/utils/serie'
+import { ejeX, ejeY, MARGEN } from '@/features/ficha/utils/ejes'
+import { Globo } from '@/features/ficha/components/Globo'
 
 interface Props {
   zona: Zona
   variable: Variable
   /** Serie anual (null = cargando o sin datos de la API) */
-  pts: { y: number; v: number }[] | null
+  pts: Punto[] | null
   sinNino: boolean
   idioma: Idioma
   /** Token del color de la tendencia: --up o --down */
@@ -15,155 +30,97 @@ interface Props {
   anio?: number | null
 }
 
-function pasoRedondo(rango: number, objetivo: number) {
-  const crudo = rango / objetivo
-  const mag = Math.pow(10, Math.floor(Math.log10(crudo)))
-  const n = crudo / mag
-  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * mag
-}
-
 /**
- * Serie anual real a escala (SVG, portada del prototipo): puntos por año, línea de
- * tendencia de Sen, banda del rango probable (IC 95 %) y años de El Niño.
+ * Serie anual real a escala (ficha del estudiante): punto por año, recta de Sen, banda del rango
+ * probable (IC 95 %) y franjas de los años de El Niño.
  */
 export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, anio }: Props) {
   const t = TEXTOS[idioma]
-  const W = 400
-  const H = 214
-  const ml = 46
-  const mr = 10
-  const mt = 12
-  const mb = 28
   if (!pts || pts.length < 2) return null
+  const filas = filasSerie(pts, d)
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y
-  // Recta de Sen que pasa por la mediana: pivote en el año central con el valor de la tendencia
-  const media = pts.reduce((a, p) => a + p.v, 0) / pts.length
-  const xc = (y0 + y1) / 2
-  const yc = media
-  const recta = (s: number, y: number) => yc + (s / 10) * (y - xc)
-  const vals = pts
-    .map((p) => p.v)
-    .concat([recta(d.ci_low, y0), recta(d.ci_high, y0), recta(d.ci_low, y1), recta(d.ci_high, y1)])
-  let lo = Math.min(...vals)
-  let hi = Math.max(...vals)
-  if (variable === 'lluvia') lo = Math.max(0, lo)
-  const paso = pasoRedondo(hi - lo || 1, 4)
-  lo = Math.floor(lo / paso) * paso
-  hi = Math.ceil(hi / paso) * paso
-  const X = (y: number) => ml + ((y - y0) / (y1 - y0)) * (W - ml - mr)
-  const Y = (v: number) => mt + ((hi - v) / (hi - lo)) * (H - mt - mb)
-  const f = (n: number) => n.toFixed(1)
-  const lineas: number[] = []
-  for (let v = lo; v <= hi + paso / 2; v += paso) lineas.push(v)
-  const marcas: number[] = []
-  for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += y1 - y0 > 30 ? 10 : 5) marcas.push(y)
-  const banda = (
-    [
-      [y0, d.ci_low],
-      [xc, null],
-      [y1, d.ci_high],
-      [y1, d.ci_low],
-      [xc, null],
-      [y0, d.ci_high],
-    ] as [number, number | null][]
-  )
-    .map(([y, s]) => `${f(X(y))},${f(Y(s == null ? yc : recta(s, y)))}`)
-    .join(' ')
+  const temp = variable === 'temperatura'
+  const valor = (v: number) => (temp ? `${num(v, 1, idioma)} °C` : `${Math.round(v)} mm`)
+  const nino = variable === 'lluvia' && !sinNino ? ninoEn({ year_start: y0, year_end: y1 }) : []
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="block h-auto w-full overflow-visible"
+    <div
+      className="aspect-[400/214] w-full"
       role="img"
       aria-label={`${NOMBRE[d.id]}: ${fmtValor(d.slope_per_decade, variable, idioma)} ${t.perDecade}`}
     >
-      {variable === 'lluvia' &&
-        !sinNino &&
-        ninoEn({ year_start: y0, year_end: y1 }).map((y) => (
-          <rect
-            key={y}
-            x={f(X(y) - 4)}
-            y={mt}
-            width={8}
-            height={H - mt - mb}
-            style={{ fill: 'var(--nino)' }}
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={filas} margin={MARGEN}>
+          <CartesianGrid vertical={false} stroke="var(--line)" />
+          {nino.map((y) => (
+            <ReferenceArea
+              key={y}
+              x1={y - 0.4}
+              x2={y + 0.4}
+              fill="var(--nino)"
+              zIndex={-60}
+              fillOpacity={1}
+              ifOverflow="extendDomain"
+            />
+          ))}
+          <XAxis dataKey="y" {...ejeX(y0, y1)} />
+          <YAxis
+            {...ejeY(t.unitAxis[variable])}
+            domain={
+              variable === 'lluvia' ? [(m: number) => Math.max(0, m), 'auto'] : ['auto', 'auto']
+            }
+            tickFormatter={(v: number) => numConSigno(v, temp ? 1 : 0, idioma)}
           />
-        ))}
-      {lineas.map((v) => (
-        <g key={v}>
-          <line x1={ml} x2={W - mr} y1={f(Y(v))} y2={f(Y(v))} style={{ stroke: 'var(--line)' }} />
-          <text
-            x={ml - 6}
-            y={f(Y(v) + 4)}
-            textAnchor="end"
-            fontSize={11}
-            style={{ fill: 'var(--muted)' }}
-          >
-            {variable === 'temperatura' ? num(v, paso < 1 ? 1 : 0, idioma) : Math.round(v)}
-          </text>
-        </g>
-      ))}
-      {marcas.map((y) => (
-        <text
-          key={y}
-          x={f(X(y))}
-          y={H - 8}
-          textAnchor="middle"
-          fontSize={11}
-          style={{ fill: 'var(--muted)' }}
-        >
-          {y}
-        </text>
-      ))}
-      <polygon points={banda} style={{ fill: `var(${color})` }} fillOpacity={0.16} />
-      <polyline
-        points={pts.map((p) => `${f(X(p.y))},${f(Y(p.v))}`).join(' ')}
-        fill="none"
-        style={{ stroke: 'var(--line-2)' }}
-        strokeWidth={1.2}
-      />
-      {pts.map((p) => (
-        <circle key={p.y} cx={f(X(p.y))} cy={f(Y(p.v))} r={2.6} style={{ fill: 'var(--muted)' }} />
-      ))}
-      {anio != null && anio >= y0 && anio <= y1 && (
-        <g>
-          <line
-            x1={f(X(anio))}
-            x2={f(X(anio))}
-            y1={mt}
-            y2={H - mb}
-            style={{ stroke: 'var(--accent)' }}
-            strokeWidth={1.5}
-            strokeDasharray="3 3"
+          <Area
+            dataKey="banda"
+            stroke="none"
+            fill={`var(${color})`}
+            fillOpacity={0.16}
+            isAnimationActive={false}
+            activeDot={false}
           />
-          {pts
-            .filter((p) => p.y === anio)
-            .map((p) => (
-              <circle
-                key={p.y}
-                cx={f(X(p.y))}
-                cy={f(Y(p.v))}
-                r={6}
-                fill="none"
-                style={{ stroke: 'var(--accent)' }}
-                strokeWidth={2.5}
-              />
-            ))}
-        </g>
-      )}
-      <line
-        x1={f(X(y0))}
-        y1={f(Y(recta(d.slope_per_decade, y0)))}
-        x2={f(X(y1))}
-        y2={f(Y(recta(d.slope_per_decade, y1)))}
-        style={{ stroke: `var(${color})` }}
-        strokeWidth={3.5}
-        strokeLinecap="round"
-      />
-      <text x={ml} y={mt - 2} fontSize={11} style={{ fill: 'var(--muted)' }}>
-        {t.unitAxis[variable]}
-      </text>
-    </svg>
+          <Line
+            dataKey="v"
+            stroke="var(--line-2)"
+            strokeWidth={1.2}
+            dot={{ r: 2.6, fill: 'var(--muted)', stroke: 'none' }}
+            activeDot={{ r: 5, fill: 'var(--fg)', stroke: 'var(--panel)', strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
+          <Line
+            dataKey="tendencia"
+            stroke={`var(${color})`}
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+          />
+          {anio != null && anio >= y0 && anio <= y1 && (
+            <ReferenceLine
+              x={anio}
+              stroke="var(--accent)"
+              strokeWidth={1.5}
+              strokeDasharray="3 3"
+            />
+          )}
+          <Tooltip
+            cursor={{ stroke: 'var(--line-2)' }}
+            isAnimationActive={false}
+            content={({ active, payload }) => {
+              const f = payload?.[0]?.payload as (typeof filas)[number] | undefined
+              if (!active || !f) return null
+              return (
+                <Globo>
+                  <b className="font-semibold">{t.serieTip(f.y, valor(f.v))}</b>
+                  <span className="text-muted">{t.tendenciaTip(valor(f.tendencia))}</span>
+                </Globo>
+              )
+            }}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   )
 }

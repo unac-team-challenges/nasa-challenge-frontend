@@ -111,6 +111,85 @@ const es = {
   clue: (nombre: string, verbo: string, valor: string, estado: string) =>
     `Mientras tanto, en ${nombre} ${verbo} ${valor} por década (${estado}).`,
   clueBtn: (nombre: string) => `Ir a ${nombre}`,
+  // Ficha del agricultor
+  /** valor sin signo: "8 %" o "0,21 °C" */
+  campoCambio: {
+    lluvia: (valor: string, sube: boolean) =>
+      `${valor} ${sube ? 'más' : 'menos'} lluvia cada 10 años`,
+    temperatura: (valor: string, sube: boolean) =>
+      `${valor} ${sube ? 'más de calor' : 'menos de calor'} cada 10 años`,
+  } as PorVariable<(valor: string, sube: boolean) => string>,
+  campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
+  campoNoSeguro: 'Ojo: todavía no es seguro, puede ser casualidad.',
+  campoPeores: {
+    lluvia: (anios: string) => `Los años más secos: ${anios}.`,
+    temperatura: (anios: string) => `Los años más calurosos: ${anios}.`,
+  } as PorVariable<(anios: string) => string>,
+  anomH: 'Cada año frente a lo normal',
+  anomEje: {
+    lluvia: '% frente a lo normal',
+    temperatura: '°C frente a lo normal',
+  } as PorVariable<string>,
+  anomCap: (variable: Variable, a: number, b: number, sinNino: boolean, anios: string) =>
+    (variable === 'lluvia'
+      ? 'Barra hacia arriba: año con más lluvia que lo normal. Hacia abajo: con menos.'
+      : 'Barra hacia arriba: año más caluroso que lo normal. Hacia abajo: más frío.') +
+    ` Lo normal es el promedio de ${a} a ${b}.` +
+    (variable === 'lluvia'
+      ? sinNino
+        ? ` Sin los años de El Niño (${anios}).`
+        : ` Franjas: años de El Niño (${anios}).`
+      : ''),
+  anomTip: (anio: number, valor: string) => `${anio}: ${valor} frente a lo normal`,
+  vigilarH: 'Qué vigilar en tu campo',
+  vigilarIntro: (real: boolean): string =>
+    real
+      ? 'La tendencia es sostenida. Algunas ideas para prepararte:'
+      : 'Todavía no es seguro, pero conviene estar atento:',
+  /** clave: variable y si sube */
+  vigilar: {
+    lluvia: {
+      baja: [
+        'Planifica el agua de riego: los años secos se están volviendo más comunes.',
+        'Prefiere cultivos y variedades que aguanten mejor la falta de agua.',
+        'Revisa canales y reservorios antes de la temporada de lluvias.',
+      ],
+      sube: [
+        'Cuida el suelo de la erosión y los huaicos en los años muy lluviosos.',
+        'Revisa el drenaje de tus parcelas para que el agua no se quede.',
+        'Más humedad puede traer más hongos y plagas: vigila tus cultivos.',
+      ],
+    },
+    temperatura: {
+      sube: [
+        'Con más calor el suelo se seca antes: tus cultivos pueden pedir más riego.',
+        'Cuando puedas, siembra en las fechas más frescas.',
+        'El calor puede traer plagas que antes no llegaban a tu zona.',
+      ],
+      baja: [
+        'Cuidado con las heladas, sobre todo en las noches despejadas.',
+        'Prefiere variedades que resistan mejor el frío.',
+        'Protege los almácigos y los animales en las noches más frías.',
+      ],
+    },
+  } as PorVariable<{ sube: string[]; baja: string[] }>,
+  vigilarNota:
+    'Son ideas generales, no una recomendación técnica. Consulta con tu agencia agraria.',
+  // Ficha del estudiante
+  serieH: 'La serie año por año',
+  serieTip: (anio: number, valor: string) => `${anio}: ${valor}`,
+  tendenciaTip: (valor: string) => `Tendencia: ${valor}`,
+  preguntasH: 'Para investigar',
+  preguntas: (variable: Variable, contraste: string | null) =>
+    [
+      variable === 'lluvia'
+        ? '¿La tendencia se mantiene si quitas los años de El Niño? Usa el interruptor y compara la cifra.'
+        : null,
+      '¿Por qué un cambio puede verse grande y aun así ser «posible casualidad»? Mira el rango probable.',
+      contraste ? `¿Por qué en ${contraste} el cambio va en sentido contrario?` : null,
+      '¿Cambia el resultado si eliges el periodo largo, desde 1981?',
+    ].filter((p): p is string => p != null),
+  csvBtn: 'Descargar la serie (CSV)',
   dosH: '¿Coinciden dos fuentes de NASA?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'modelo, la del mapa' },
@@ -309,6 +388,75 @@ const en: Textos = {
   clue: (nombre, verbo, valor, estado) =>
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
+  campoCambio: {
+    lluvia: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} rain every 10 years`,
+    temperatura: (valor, sube) => `${valor} ${sube ? 'warmer' : 'cooler'} every 10 years`,
+  },
+  campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
+  campoNoSeguro: 'Careful: it is not certain yet, it may be chance.',
+  campoPeores: {
+    lluvia: (anios) => `The driest years: ${anios}.`,
+    temperatura: (anios) => `The hottest years: ${anios}.`,
+  },
+  anomH: 'Each year compared with normal',
+  anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal' },
+  anomCap: (variable, a, b, sinNino, anios) =>
+    (variable === 'lluvia'
+      ? 'Bar up: a year with more rain than normal. Bar down: with less.'
+      : 'Bar up: a year hotter than normal. Bar down: cooler.') +
+    ` Normal is the average from ${a} to ${b}.` +
+    (variable === 'lluvia'
+      ? sinNino
+        ? ` Without the El Niño years (${anios}).`
+        : ` Stripes: El Niño years (${anios}).`
+      : ''),
+  anomTip: (anio, valor) => `${anio}: ${valor} vs normal`,
+  vigilarH: 'What to watch on your farm',
+  vigilarIntro: (real) =>
+    real
+      ? 'The trend is steady. Some ideas to get ready:'
+      : 'It is not certain yet, but stay alert:',
+  vigilar: {
+    lluvia: {
+      baja: [
+        'Plan your irrigation water: dry years are becoming more common.',
+        'Choose crops and varieties that handle water shortage better.',
+        'Check canals and reservoirs before the rainy season.',
+      ],
+      sube: [
+        'Protect the soil from erosion and mudslides in very rainy years.',
+        'Check your plots’ drainage so water does not pool.',
+        'More moisture can bring more fungi and pests: watch your crops.',
+      ],
+    },
+    temperatura: {
+      sube: [
+        'With more heat the soil dries sooner: your crops may need more water.',
+        'When you can, plant in the cooler dates.',
+        'Heat can bring pests that did not reach your area before.',
+      ],
+      baja: [
+        'Watch out for frost, especially on clear nights.',
+        'Choose varieties that resist cold better.',
+        'Protect seedbeds and animals on the coldest nights.',
+      ],
+    },
+  },
+  vigilarNota: 'These are general ideas, not technical advice. Ask your local agricultural office.',
+  serieH: 'The series year by year',
+  serieTip: (anio, valor) => `${anio}: ${valor}`,
+  tendenciaTip: (valor) => `Trend: ${valor}`,
+  preguntasH: 'To investigate',
+  preguntas: (variable, contraste) =>
+    [
+      variable === 'lluvia'
+        ? 'Does the trend hold if you remove the El Niño years? Use the switch and compare the number.'
+        : null,
+      'Why can a change look large and still be a “possible coincidence”? Look at the likely range.',
+      contraste ? `Why does ${contraste} change in the opposite direction?` : null,
+      'Does the result change if you pick the long period, from 1981?',
+    ].filter((p): p is string => p != null),
+  csvBtn: 'Download the series (CSV)',
   dosH: 'Do two NASA sources agree?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'model, the one on the map' },

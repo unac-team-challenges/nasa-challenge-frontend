@@ -17,13 +17,25 @@ test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendenc
 
   const tiempo = page.getByRole('group', { name: 'Máquina del tiempo' })
   const tendencia = tiempo.getByRole('button', { name: 'Tendencia', exact: true })
+  const porAnio = tiempo.getByRole('button', { name: 'Año a año', exact: true })
   const anio = tiempo.getByRole('slider', { name: 'Año' })
+  const titulo = page.getByRole('heading', { level: 2, name: /Temperatura media/ })
   await expect(tendencia).toHaveAttribute('aria-pressed', 'true')
+  await expect(titulo).toContainText('tendencia')
+  // En el modo Tendencia no hay deslizador ni Play
+  await expect(anio).toHaveCount(0)
+  await expect(tiempo.getByRole('button', { name: /^Reproducir/ })).toHaveCount(0)
 
-  // Elegir un año con el teclado sale de la vista de tendencia
+  // Año a año muestra el deslizador; el título dice el año
+  await porAnio.click()
+  await expect(porAnio).toHaveAttribute('aria-pressed', 'true')
+  await expect(tendencia).toHaveAttribute('aria-pressed', 'false')
+  await expect(titulo).toContainText('solo')
+
+  // Elegir otro año con el teclado sigue en Año a año
   await anio.focus()
   await anio.press('Home')
-  await expect(tendencia).toHaveAttribute('aria-pressed', 'false')
+  await expect(porAnio).toHaveAttribute('aria-pressed', 'true')
   const primero = await anio.getAttribute('aria-valuetext')
   expect(primero).toMatch(/^\d{4}$/)
 
@@ -39,12 +51,14 @@ test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendenc
   expect(errores).toEqual([])
 })
 
-test('Caso 2: la ficha de La Libertad e Ica compara 2001 y 2024; Amazonas no', async ({ page }) => {
+test('Caso 2: la ficha de La Libertad, Ica y Lambayeque compara 2001 y 2024; Amazonas no', async ({
+  page,
+}) => {
   await page.goto('/explorar?sinwebgl') // el mapa 2D se puede elegir con teclado
   const mapa = page.getByRole('group', { name: 'Mapa del Perú en 2D' })
   const informe = page.locator('#informe')
 
-  for (const departamento of ['La Libertad', 'Ica']) {
+  for (const departamento of ['La Libertad', 'Ica', 'Lambayeque']) {
     const zona = mapa.getByRole('button', { name: new RegExp(`^${departamento}`) })
     await zona.focus()
     await page.keyboard.press('Enter')
@@ -59,4 +73,18 @@ test('Caso 2: la ficha de La Libertad e Ica compara 2001 y 2024; Amazonas no', a
   await page.keyboard.press('Enter')
   await expect(informe).toContainText('Amazonas')
   await expect(informe.getByRole('heading', { name: 'La costa que reverdece' })).toHaveCount(0)
+  await expect(informe.getByRole('heading', { name: 'Árboles de la selva' })).toHaveCount(0)
+})
+
+test('Selva: Madre de Dios muestra los árboles de La Pampa con su aviso', async ({ page }) => {
+  await page.goto('/explorar?sinwebgl')
+  const mapa = page.getByRole('group', { name: 'Mapa del Perú en 2D' })
+  const informe = page.locator('#informe')
+  const zona = mapa.getByRole('button', { name: /^Madre de Dios/ })
+  await zona.focus()
+  await page.keyboard.press('Enter')
+  await expect(informe).toContainText('Madre de Dios')
+  await expect(informe.getByRole('heading', { name: 'Árboles de la selva' })).toBeVisible()
+  await expect(informe).toContainText('La Pampa (Tambopata)')
+  await expect(informe).toContainText('Léelo con cuidado')
 })

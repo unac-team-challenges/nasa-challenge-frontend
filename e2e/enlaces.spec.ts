@@ -12,6 +12,24 @@ test('un enlace compartido abre la misma zona, variable y año', async ({ page }
   ).toHaveAttribute('aria-valuetext', '2010')
 })
 
+test('un enlace con ?lang=en se abre en inglés y el cambio de idioma queda en la URL', async ({
+  page,
+}) => {
+  await page.goto('/explorar?sinwebgl&lang=en')
+  await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
+  await page.getByRole('button', { name: 'Change language' }).click()
+  await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
+  await expect(page).not.toHaveURL(/lang=/)
+  await page.getByRole('button', { name: 'Cambiar idioma' }).click()
+  await expect(page).toHaveURL(/lang=en/)
+})
+
+test('el idioma de la URL sobrevive al ir a la metodología', async ({ page }) => {
+  await page.goto('/explorar?sinwebgl&lang=en')
+  await page.getByRole('link', { name: 'Methodology' }).first().click()
+  await expect(page).toHaveURL(/metodologia.*lang=en/)
+})
+
 test('elegir una zona actualiza la URL y se puede recargar', async ({ page }) => {
   await page.goto('/explorar?sinwebgl')
   await page

@@ -33,8 +33,13 @@ const es = {
   // Explorador
   explorador: 'Explorador',
   mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
-  mapSub: (a: number, b: number) => `Cambio por década, ${a}–${b}`,
+  mapSub: 'Cambio por década',
+  mapSubAnio: 'Cada departamento frente a su propio promedio',
+  /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
+  mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
+  mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
+  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -111,6 +116,21 @@ const es = {
   clue: (nombre: string, verbo: string, valor: string, estado: string) =>
     `Mientras tanto, en ${nombre} ${verbo} ${valor} por década (${estado}).`,
   clueBtn: (nombre: string) => `Ir a ${nombre}`,
+  dosH: '¿Coinciden dos fuentes de NASA?',
+  dosFuente: {
+    power: { nombre: 'NASA POWER', tipo: 'modelo, la del mapa' },
+    imerg: { nombre: 'GPM IMERG', tipo: 'satélites' },
+  },
+  dosSi: (sube: boolean) => `Coinciden: las dos dicen que ${sube ? 'llueve más' : 'llueve menos'}.`,
+  dosNo: (sube: boolean) =>
+    `No coinciden: el modelo dice que ${sube ? 'llueve más' : 'llueve menos'} y los satélites, que ${sube ? 'llueve menos' : 'llueve más'}.`,
+  dosSiDebil: (sube: boolean) =>
+    `Las dos apuntan a que ${sube ? 'llueve más' : 'llueve menos'}, pero ninguna de las dos es segura.`,
+  dosDudoso:
+    'Apuntan a lados distintos, pero sus rangos probables se tocan: no se puede decir que se contradigan.',
+  dosPocos: 'Una de las dos fuentes tiene muy pocos datos aquí: no las comparamos.',
+  dosPorQue:
+    'Los satélites de IMERG cambiaron en 2014 (de TRMM a GPM) y eso puede hacer que la lluvia parezca bajar. Por eso el mapa usa POWER y nunca marca a IMERG como cambio real.',
   verb: {
     lluvia: ['la lluvia sube', 'la lluvia baja'],
     temperatura: ['la temperatura sube', 'la temperatura baja'],
@@ -139,8 +159,14 @@ const es = {
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
+  timeModeAria: 'Qué ver en el mapa',
   timeTrend: 'Tendencia',
-  timeBackTrend: 'Ver la tendencia',
+  timeTrendTitle: (a: number, b: number) => `Tendencia ${a}–${b}: cuánto cambió en esos años`,
+  timeByYear: 'Año a año',
+  timeByYearTitle: 'Año a año: cómo fue cada año frente a su promedio',
+  timeHelp: (n: number) =>
+    `Tendencia: cuánto cambió en ${n} años. Año a año: cómo fue ese año frente a su promedio.`,
+  timeHelpClose: 'Cerrar la ayuda',
   timePlay: (a: number, b: number) => `Reproducir ${a}–${b}`,
   timePause: 'Pausar',
   timeYear: 'Año',
@@ -165,6 +191,20 @@ const es = {
   cmpCap: 'NDVI anual de MODIS MOD13A3 (NASA), píxeles de 1 km. Desliza para comparar 2001 y 2024.',
   cmpUnidad:
     'Cifras de un recuadro de 0,25° × 0,25° (~27 × 27 km) sobre el valle; no son el promedio del departamento.',
+  /** Etiqueta del aviso de una zona (p. ej. Olmos o La Pampa) */
+  cuidado: 'Léelo con cuidado',
+  // Árboles de la selva (MODIS MOD44B), donde el NDVI se satura
+  selvaH: 'Árboles de la selva',
+  selvaTexto: (zona: string, a: number, b: number, ka: number, kb: number) =>
+    `En ${zona}, los árboles cubrían el ${a} % del suelo en 2001 y el ${b} % en 2024: el bosque pasó de ${ka} km² a ${kb} km².`,
+  selvaSinCambio: (zona: string, b: number) =>
+    `En ${zona}, los árboles cubren cerca del ${b} % del suelo y de 2001 a 2024 no hay un cambio distinguible de 0. Es el contraste con la selva que se pierde.`,
+  selvaTendencia: (v: string) => `Tendencia: ${v} puntos de árboles por década`,
+  selvaNoDistinguible: 'No distinguible de 0',
+  selvaCap:
+    'Cobertura de árboles de MODIS MOD44B (NASA), píxeles de 250 m. Bosque: píxeles con 30 % o más de árboles.',
+  selvaUnidad:
+    'Cifras de un recuadro de unos 25 km de lado en la selva; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
@@ -214,8 +254,12 @@ const en: Textos = {
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
   mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
-  mapSub: (a, b) => `Change per decade, ${a}–${b}`,
+  mapSub: 'Change per decade',
+  mapSubAnio: 'Each department vs its own average',
+  mapModoTendencia: (a, b) => `trend ${a}–${b}`,
+  mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
+  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],
@@ -252,11 +296,9 @@ const en: Textos = {
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
-  // Mismas reglas que el pipeline: IMERG 2014 siempre en lluvia, y lag1 > 0.5
-  avisoFijo: (variable, lag1) =>
+  // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
+  avisoFijo: (_variable, lag1) =>
     [
-      variable === 'lluvia' &&
-        'IMERG switches satellite constellation in 2014 (TRMM → GPM): the rainfall trend may be biased downward, so it is not marked as real.',
       lag1 != null &&
         lag1 > 0.5 &&
         'Years very similar to each other (high lag1): the trend may look more certain than it is.',
@@ -296,6 +338,20 @@ const en: Textos = {
   clue: (nombre, verbo, valor, estado) =>
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
+  dosH: 'Do two NASA sources agree?',
+  dosFuente: {
+    power: { nombre: 'NASA POWER', tipo: 'model, the one on the map' },
+    imerg: { nombre: 'GPM IMERG', tipo: 'satellites' },
+  },
+  dosSi: (sube) => `They agree: both say it ${sube ? 'rains more' : 'rains less'}.`,
+  dosNo: (sube) =>
+    `They disagree: the model says it ${sube ? 'rains more' : 'rains less'} and the satellites say it ${sube ? 'rains less' : 'rains more'}.`,
+  dosSiDebil: (sube) => `Both point to ${sube ? 'more' : 'less'} rain, but neither is certain.`,
+  dosDudoso:
+    'They point in different directions, but their likely ranges overlap: we cannot say they contradict each other.',
+  dosPocos: 'One of the two sources has very little data here: we do not compare them.',
+  dosPorQue:
+    'IMERG satellites changed in 2014 (from TRMM to GPM), which can make rainfall look like it drops. That is why the map uses POWER and never marks IMERG as a real change.',
   verb: {
     lluvia: ['rainfall rises', 'rainfall falls'],
     temperatura: ['temperature rises', 'temperature falls'],
@@ -324,8 +380,14 @@ const en: Textos = {
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
   },
+  timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
-  timeBackTrend: 'Back to the trend',
+  timeTrendTitle: (a, b) => `Trend ${a}–${b}: how much changed over those years`,
+  timeByYear: 'By year',
+  timeByYearTitle: 'By year: how each year compared with its average',
+  timeHelp: (n) =>
+    `Trend: how much changed over ${n} years. By year: how that year compared with its average.`,
+  timeHelpClose: 'Close the help',
   timePlay: (a, b) => `Play ${a}–${b}`,
   timePause: 'Pause',
   timeYear: 'Year',
@@ -348,6 +410,17 @@ const en: Textos = {
   cmpCap: 'Annual NDVI from MODIS MOD13A3 (NASA), 1 km pixels. Drag to compare 2001 and 2024.',
   cmpUnidad:
     'Figures for a 0.25° × 0.25° box (~27 × 27 km) over the valley; not the department average.',
+  cuidado: 'Read with care',
+  selvaH: 'Rainforest trees',
+  selvaTexto: (zona, a, b, ka, kb) =>
+    `In ${zona}, trees covered ${a} % of the ground in 2001 and ${b} % in 2024: forest went from ${ka} km² to ${kb} km².`,
+  selvaSinCambio: (zona, b) =>
+    `In ${zona}, trees cover about ${b} % of the ground and from 2001 to 2024 there is no change distinguishable from 0. It is the contrast with the rainforest being lost.`,
+  selvaTendencia: (v) => `Trend: ${v} points of tree cover per decade`,
+  selvaNoDistinguible: 'Not distinguishable from 0',
+  selvaCap:
+    'Tree cover from MODIS MOD44B (NASA), 250 m pixels. Forest: pixels with 30 % or more trees.',
+  selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
@@ -406,46 +479,148 @@ export const FRASES = {
 /** Nombre y dato de cada personaje de la fauna del mapa 3D (src/features/mapa/escena/fauna.ts), por especie. */
 export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
   es: {
-    alpaca: ['Alpaca · Puno', 'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.'],
-    vicuna: ['Vicuña · Ayacucho', 'Animal nacional: está en el escudo del Perú. La Reserva Pampa Galeras ayudó a salvarla de la extinción.'],
-    condor: ['Cóndor andino · Arequipa', 'Planea sobre el Cañón del Colca aprovechando el aire caliente; sus alas pasan los 3 metros.'],
-    pastora: ['Pastora andina · Cusco', 'Pollera y montera: ropa tradicional de las comunidades quechuas del Cusco.'],
-    caballito: ['Caballito de totora · La Libertad', 'Los pescadores de Huanchaco usan estas balsas de junco desde tiempos preincas.'],
-    agricultor: ['Agricultor · Ica', 'El riego convierte el desierto de Ica en viñedos para el pisco y campos de espárragos.'],
-    pinguino: ['Pingüino de Humboldt · Ica', 'Vive en las islas Ballestas, en el agua fría de la corriente de Humboldt. Es una especie vulnerable.'],
+    alpaca: [
+      'Alpaca · Puno',
+      'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.',
+    ],
+    vicuna: [
+      'Vicuña · Ayacucho',
+      'Animal nacional: está en el escudo del Perú. La Reserva Pampa Galeras ayudó a salvarla de la extinción.',
+    ],
+    condor: [
+      'Cóndor andino · Arequipa',
+      'Planea sobre el Cañón del Colca aprovechando el aire caliente; sus alas pasan los 3 metros.',
+    ],
+    pastora: [
+      'Pastora andina · Cusco',
+      'Pollera y montera: ropa tradicional de las comunidades quechuas del Cusco.',
+    ],
+    caballito: [
+      'Caballito de totora · La Libertad',
+      'Los pescadores de Huanchaco usan estas balsas de junco desde tiempos preincas.',
+    ],
+    agricultor: [
+      'Agricultor · Ica',
+      'El riego convierte el desierto de Ica en viñedos para el pisco y campos de espárragos.',
+    ],
+    pinguino: [
+      'Pingüino de Humboldt · Ica',
+      'Vive en las islas Ballestas, en el agua fría de la corriente de Humboldt. Es una especie vulnerable.',
+    ],
     lobo: ['Lobo marino · Callao', 'Forma colonias en las islas Palomino, frente al Callao.'],
-    pelicano: ['Pelícano peruano · costa norte', 'Pesca anchoveta en el mar frío de la corriente de Humboldt.'],
-    delfin: ['Delfín rosado · Loreto', 'Vive en los ríos amazónicos, como los de la Reserva Pacaya Samiria.'],
-    guacamayo: ['Guacamayo escarlata · Madre de Dios', 'Cientos se reúnen en las collpas, paredes de arcilla junto a los ríos de Tambopata.'],
+    pelicano: [
+      'Pelícano peruano · costa norte',
+      'Pesca anchoveta en el mar frío de la corriente de Humboldt.',
+    ],
+    delfin: [
+      'Delfín rosado · Loreto',
+      'Vive en los ríos amazónicos, como los de la Reserva Pacaya Samiria.',
+    ],
+    guacamayo: [
+      'Guacamayo escarlata · Madre de Dios',
+      'Cientos se reúnen en las collpas, paredes de arcilla junto a los ríos de Tambopata.',
+    ],
     jaguar: ['Jaguar · Ucayali', 'El felino más grande de América vive en la selva amazónica.'],
-    gallito: ['Gallito de las rocas · San Martín', 'Ave nacional del Perú; vive en los bosques nublados.'],
-    mono: ['Mono choro de cola amarilla · Amazonas', 'Solo existe en el Perú y está en peligro crítico de extinción.'],
-    oso: ['Oso de anteojos · Cajamarca', 'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.'],
-    cocodrilo: ['Cocodrilo americano · Tumbes', 'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.'],
-    caballo: ['Caballo peruano de paso · Lima', 'Su andar suave, el «paso llano», es patrimonio cultural de la nación.'],
-    shipibo: ['Mujer shipibo-konibo · Ucayali', 'Pueblo amazónico del río Ucayali. Sus diseños kené, pintados y bordados, son Patrimonio Cultural de la Nación desde 2008.'],
-    danzante: ['Danzante de tijeras · Huancavelica', 'El danzaq baila al ritmo de unas tijeras de metal. La UNESCO la declaró Patrimonio Cultural Inmaterial de la Humanidad en 2010.'],
+    gallito: [
+      'Gallito de las rocas · San Martín',
+      'Ave nacional del Perú; vive en los bosques nublados.',
+    ],
+    mono: [
+      'Mono choro de cola amarilla · Amazonas',
+      'Solo existe en el Perú y está en peligro crítico de extinción.',
+    ],
+    oso: [
+      'Oso de anteojos · Cajamarca',
+      'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.',
+    ],
+    cocodrilo: [
+      'Cocodrilo americano · Tumbes',
+      'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.',
+    ],
+    caballo: [
+      'Caballo peruano de paso · Lima',
+      'Su andar suave, el «paso llano», es patrimonio cultural de la nación.',
+    ],
+    shipibo: [
+      'Mujer shipibo-konibo · Ucayali',
+      'Pueblo amazónico del río Ucayali. Sus diseños kené, pintados y bordados, son Patrimonio Cultural de la Nación desde 2008.',
+    ],
+    danzante: [
+      'Danzante de tijeras · Huancavelica',
+      'El danzaq baila al ritmo de unas tijeras de metal. La UNESCO la declaró Patrimonio Cultural Inmaterial de la Humanidad en 2010.',
+    ],
   },
   en: {
-    alpaca: ['Alpaca · Puno', 'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.'],
-    vicuna: ['Vicuña · Ayacucho', "National animal, shown on Peru's coat of arms. The Pampa Galeras reserve helped save it from extinction."],
-    condor: ['Andean condor · Arequipa', 'It soars over the Colca Canyon on warm air currents; its wingspan exceeds 3 metres.'],
-    pastora: ['Andean shepherdess · Cusco', "Pollera skirt and montera hat: traditional clothing of Cusco's Quechua communities."],
-    caballito: ['Reed boat · La Libertad', "Huanchaco's fishermen have used these reed boats since pre-Inca times."],
-    agricultor: ['Farmer · Ica', "Irrigation turns Ica's desert into vineyards for pisco and asparagus fields."],
-    pinguino: ['Humboldt penguin · Ica', 'It lives on the Ballestas Islands, in the cold Humboldt Current. It is a vulnerable species.'],
+    alpaca: [
+      'Alpaca · Puno',
+      'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.',
+    ],
+    vicuna: [
+      'Vicuña · Ayacucho',
+      "National animal, shown on Peru's coat of arms. The Pampa Galeras reserve helped save it from extinction.",
+    ],
+    condor: [
+      'Andean condor · Arequipa',
+      'It soars over the Colca Canyon on warm air currents; its wingspan exceeds 3 metres.',
+    ],
+    pastora: [
+      'Andean shepherdess · Cusco',
+      "Pollera skirt and montera hat: traditional clothing of Cusco's Quechua communities.",
+    ],
+    caballito: [
+      'Reed boat · La Libertad',
+      "Huanchaco's fishermen have used these reed boats since pre-Inca times.",
+    ],
+    agricultor: [
+      'Farmer · Ica',
+      "Irrigation turns Ica's desert into vineyards for pisco and asparagus fields.",
+    ],
+    pinguino: [
+      'Humboldt penguin · Ica',
+      'It lives on the Ballestas Islands, in the cold Humboldt Current. It is a vulnerable species.',
+    ],
     lobo: ['Sea lion · Callao', 'It forms colonies on the Palomino Islands, off Callao.'],
-    pelicano: ['Peruvian pelican · north coast', 'It fishes for anchovy in the cold Humboldt Current.'],
-    delfin: ['Pink river dolphin · Loreto', 'It lives in Amazonian rivers, such as those of the Pacaya Samiria reserve.'],
-    guacamayo: ['Scarlet macaw · Madre de Dios', "Hundreds gather at the clay licks along Tambopata's rivers."],
+    pelicano: [
+      'Peruvian pelican · north coast',
+      'It fishes for anchovy in the cold Humboldt Current.',
+    ],
+    delfin: [
+      'Pink river dolphin · Loreto',
+      'It lives in Amazonian rivers, such as those of the Pacaya Samiria reserve.',
+    ],
+    guacamayo: [
+      'Scarlet macaw · Madre de Dios',
+      "Hundreds gather at the clay licks along Tambopata's rivers.",
+    ],
     jaguar: ['Jaguar · Ucayali', 'The largest cat in the Americas lives in the Amazon rainforest.'],
-    gallito: ['Andean cock-of-the-rock · San Martín', "Peru's national bird; it lives in cloud forests."],
-    mono: ['Yellow-tailed woolly monkey · Amazonas', 'Found only in Peru and critically endangered.'],
-    oso: ['Spectacled bear · Cajamarca', "South America's only bear; its pale face markings differ in every individual."],
-    cocodrilo: ['American crocodile · Tumbes', "Peru's only crocodile lives in Tumbes' mangroves and rivers."],
-    caballo: ['Peruvian Paso horse · Lima', "Its smooth gait, the 'paso llano', is part of Peru's national heritage."],
-    shipibo: ['Shipibo-Konibo woman · Ucayali', 'An Amazonian people of the Ucayali River. Their kené designs, painted and embroidered, have been National Cultural Heritage of Peru since 2008.'],
-    danzante: ['Scissors dancer · Huancavelica', 'The danzaq dances to the beat of metal scissors. UNESCO listed it as Intangible Cultural Heritage of Humanity in 2010.'],
+    gallito: [
+      'Andean cock-of-the-rock · San Martín',
+      "Peru's national bird; it lives in cloud forests.",
+    ],
+    mono: [
+      'Yellow-tailed woolly monkey · Amazonas',
+      'Found only in Peru and critically endangered.',
+    ],
+    oso: [
+      'Spectacled bear · Cajamarca',
+      "South America's only bear; its pale face markings differ in every individual.",
+    ],
+    cocodrilo: [
+      'American crocodile · Tumbes',
+      "Peru's only crocodile lives in Tumbes' mangroves and rivers.",
+    ],
+    caballo: [
+      'Peruvian Paso horse · Lima',
+      "Its smooth gait, the 'paso llano', is part of Peru's national heritage.",
+    ],
+    shipibo: [
+      'Shipibo-Konibo woman · Ucayali',
+      'An Amazonian people of the Ucayali River. Their kené designs, painted and embroidered, have been National Cultural Heritage of Peru since 2008.',
+    ],
+    danzante: [
+      'Scissors dancer · Huancavelica',
+      'The danzaq dances to the beat of metal scissors. UNESCO listed it as Intangible Cultural Heritage of Humanity in 2010.',
+    ],
   },
 }
 
@@ -535,7 +710,15 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
     fuentes: [
       {
         variable: 'Lluvia',
-        fuente: 'GPM IMERG v07 (NASA), promedio mensual',
+        fuente: 'MERRA-2 (NASA) vía POWER: lluvia corregida (PRECTOTCORR)',
+        resolucion: '≈ 50 × 60 km',
+        rango: 'lluvia',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Lluvia por satélite (segunda fuente)',
+        fuente:
+          'GPM IMERG v07 (NASA), promedio mensual. Solo para comparar con POWER en la ficha («¿Coinciden dos fuentes de NASA?»)',
         resolucion: '≈ 10 km',
         rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
@@ -550,7 +733,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       {
         variable: 'Copia local (plan B)',
         fuente:
-          'NASA POWER (MERRA-2): lluvia y temperatura. La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
+          'Los mismos números que la API (NASA POWER y, para comparar, IMERG). La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
         resolucion: '≈ 50 × 60 km',
         rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
@@ -560,6 +743,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente: 'MODIS MOD13A3 (NASA): índice de vegetación NDVI, pedido con AppEEARS',
         resolucion: '1 km',
         anios: '2001 y 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+      {
+        variable: 'Árboles de la selva',
+        fuente: 'MODIS MOD44B (NASA): % del suelo cubierto por árboles, pedido con AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
     ],
@@ -607,7 +797,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
     limites: [
       [
         'La lluvia de IMERG',
-        'Los satélites de IMERG cambian en 2014 (de TRMM a GPM) y la tendencia puede salir sesgada a la baja. Mientras la lluvia venga solo de IMERG, su semáforo no llega a «cambio real»: queda en «posible casualidad» hasta tener una segunda fuente independiente.',
+        'Los satélites de IMERG cambian en 2014 (de TRMM a GPM) y su tendencia puede salir sesgada a la baja: con IMERG, la lluvia baja en los 25 departamentos. Por eso el mapa usa la lluvia de POWER, e IMERG aparece en la ficha como segunda fuente para ver si coinciden. Su semáforo nunca llega a «cambio real».',
       ],
       [
         'El Niño',
@@ -623,7 +813,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       ],
       [
         'Departamentos pequeños',
-        'Con menos de 4 celdas (Callao, Tumbes y Lambayeque en la temperatura; Callao en la lluvia) no damos veredicto. Lima y Callao comparten celda en POWER y sus valores coinciden.',
+        'Con menos de 4 celdas de POWER (Callao, Tumbes y Lambayeque) no damos veredicto. Lima y Callao comparten celda en POWER y sus valores coinciden.',
       ],
       [
         'Años completos',
@@ -656,7 +846,15 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
     fuentes: [
       {
         variable: 'Rainfall',
-        fuente: 'GPM IMERG v07 (NASA), monthly mean',
+        fuente: 'MERRA-2 (NASA) via POWER: corrected precipitation (PRECTOTCORR)',
+        resolucion: '≈ 50 × 60 km',
+        rango: 'lluvia',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Satellite rainfall (second source)',
+        fuente:
+          'GPM IMERG v07 (NASA), monthly mean. Only to compare with POWER in the report card ("Do two NASA sources agree?")',
         resolucion: '≈ 10 km',
         rango: 'lluvia',
         enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
@@ -671,7 +869,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       {
         variable: 'Local copy (plan B)',
         fuente:
-          'NASA POWER (MERRA-2): rainfall and temperature. The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
+          'The same numbers as the API (NASA POWER and, to compare, IMERG). The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
         resolucion: '≈ 50 × 60 km',
         rango: 'local',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
@@ -681,6 +879,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente: 'MODIS MOD13A3 (NASA): NDVI vegetation index, requested with AppEEARS',
         resolucion: '1 km',
         anios: '2001 & 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+      {
+        variable: 'Rainforest trees',
+        fuente: 'MODIS MOD44B (NASA): % of the ground covered by trees, requested with AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
     ],
@@ -728,7 +933,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
     limites: [
       [
         'IMERG rainfall',
-        'IMERG satellites change in 2014 (from TRMM to GPM) and the trend can be biased downward. While rainfall comes only from IMERG, its traffic light never reaches "real change": it stays at "possible chance" until a second independent source exists.',
+        'IMERG satellites change in 2014 (from TRMM to GPM) and its trend can be biased downward: with IMERG, rainfall drops in all 25 departments. That is why the map uses POWER rainfall, and IMERG appears in the report card as a second source to check whether they agree. Its traffic light never reaches "real change".',
       ],
       [
         'El Niño',
@@ -744,7 +949,7 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       ],
       [
         'Small departments',
-        'With fewer than 4 cells (Callao, Tumbes and Lambayeque for temperature; Callao for rainfall) we give no verdict. Lima and Callao share a POWER cell and their values match.',
+        'With fewer than 4 POWER cells (Callao, Tumbes and Lambayeque) we give no verdict. Lima and Callao share a POWER cell and their values match.',
       ],
       [
         'Complete years',

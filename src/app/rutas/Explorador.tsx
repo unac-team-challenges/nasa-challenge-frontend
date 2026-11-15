@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
@@ -9,6 +9,7 @@ import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
+import { AyudaModo } from '@/features/tiempo/components/AyudaModo'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
@@ -32,7 +33,7 @@ const RETRASO_INFO_S = 1.3
  * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
-  const { idioma, sinNino, informeMin, setInformeMin } = useApp()
+  const { idioma, sinNino, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
   const { variable, sel, anio, seleccionar } = useBusqueda()
   const en3d = modoMapa === '3d'
@@ -52,7 +53,7 @@ export function Explorador() {
   if (sel !== previa.sel || informeMin !== previa.informeMin) {
     setPrevia({ sel, informeMin })
     if (sel !== previa.sel) {
-      const animar = !!sel && !reducido()
+      const animar = !!sel && zonaDesdeMapa && !reducido()
       setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
       // si el informe estaba cerrado, se abre cuando la presentación termina
       setAbrirTarde(animar && previa.informeMin)
@@ -63,6 +64,18 @@ export function Explorador() {
     const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
     return () => clearTimeout(fin)
   }, [intro])
+
+  // Si el informe nuevo es más corto, el navegador baja la página sin avisar: se lleva la vista
+  // al principio del informe (nunca al mapa). Si cabe, la posición no se toca.
+  const ultimoY = useRef(0)
+  useEffect(() => {
+    const guardar = () => (ultimoY.current = window.scrollY)
+    window.addEventListener('scroll', guardar, { passive: true })
+    return () => window.removeEventListener('scroll', guardar)
+  }, [])
+  useLayoutEffect(() => {
+    if (window.scrollY < ultimoY.current - 1) informe.current?.scrollIntoView({ block: 'start' })
+  }, [sel])
 
   // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
   useEffect(() => {
@@ -120,12 +133,16 @@ export function Explorador() {
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
-                {t.mapH[variable]}
+                {t.mapH[variable]} ·{' '}
+                {anio == null
+                  ? t.mapModoTendencia(rango.year_start, rango.year_end)
+                  : t.mapModoAnio(anio)}
               </h2>
               <span className="text-[13px] text-muted">
-                {anio == null ? t.mapSub(rango.year_start, rango.year_end) : t.legTimeNote(anio)}
+                {anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
+            <AyudaModo />
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}
@@ -258,7 +275,6 @@ export function Explorador() {
           >
             {/* La información entra suave cuando termina la presentación del departamento */}
             <div
-              key={sel ?? 'ninguna'}
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >

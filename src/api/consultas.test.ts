@@ -196,8 +196,19 @@ describe('vegetacionDeApi (Caso 2)', () => {
     simular([valleApi('13', 188.9, 355.5), valleApi('11', 117.6, 221.5)])
     const { vegetacionDeApi } = await cargar()
     expect(await vegetacionDeApi()).toEqual({
-      '13': { areaAntes: 189, areaDespues: 356, sen: 0.0535 },
-      '11': { areaAntes: 118, areaDespues: 222, sen: 0.0535 },
+      '13': { areaAntes: 189, areaDespues: 356, sen: 0.0535, aviso: null },
+      '11': { areaAntes: 118, areaDespues: 222, sen: 0.0535, aviso: null },
+    })
+  })
+
+  it('trae el aviso de la zona (Olmos) para mostrarlo en la ficha', async () => {
+    const olmos = valleApi('14', 124.5, 419)
+    simular([{ ...olmos, stats: { ...olmos.stats, aviso: 'Recuadro movido después de…' } }])
+    const { vegetacionDeApi } = await cargar()
+    expect((await vegetacionDeApi())!['14']).toMatchObject({
+      areaAntes: 125,
+      areaDespues: 419,
+      aviso: 'Recuadro movido después de…',
     })
   })
 
@@ -215,5 +226,119 @@ describe('vegetacionDeApi (Caso 2)', () => {
     expect(await (await cargar()).vegetacionDeApi()).toBeNull()
     vi.stubEnv('VITE_API_URL', '')
     expect(await (await cargar()).vegetacionDeApi()).toBeNull()
+  })
+})
+
+/** Zona de /api/cobertura-arboles como la sirve el backend (stats completos). */
+const selvaApi = (ubigeo: string, ciLow: number, ciHigh: number, anios = [2001, 2024]) => ({
+  id: 'selva-' + ubigeo,
+  ubigeo,
+  serie: anios.map((anio) => ({
+    anio,
+    arboles_pct: anio === 2001 ? 74.1 : 45.86,
+    area_bosque_km2: anio === 2001 ? 724.5 : 461.5,
+  })),
+  stats: {
+    slope_per_decade: -15.26,
+    ci_low: ciLow,
+    ci_high: ciHigh,
+    n_years: 24,
+    status: 'posible_casualidad',
+    aviso: ubigeo === '17' ? 'La pérdida no fue pareja…' : null,
+  },
+})
+
+describe('coberturaDeApi (árboles de la selva)', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+  const simular = (cuerpo: unknown, status = 200) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(cuerpo, status)),
+    )
+
+  it('toma 2001 y 2024 de la serie, con tendencia, rango, estado y aviso, por ubigeo', async () => {
+    simular([selvaApi('17', -17.45, -12.52), selvaApi('16', -0.2, 2.86)])
+    const { coberturaDeApi } = await cargar()
+    const c = await coberturaDeApi()
+    expect(c!['17']).toEqual({
+      pctAntes: 74.1,
+      pctDespues: 45.86,
+      bosqueAntes: 725,
+      bosqueDespues: 462,
+      sen: -15.26,
+      ciLow: -17.45,
+      ciHigh: -12.52,
+      status: 'posible_casualidad',
+      aviso: 'La pérdida no fue pareja…',
+    })
+    expect(c!['16'].aviso).toBeNull()
+  })
+
+  it('un recuadro sin 2001 o 2024, o sin stats completos, se omite (queda selva.ts)', async () => {
+    const sinStats = { ...selvaApi('16', -0.2, 2.86), stats: { status: 'real' } }
+    simular([selvaApi('17', -17, -12, [2001, 2023]), sinStats])
+    const { coberturaDeApi } = await cargar()
+    expect(await coberturaDeApi()).toBeNull()
+  })
+
+  it('sin API o con error devuelve null', async () => {
+    simular({ error: 'no existe' }, 404)
+    const { coberturaDeApi } = await cargar()
+    expect(await coberturaDeApi()).toBeNull()
+    vi.stubEnv('VITE_API_URL', '')
+    expect(await (await cargar()).coberturaDeApi()).toBeNull()
+  })
+})
+
+describe('imergDeApi (segunda fuente de lluvia)', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  /** Simula /api/variables (unidad de lluvia_imerg) y /api/zonas; anota qué variable se pidió. */
+  const simularImerg = (unidad: string, pedidas: string[] = []) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (req: Request) => {
+        const url = new URL(req.url)
+        if (url.pathname === '/api/variables')
+          return json([
+            { id: 'lluvia_imerg', unidad, fuente: 'GPM IMERG v07 (NASA)', descripcion: '' },
+          ])
+        pedidas.push(url.searchParams.get('variable') ?? '')
+        return json(ids.map(zonaConStats))
+      }),
+    )
+
+  it('pide lluvia_imerg y pasa de mm/día a mm/año según la unidad de /api/variables', async () => {
+    const pedidas: string[] = []
+    simularImerg('mm/día', pedidas)
+    const { imergDeApi } = await cargar()
+    const imerg = await imergDeApi()
+    expect(pedidas).toEqual(['lluvia_imerg'])
+    expect(Object.keys(imerg!)).toHaveLength(25)
+    expect(imerg!['21'].slope_per_decade).toBeCloseTo(36.5)
+    expect(imerg!['21'].status).toBe('real')
+  })
+
+  it('si la unidad ya no es por día, no multiplica', async () => {
+    simularImerg('mm/año')
+    const { imergDeApi } = await cargar()
+    expect((await imergDeApi())!['21'].slope_per_decade).toBeCloseTo(0.1)
+  })
+
+  it('si la API no la tiene (backend viejo) devuelve null y la ficha usa la copia local', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'variable no existe' }, 400)),
+    )
+    const { imergDeApi } = await cargar()
+    expect(await imergDeApi()).toBeNull()
   })
 })

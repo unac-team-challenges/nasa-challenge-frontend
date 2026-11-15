@@ -9,9 +9,35 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/cobertura-arboles": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Cobertura de árboles (MODIS MOD44B) de recuadros de selva, donde el NDVI se satura: cada zona con\nsu serie anual (`arboles_pct`, `area_bosque_km2`), su tendencia y su `unidad_geografica`\n(un recuadro, **no** el promedio del departamento).",
+        "operationId": "cobertura",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZonaCobertura"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/variables": {
       "get": {
-        "tags": ["api"],
+        "tags": [
+          "api"
+        ],
         "summary": "Variables del producto con unidad, fuente y rango de años (`data/variables.json`).",
         "operationId": "variables",
         "responses": {
@@ -33,7 +59,9 @@
     },
     "/api/vegetacion": {
       "get": {
-        "tags": ["api"],
+        "tags": [
+          "api"
+        ],
         "summary": "Vegetación (NDVI de MODIS) de los valles irrigados de la costa, para el Caso 2: cada zona con su\nserie anual (`ndvi_anual`, `area_verde_km2`), su tendencia y su `unidad_geografica` (un recuadro\nsobre el valle, **no** el promedio del departamento).",
         "operationId": "vegetacion",
         "responses": {
@@ -55,7 +83,9 @@
     },
     "/api/zonas": {
       "get": {
-        "tags": ["api"],
+        "tags": [
+          "api"
+        ],
         "summary": "Las 25 zonas (departamentos) con su tendencia, sin series.",
         "operationId": "zonas",
         "parameters": [
@@ -98,7 +128,9 @@
     },
     "/api/zonas/{id}": {
       "get": {
-        "tags": ["api"],
+        "tags": [
+          "api"
+        ],
         "summary": "Serie anual y tendencia de una zona (`id` = ubigeo como texto, \"01\"–\"25\").",
         "operationId": "zona",
         "parameters": [
@@ -159,10 +191,41 @@
   },
   "components": {
     "schemas": {
+      "AnioCobertura": {
+        "type": "object",
+        "description": "Medidas de un año (MOD44B es un producto anual).",
+        "required": [
+          "anio",
+          "arboles_pct",
+          "area_bosque_km2"
+        ],
+        "properties": {
+          "anio": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "arboles_pct": {
+            "type": "number",
+            "format": "double",
+            "description": "Cobertura de árboles media del recuadro, en % (0–100)."
+          },
+          "area_bosque_km2": {
+            "type": "number",
+            "format": "double",
+            "description": "Área con cobertura de árboles mayor o igual que `umbral_bosque_pct`, en km²."
+          }
+        },
+        "additionalProperties": false
+      },
       "AnioVegetacion": {
         "type": "object",
         "description": "Medidas de un año completo (12 meses válidos).",
-        "required": ["anio", "ndvi_anual", "area_verde_km2"],
+        "required": [
+          "anio",
+          "ndvi_anual",
+          "area_verde_km2"
+        ],
         "properties": {
           "anio": {
             "type": "integer",
@@ -185,7 +248,9 @@
       "ErrorRespuesta": {
         "type": "object",
         "description": "Cuerpo de los errores 400 y 404.",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
           "error": {
             "type": "string"
@@ -194,7 +259,10 @@
       },
       "Punto": {
         "type": "object",
-        "required": ["anio", "valor"],
+        "required": [
+          "anio",
+          "valor"
+        ],
         "properties": {
           "anio": {
             "type": "integer",
@@ -225,8 +293,11 @@
         ],
         "properties": {
           "aviso": {
-            "type": ["string", "null"],
-            "description": "Cuidado al interpretar la tendencia: siempre en lluvia (IMERG 2014) y si `lag1 > 0.5`."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cuidado al interpretar la tendencia: siempre en `lluvia_imerg` (salto de 2014) y si `lag1 > 0.5`."
           },
           "ci_high": {
             "type": "number",
@@ -258,7 +329,10 @@
             "description": "Antes de Benjamini-Hochberg."
           },
           "pct_change_per_decade": {
-            "type": ["number", "null"],
+            "type": [
+              "number",
+              "null"
+            ],
             "format": "double",
             "description": "Solo lluvia."
           },
@@ -291,16 +365,31 @@
       "Status": {
         "type": "string",
         "description": "Semáforo de la tendencia.",
-        "enum": ["real", "posible_casualidad", "pocos_datos"]
+        "enum": [
+          "real",
+          "posible_casualidad",
+          "pocos_datos"
+        ]
       },
       "Variable": {
         "type": "string",
-        "enum": ["lluvia", "temperatura"]
+        "enum": [
+          "lluvia",
+          "temperatura",
+          "lluvia_imerg"
+        ]
       },
       "VariableInfo": {
         "type": "object",
         "description": "`GET /api/variables`: una entrada de `data/variables.json`, tal cual.",
-        "required": ["id", "unidad", "fuente", "descripcion", "anio_inicio", "anio_fin"],
+        "required": [
+          "id",
+          "unidad",
+          "fuente",
+          "descripcion",
+          "anio_inicio",
+          "anio_fin"
+        ],
         "properties": {
           "anio_fin": {
             "type": "integer",
@@ -330,7 +419,14 @@
       "Zona": {
         "type": "object",
         "description": "`GET /api/zonas`: una zona del mapa con su tendencia (sin serie).",
-        "required": ["id", "nombre", "lat", "lon", "celdas", "stats"],
+        "required": [
+          "id",
+          "nombre",
+          "lat",
+          "lon",
+          "celdas",
+          "stats"
+        ],
         "properties": {
           "celdas": {
             "type": "integer",
@@ -354,11 +450,105 @@
             "type": "string"
           },
           "nota": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha."
           },
           "stats": {
             "$ref": "#/components/schemas/Stats"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ZonaCobertura": {
+        "type": "object",
+        "description": "`GET /api/cobertura-arboles`: una zona (recuadro de selva) con su serie anual y su tendencia.",
+        "required": [
+          "id",
+          "nombre",
+          "departamento",
+          "ubigeo",
+          "tipo",
+          "unidad_geografica",
+          "bbox",
+          "lat",
+          "lon",
+          "pixeles",
+          "fuente",
+          "umbral_bosque_pct",
+          "tendencia_de",
+          "serie",
+          "stats"
+        ],
+        "properties": {
+          "bbox": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "`[oeste, sur, este, norte]` en grados."
+          },
+          "departamento": {
+            "type": "string",
+            "description": "Departamento donde está el recuadro."
+          },
+          "fuente": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "description": "Identificador del recuadro, p. ej. \"la-pampa\"."
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lon": {
+            "type": "number",
+            "format": "double"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "pixeles": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Píxeles MODIS (~250 m) de tierra del recuadro.",
+            "minimum": 0
+          },
+          "serie": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnioCobertura"
+            },
+            "description": "Un punto por año, de menor a mayor (como `serie` de `/api/zonas/{id}`)."
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "tendencia_de": {
+            "type": "string",
+            "description": "Sobre qué campo de `serie` se calcula `stats` (hoy, \"arboles_pct\")."
+          },
+          "tipo": {
+            "type": "string",
+            "description": "P. ej. \"selva con minería de oro\"."
+          },
+          "ubigeo": {
+            "type": "string",
+            "description": "Ubigeo del departamento, como texto (\"01\"–\"25\")."
+          },
+          "umbral_bosque_pct": {
+            "type": "number",
+            "format": "double",
+            "description": "% de cobertura de árboles desde el que un píxel cuenta como bosque."
+          },
+          "unidad_geografica": {
+            "type": "string",
+            "description": "Qué área se promedia: un recuadro, **no** el departamento. La ficha debe mostrarlo."
           }
         },
         "additionalProperties": false
@@ -402,7 +592,10 @@
             "type": "string"
           },
           "nota": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha."
           },
           "serie": {

@@ -50,7 +50,7 @@ Todo lo que se rompió, se desvió del plan (`docs/superpowers/plans/2026-11-14-
 
 Además, todos los imports relativos pasaron a `@/`.
 
-**Conflictos reales** (`git merge-tree --write-tree --name-only --messages feat/mapa-hover-relieve HEAD`, solo lectura): 7 archivos con conflicto de contenido, todos en el bloque de imports (un hunk cada uno): `src/app/App.tsx`, `src/app/rutas/Explorador.tsx`, `src/components/Esperas.tsx`, `src/features/mapa/components/Mapa2D.tsx`, `src/features/mapa/components/Mapa3D.tsx`, `src/features/mapa/escena/escena.ts`; y `src/features/portada/components/Portada.tsx` con dos hunks. Se combinan solos en la ruta nueva: `fauna.ts`, `textos.ts`, `stores/app.ts`. Los 37 renombres se detectan (similitud 76-100 %). `store.ts` y `useZonas.ts` no chocan.
+**Conflictos reales** (`git merge-tree --write-tree --name-only --messages feat/mapa-hover-relieve HEAD`, solo lectura): 7 archivos con conflicto de contenido, todos en el bloque de imports (un hunk cada uno): `src/app/App.tsx`, `src/app/rutas/Explorador.tsx`, `src/components/Esperas.tsx`, `src/features/mapa/components/Mapa2D.tsx`, `src/features/mapa/components/Mapa3D.tsx`, `src/features/mapa/escena/escena.ts`; y `src/features/portada/components/Portada.tsx` con dos hunks. Se combinan solos en la ruta nueva: `fauna.ts`, `textos.ts`, `stores/app.ts`. Los 27 renombres se detectan (similitud 76-100 %). `store.ts` y `useZonas.ts` no chocan.
 
 **Ruta recomendada.** Rebasar commit por commit rehace los mismos 7 conflictos hasta 3 veces, porque `76a6329`, `69a158d` y `1feceea` reescriben los mismos bloques de imports. Mejor:
 

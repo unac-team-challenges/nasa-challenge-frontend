@@ -4,7 +4,7 @@ Reorganiza `src/` por features y capas compartidas, sin cambios de comportamient
 
 ## Añadido
 - Estructura `src/app` (App, router, rutas), `src/features/{mapa,ficha,tiempo,portada,metodologia}` y capas compartidas `components`, `hooks`, `utils`, `stores`, `api`, `data`, `i18n`, `testing`.
-- Imports con alias `@/` en todo `src/`, `e2e/` y `vite.config.ts`; `src/index.css` conserva su `@import` relativo.
+- Imports con alias `@/` en todo `src/`; `src/index.css` conserva su `@import` relativo.
 - Guarda de arquitectura en `eslint.config.js` con `eslint-plugin-import-x` y `eslint-import-resolver-typescript` (devDependencies): prohíbe imports relativos (también `import()`), compartido → feature/app, feature → app y feature → otra feature. Las features nuevas quedan protegidas solas.
 - `ARQUITECTURE.md`: estructura, reglas y cómo agregar una feature.
 - `CLAUDE.md`: guía para Claude sobre la estructura y las reglas.

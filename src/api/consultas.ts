@@ -266,9 +266,9 @@ export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | nul
 /** Malla por celda del contrato `/api/celdas`: `t2m` (temperatura) o `valor` (lluvia, vegetación). */
 export type Malla = components['schemas']['Malla']
 
-/** Malla de temperatura o lluvia desde la API, o null sin API, con error o vacía (se usa la copia local). */
+/** Malla de temperatura, lluvia o vegetación desde la API, o null sin API, con error o vacía (se usa la copia local). */
 export async function celdasDeApi(
-  variable: 'temperatura' | 'lluvia' = 'temperatura',
+  variable: 'temperatura' | 'lluvia' | 'vegetacion' = 'temperatura',
 ): Promise<Malla | null> {
   if (!hayApi) return null
   try {

@@ -3,7 +3,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { anomaliasAnio, FUENTE_LOCAL } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
 import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
-import { fmtAnomalia, fmtValor } from '@/utils/formato'
+import { fmtAnomalia, fmtValor, num } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
@@ -122,6 +122,23 @@ export function Leyenda() {
         ))}
       </div>
       <p className="m-0 mt-1.5 text-xs text-muted">{t.legVegNota}</p>
+      {calor && (
+        <div className="mt-1.5 grid gap-0.5 text-xs">
+          <span className="text-fg">
+            {t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}
+          </span>
+          <span
+            className="h-2.5 rounded-[3px] border border-line"
+            style={{ background: rampa(calor.paradas) }}
+            aria-hidden
+          />
+          <span className="flex justify-between text-muted">
+            <span>{num(calor.min, 2, idioma)} NDVI</span>
+            <span>{num(calor.max, 2, idioma)} NDVI</span>
+          </span>
+          <span className="text-muted">{t.legVegMallaNota}</span>
+        </div>
+      )}
     </>
   )
 

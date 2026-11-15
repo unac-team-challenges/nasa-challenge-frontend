@@ -44,6 +44,12 @@
   --lluvia-4: #2a56b5;
   --lluvia-5: #3a2f98;
   --lluvia-6: #6c2a8c;
+  /* Mapa de vegetación (NDVI): ocre del desierto → paja → verde claro → verde → selva, igual en claro y oscuro */
+  --veg-0: #c8a978;
+  --veg-1: #e3d58c;
+  --veg-2: #a8cf73;
+  --veg-3: #4f9a4c;
+  --veg-4: #1f5e34;
   --accent: #a8285a;
   --accent-text: #8e1f4b;
   --accent-fg: #ffffff;

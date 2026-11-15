@@ -2,20 +2,27 @@ import { useQuery } from '@tanstack/react-query'
 import { celdasDeApi, type Malla } from '@/api/consultas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { PARADAS_LLUVIA, prepararCalor, type Calor } from '@/features/mapa/utils/calor'
+import { PARADAS_LLUVIA, PARADAS_VEG, prepararCalor, type Calor } from '@/features/mapa/utils/calor'
 
 /**
  * Malla por celda del mapa de color: temperatura (frío → calor) o lluvia (seco → azul profundo).
  * Temperatura: de la API si la sesión la usa; si no, o si falla, de la copia local (mismos números).
  * Lluvia: igual (mm/año de NASA POWER, campo `valor`). Cada copia va en un chunk aparte
  * para no pesar en la carga inicial. Se prepara una sola vez y la comparten el 3D, el 2D y la leyenda.
+ * Modo Vegetación: el NDVI de MODIS por celda de 0,25° (2001–2024), de la API o de su copia local.
  */
 export function useCalor(): Calor | null {
   const { variable, vegetacion } = useBusqueda()
   const fuente = useApp((s) => s.fuente)
   const { data } = useQuery({
-    queryKey: ['celdas', variable, fuente],
+    queryKey: ['celdas', vegetacion ? 'vegetacion' : variable, fuente],
     queryFn: async () => {
+      if (vegetacion)
+        return prepararCalor(
+          (fuente === 'api' && (await celdasDeApi('vegetacion'))) ||
+            ((await import('@/data/celdas_vegetacion.json')).default as Malla),
+          PARADAS_VEG,
+        )
       if (variable === 'lluvia') {
         // API (mm/año, campo `valor`) o, si no hay, la copia local con las mismas celdas
         const m =
@@ -32,6 +39,5 @@ export function useCalor(): Calor | null {
     staleTime: Infinity,
     retry: false,
   })
-  // En el modo Vegetación los departamentos quedan de fondo: sin mapa de calor
-  return vegetacion ? null : (data ?? null)
+  return data ?? null
 }

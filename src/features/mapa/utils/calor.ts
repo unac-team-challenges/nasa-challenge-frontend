@@ -61,6 +61,7 @@ export function prepararCalor(m: Malla, paradas = PARADAS_CALOR): Calor {
     pix[i] = Math.round((latMax - c.lat) / dlat) * w + Math.round((c.lon - lonMin) / dlon)
     let suma = 0
     let k = 0
+    // Temperatura trae `t2m`; las mallas nuevas (vegetación), `valor`
     ;(c.t2m ?? c.valor ?? []).forEach((t, j) => {
       if (t == null || j >= anios) return
       serie[i * anios + j] = t
@@ -173,6 +174,9 @@ export const PARADAS_LLUVIA = [
   '--lluvia-5',
   '--lluvia-6',
 ]
+
+/** Vegetación (NDVI): ocre del desierto → paja → verde claro → verde → selva (más verde = más vegetación). */
+export const PARADAS_VEG = ['--veg-0', '--veg-1', '--veg-2', '--veg-3', '--veg-4']
 
 /**
  * Pinta la malla en `cv` (1 px por celda): la media del periodo o la T2M de un año, siempre con la

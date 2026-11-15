@@ -40,13 +40,30 @@ const K = 2.2
 const COSLAT = Math.cos((LAT0 * Math.PI) / 180)
 /** Desde r155 las luces son físicas: ×π para igualar las intensidades de r128. */
 const LUZ = Math.PI
+/**
+ * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z): queda al frente de la
+ * cámara de inicio. Es la luz, la sombra del Perú y la de las nubes.
+ */
+const DIR_LUZ = new THREE.Vector3(5, 45, -45).normalize()
+/**
+ * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: así entra en la franja de
+ * cielo de la vista de inicio y su reflejo cruza el mar hacia la cámara (camino de luz).
+ */
+const DIR_ASTRO = new THREE.Vector3(DIR_LUZ.x, 0, DIR_LUZ.z).normalize().setY(0.07).normalize()
+/** Altura efectiva de la sombra del Perú (calibrada: con DIR_LUZ da el corrimiento de antes). */
+const SOMBRA = 2.4
+/** Nubes sobre el tope de su departamento: justo donde nacen las gotas (h = 9 en PARTICULAS_VS). */
+const ALTO_NUBE = 9.4
+const N_NUBES = 12
+const glsl = (v: THREE.Vector3) => `vec3(${v.x.toFixed(4)}, ${v.y.toFixed(4)}, ${v.z.toFixed(4)})`
 /** Zonas con etiqueta flotante. */
 const CLAVE = ['24', '20', '15', '21', '16', '08']
 /** En celular solo estas llevan etiqueta fija (Tumbes y Piura quedaban bajo los paneles); la elegida siempre tiene la suya. */
 const CLAVE_CELULAR = ['15', '21', '16', '08']
 const DESPLAZA_ETIQUETA: Record<string, number> = { '24': -30 } // Tumbes queda pegado a Piura
 const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
-  inicio: { pos: [8, 29, 66], tgt: [0, -1, 5] },
+  // Más baja que antes: deja una franja de cielo arriba con el sol o la luna
+  inicio: { pos: [8, 19, 72], tgt: [0, 5, 2] },
   explorar: { pos: [0, 44, 34], tgt: [0, 0, 1] },
 }
 
@@ -105,6 +122,55 @@ void main() {
   #include <fog_fragment>
 }`
 
+/**
+ * Nubes de lluvia y su sombra: una sola geometría instanciada (x, z, departamento, peso) para las
+ * dos pasadas. La altura sale de uTope y el vaivén de uTime, los mismos objetos que usan las gotas:
+ * la GPU hace todo, el CPU no toca nada por cuadro.
+ */
+const NUBE_VS = `
+uniform float uTime;
+uniform float uTope[${DEPARTAMENTOS.length}];
+attribute vec4 aNube; // x, z, departamento, peso 0..1
+varying vec2 vUv;
+varying float vPeso;
+const vec3 LUZ = ${glsl(DIR_LUZ)};
+#include <fog_pars_vertex>
+void main() {
+  float tope = uTope[int(aNube.z + 0.5)];
+  float tam = 1.6 + 2.0 * aNube.w; // chicas y translúcidas: nunca tapan el dato
+  vec3 c = vec3(aNube.x + sin(uTime * 0.12 + aNube.x) * 0.6, tope + ${ALTO_NUBE.toFixed(1)}, aNube.y);
+  vUv = uv;
+  vPeso = aNube.w;
+#ifdef SOMBRA
+  // Plana sobre el departamento, corrida en sentido contrario a la luz
+  c.xz -= LUZ.xz / LUZ.y * ${ALTO_NUBE.toFixed(1)};
+  c.y = tope + 0.03;
+  vec4 mvPosition = viewMatrix * vec4(c + vec3(position.x * 2.0, 0.0, -position.y) * tam, 1.0);
+#else
+  // Siempre de frente a la cámara
+  vec4 mvPosition = viewMatrix * vec4(c, 1.0);
+  mvPosition.xy += position.xy * vec2(2.0, 1.0) * tam;
+#endif
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`
+const NUBE_FS = `
+uniform sampler2D uMapa;
+uniform vec3 uColor;
+varying vec2 vUv;
+varying float vPeso;
+#include <fog_pars_fragment>
+void main() {
+  float a = texture2D(uMapa, vUv).a;
+#ifdef SOMBRA
+  gl_FragColor = vec4(0.0, 0.0, 0.0, a * 0.14);
+#else
+  gl_FragColor = vec4(uColor * mix(1.0, 0.78, vPeso), a * 0.75); // más lluvia, nube más gris
+#endif
+  if (gl_FragColor.a < 0.01) discard;
+  #include <fog_fragment>
+}`
+
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
 /** ¿Esta zona lleva etiqueta fija en esta pantalla? Si no, la elegida usa la etiqueta suelta. */
@@ -120,7 +186,7 @@ interface DatosMalla {
   /** 0..1: cuánto brilla por el hover (se interpola en cada cuadro). */
   brillo: number
 }
-type TipoCalor = 'real' | 'rayado' | 'apagado'
+type TipoCalor = 'real' | 'punteado' | 'apagado'
 
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -173,7 +239,11 @@ uniform float uTime;
 uniform sampler2D uMundo, uMundo2, uPeru;
 uniform vec4 uCaja, uCajaPeru;
 uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uNieve, uAgua, uFrontera;
+uniform vec3 uLuzColor;
+uniform float uBrillo;
 varying vec3 vW;
+const vec3 LUZ = ${glsl(DIR_LUZ)};
+const vec3 ASTRO = ${glsl(DIR_ASTRO)};
 #include <fog_pars_fragment>
 void main() {
   vec2 uv = (vW.xz - uCaja.xy) / uCaja.zw;
@@ -184,20 +254,45 @@ void main() {
   float cerca = t.g * borde, lejos = t.b * borde, tierra = smoothstep(0.44, 0.56, cerca);
   vec3 mar = mix(uSomero, uHondo, smoothstep(0.05, 0.95, mix(0.6, t.r, borde)));
   mar = mix(mar, uSomero, smoothstep(0.05, 0.6, lejos) * 0.55);
-  float ola = sin(vW.x * 0.7 + uTime * 0.5) * sin(vW.z * 0.8 - uTime * 0.4) * 0.6
-            + sin(length(vW.xz) * 0.55 - uTime * 0.8) * 0.4;
-  mar += ola * 0.012 * (1.0 - lejos);
+  // Olas: cuatro ondas en direcciones distintas; altura y normal con fórmula exacta (sin texturas)
+  vec2 p = vW.xz;
+  const vec3 w1 = vec3(0.8, 0.6, 0.9), w2 = vec3(-0.5, 0.86, 1.4), w3 = vec3(0.2, -0.98, 2.3),
+             w4 = vec3(-0.9, -0.44, 4.1);
+#ifdef OLAS_SIMPLES
+  // Celular: solo las dos ondas grandes (la mitad de senos por píxel)
+  vec2 f = vec2(dot(p, w1.xy) * w1.z, dot(p, w2.xy) * w2.z) + uTime * vec2(0.9, 1.3);
+  const vec2 amp = vec2(0.08, 0.055);
+  vec2 c = amp * cos(f);
+  vec2 g = w1.xy * w1.z * c.x + w2.xy * w2.z * c.y;
+  float h = dot(amp, sin(f)) / (amp.x + amp.y); // -1..1
+#else
+  vec4 f = vec4(dot(p, w1.xy) * w1.z, dot(p, w2.xy) * w2.z, dot(p, w3.xy) * w3.z, dot(p, w4.xy) * w4.z)
+         + uTime * vec4(0.9, 1.3, 1.9, 2.6);
+  const vec4 amp = vec4(0.08, 0.055, 0.03, 0.015);
+  vec4 c = amp * cos(f);
+  vec2 g = w1.xy * w1.z * c.x + w2.xy * w2.z * c.y + w3.xy * w3.z * c.z + w4.xy * w4.z * c.w;
+  float h = dot(amp, sin(f)) / dot(amp, vec4(1.0)); // -1..1
+#endif
+  vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
+  vec3 v = normalize(cameraPosition - vW);
+  float olas = 1.0 - lejos * 0.6; // calmas junto a la costa, vivas mar adentro
+  mar *= mix(1.0, 0.72 + 0.56 * max(dot(n, LUZ), 0.0), olas);                  // luz y sombra de cada ola
+  mar = mix(mar, uHondo, (1.0 - smoothstep(-0.9, -0.2, h)) * 0.35 * olas);      // valles más hondos
+  mar = mix(mar, uEspuma, smoothstep(0.25, 1.0, h) * 0.32 * olas);            // crestas claras
+  mar = mix(mar, uSomero, pow(1.0 - max(v.y, 0.0), 4.0) * 0.3);               // fresnel: más claro al ras
+  mar += uLuzColor * pow(max(dot(reflect(-ASTRO, n), v), 0.0), 40.0) * uBrillo; // camino de luz del sol o la luna
   float banda = smoothstep(0.1, 0.36, cerca) * (1.0 - smoothstep(0.4, 0.47, cerca));
-  mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)));
-  // Color por altitud (t2.r = elevación / 6000 m), nieve sobre ~4800 m y sombreado real del relieve (t.r)
+  float corte = 0.6 + 0.4 * sin(p.x * 3.1 + uTime) * sin(p.y * 2.7 - uTime * 0.8); // espuma que se corta y viaja
+  mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)) * corte);
+  // Color por altitud (t2.r = elevación / 6000 m), nieve solo sobre ~5200 m y sombreado real del relieve (t.r)
   vec3 suelo = mix(uTierraBaja, uTierraAlta, smoothstep(0.02, 0.7, t2.r));
-  suelo = mix(suelo, uNieve, smoothstep(0.8, 0.92, t2.r));
+  suelo = mix(suelo, uNieve, smoothstep(0.86, 0.95, t2.r));
   suelo *= 0.62 + 0.7 * t.r;
   suelo = mix(suelo, uAgua, t2.g * 0.55);
   suelo = mix(suelo, uFrontera, t2.b * 0.45);
   vec3 col = mix(mar, suelo, tierra);
-  // sombra suave del Perú (sol del noroeste): los departamentos se "apoyan" en el suelo
-  vec2 pv = (vW.xz + vec2(-1.2, 1.2) - uCajaPeru.xy) / uCajaPeru.zw;
+  // sombra suave del Perú, corrida según la luz: los departamentos se "apoyan" en el suelo
+  vec2 pv = (vW.xz + LUZ.xz / LUZ.y * ${SOMBRA.toFixed(2)} - uCajaPeru.xy) / uCajaPeru.zw;
   col = mix(col, uSombra, texture2D(uPeru, pv).r * 0.35);
   gl_FragColor = vec4(col, 1.0);
   #include <fog_fragment>
@@ -322,41 +417,132 @@ function pixel(r: number, g: number, b: number) {
   return tx
 }
 
-function texturaCielo() {
+/**
+ * Cielo anclado al mundo (equirectangular): v = 0 es el cenit, 0.5 el horizonte. Así el azul
+ * sigue la altura real y no la pantalla. Bajo el horizonte, la bruma (= color de la niebla):
+ * el mar lejano y el cielo se funden sin costura.
+ */
+function texturaCielo(claro: boolean, bruma: string) {
   const c = document.createElement('canvas')
   c.width = 4
   c.height = 512
   const g = c.getContext('2d')!
-  const bg = cssVar('--bg')
-  const claro = esTemaClaro()
   const grad = g.createLinearGradient(0, 0, 0, 512)
-  grad.addColorStop(0, hexMix(bg, claro ? '#ffffff' : '#000000', claro ? 0.35 : 0.4))
-  grad.addColorStop(0.58, hexMix(bg, cssVar('--accent-soft'), claro ? 0.55 : 0.7))
-  grad.addColorStop(1, bg)
+  const paradas: [number, string][] = claro
+    ? [
+        [0, '#2f6fb8'],
+        [0.38, '#4f8fd2'],
+        [0.47, '#8dbde8'],
+        [0.5, bruma],
+        [1, bruma],
+      ]
+    : [
+        [0, '#03050b'],
+        [0.32, '#0a1020'],
+        [0.46, '#182139'],
+        [0.5, bruma],
+        [1, bruma],
+      ]
+  for (const [t, col] of paradas) grad.addColorStop(t, col)
   g.fillStyle = grad
   g.fillRect(0, 0, 4, 512)
+  const tx = new THREE.CanvasTexture(c)
+  tx.mapping = THREE.EquirectangularReflectionMapping
+  return tx
+}
+
+/** Sol (claro: disco cálido y halo amplio) o luna (oscuro: disco pálido, manchas fijas y halo frío). */
+function texturaAstro(claro: boolean) {
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const g = c.getContext('2d')!
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64)
+  const paradas: [number, string][] = claro
+    ? [
+        [0, '#fffaf0'],
+        [0.18, 'rgba(255,240,205,1)'],
+        [0.24, 'rgba(255,224,170,0.5)'],
+        [0.5, 'rgba(255,214,160,0.14)'],
+        [0.9, 'rgba(255,210,150,0)'], // se apaga antes del borde: sin halo cuadrado
+      ]
+    : [
+        [0, '#f2f5ff'],
+        [0.2, 'rgba(232,238,255,1)'],
+        [0.23, 'rgba(190,205,255,0.3)'],
+        [0.5, 'rgba(180,198,255,0.08)'],
+        [0.9, 'rgba(170,190,255,0)'], // se apaga antes del borde: sin halo cuadrado
+      ]
+  for (const [t, col] of paradas) grad.addColorStop(t, col)
+  g.fillStyle = grad
+  g.fillRect(0, 0, 128, 128)
+  if (!claro) {
+    g.fillStyle = 'rgba(150,160,185,0.45)'
+    for (const [x, y, r] of [
+      [58, 59, 4.5],
+      [69, 66, 3.5],
+      [61, 71, 2.5],
+      [69, 55, 2],
+    ]) {
+      g.beginPath()
+      g.arc(x, y, r, 0, Math.PI * 2)
+      g.fill()
+    }
+  }
   return new THREE.CanvasTexture(c)
 }
 
-function texturaRayada(hex: string) {
+/** Nube: manchas blancas suaves que se solapan (el color lo pone el shader). */
+function texturaNube() {
+  const c = document.createElement('canvas')
+  c.width = 128
+  c.height = 64
+  const g = c.getContext('2d')!
+  for (const [x, y, r] of [
+    [36, 38, 20],
+    [58, 30, 24],
+    [82, 34, 22],
+    [100, 40, 16],
+    [26, 44, 14],
+    [64, 42, 22],
+    [46, 44, 18],
+  ]) {
+    const grad = g.createRadialGradient(x, y, 0, x, y, r)
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)')
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    g.fillStyle = grad
+    g.fillRect(x - r, y - r, r * 2, r * 2)
+  }
+  return new THREE.CanvasTexture(c)
+}
+
+/**
+ * «Posible casualidad»: el color lavado con el panel y una trama fina de puntos del color pleno,
+ * al tresbolillo. Se lee como "menos seguro" sin parecer rayado. La baldosa (64 px) se repite sin costura.
+ */
+function texturaPunteada(hex: string) {
   const c = document.createElement('canvas')
   c.width = c.height = 64
   const x = c.getContext('2d')!
   const col = new THREE.Color(hex)
-  const claro = col.clone().lerp(new THREE.Color(cssVar('--panel')), 0.55)
-  x.fillStyle = '#' + claro.getHexString()
+  x.fillStyle =
+    '#' +
+    col
+      .clone()
+      .lerp(new THREE.Color(cssVar('--panel')), 0.5)
+      .getHexString()
   x.fillRect(0, 0, 64, 64)
-  x.strokeStyle = '#' + col.getHexString()
-  x.lineWidth = 10
-  for (let i = -64; i < 128; i += 22) {
-    x.beginPath()
-    x.moveTo(i, 64)
-    x.lineTo(i + 64, 0)
-    x.stroke()
-  }
+  x.fillStyle = '#' + col.getHexString()
+  x.beginPath()
+  for (let f = 0; f < 4; f++)
+    for (let k = 0; k < 4; k++) {
+      const cx = k * 16 + (f % 2) * 8 + 4
+      x.moveTo(cx + 3, f * 16 + 8)
+      x.arc(cx, f * 16 + 8, 3, 0, Math.PI * 2)
+    }
+  x.fill()
   const tx = new THREE.CanvasTexture(c)
   tx.wrapS = tx.wrapT = THREE.RepeatWrapping
-  tx.repeat.set(0.7, 0.7)
+  tx.repeat.set(1.2, 1.2)
   return tx
 }
 
@@ -414,7 +600,7 @@ export class EscenaPeru {
   private texturas: THREE.Texture[] = []
   private mapa = new THREE.Group()
   private mallas: Malla[] = []
-  private rayadas: Record<'up' | 'down' | 'green', THREE.CanvasTexture> | null = null
+  private punteadas: Record<'up' | 'down' | 'green', THREE.CanvasTexture> | null = null
   private zonas: Record<string, Zona> = {}
   private variable: Variable = 'lluvia'
   private hover: string | null = null
@@ -438,6 +624,15 @@ export class EscenaPeru {
   private etiquetasPais: { el: HTMLDivElement; x: number; z: number; es: string; en: string }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
   private particulas: Particulas
+  /** Nubes sobre las zonas donde llueve, con su sombra (2 draw calls para todas). */
+  private nubes = new THREE.Group()
+  private geoNubes = new THREE.InstancedBufferGeometry()
+  /** Sol (claro) o luna (oscuro) en el cielo real, en la dirección de la luz. */
+  private astro = new THREE.Sprite(
+    new THREE.SpriteMaterial({ fog: false, depthWrite: false, transparent: true }),
+  )
+  /** Estrellas fijas, solo en oscuro. */
+  private estrellas: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>
   private muestras: [number, number][][] = []
   private v3 = new THREE.Vector3()
   /** Resolución adaptativa: promedio móvil del intervalo entre cuadros dibujados seguidos. */
@@ -511,7 +706,7 @@ export class EscenaPeru {
     this.controles = c
 
     this.escena.add(this.hemi)
-    this.sol.position.set(-25, 50, 25)
+    this.sol.position.copy(DIR_LUZ).multiplyScalar(60)
     this.escena.add(this.sol)
 
     this.mapa.rotation.x = -Math.PI / 2
@@ -615,10 +810,13 @@ export class EscenaPeru {
           uRelieve: u(RELIEVE),
           uAgua: u(new THREE.Color()),
           uFrontera: u(new THREE.Color()),
+          uLuzColor: u(new THREE.Color()),
+          uBrillo: u(0.5),
         },
       ]),
       vertexShader: SUELO_VS,
       fragmentShader: SUELO_FS,
+      defines: celular() ? { OLAS_SIMPLES: '' } : {},
       fog: true,
     })
     // UniformsUtils.merge clona: las texturas se asignan después
@@ -742,6 +940,75 @@ export class EscenaPeru {
     puntos.frustumCulled = false
     puntos.visible = false
     this.escena.add(puntos)
+
+    // Nubes y su sombra: comparten geometría y uniforms; uTime y uTope son los de las gotas
+    const plano = new THREE.PlaneGeometry(1, 1)
+    this.geoNubes.setIndex(plano.index)
+    this.geoNubes.setAttribute('position', plano.attributes.position)
+    this.geoNubes.setAttribute('uv', plano.attributes.uv)
+    this.geoNubes.setAttribute(
+      'aNube',
+      new THREE.InstancedBufferAttribute(new Float32Array(N_NUBES * 4), 4),
+    )
+    this.geoNubes.instanceCount = 0
+    const uNubes = {
+      ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
+      uTime: matP.uniforms.uTime,
+      uTope: matP.uniforms.uTope,
+      uMapa: { value: texturaNube() },
+      uColor: { value: new THREE.Color() },
+    }
+    for (const sombra of [true, false]) {
+      const malla = new THREE.Mesh(
+        this.geoNubes,
+        new THREE.ShaderMaterial({
+          uniforms: uNubes,
+          vertexShader: NUBE_VS,
+          fragmentShader: NUBE_FS,
+          defines: sombra ? { SOMBRA: '' } : {},
+          transparent: true,
+          depthWrite: false,
+          fog: true,
+          // La sombra es una calcomanía sobre la tapa: se acerca a la cámara para no parpadear (z-fighting)
+          polygonOffset: sombra,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        }),
+      )
+      malla.frustumCulled = false
+      malla.renderOrder = sombra ? 3 : 5
+      this.nubes.add(malla)
+    }
+    this.nubes.visible = false
+    this.escena.add(this.nubes)
+
+    this.astro.position.copy(DIR_ASTRO).multiplyScalar(320) // lejos del plano «far» (600)
+    this.astro.scale.setScalar(64)
+    this.escena.add(this.astro)
+
+    // Estrellas en la media cúpula de arriba (radio 450, dentro de far = 600)
+    const cielo = new Float32Array(500 * 3)
+    for (let i = 0; i < 500; i++) {
+      const az = Math.random() * Math.PI * 2
+      const y = 0.02 + Math.random() * 0.98
+      const r = Math.sqrt(1 - y * y) * 450
+      cielo.set([Math.cos(az) * r, y * 450, Math.sin(az) * r], i * 3)
+    }
+    const geoCielo = new THREE.BufferGeometry()
+    geoCielo.setAttribute('position', new THREE.BufferAttribute(cielo, 3))
+    this.estrellas = new THREE.Points(
+      geoCielo,
+      new THREE.PointsMaterial({
+        size: 1.6,
+        sizeAttenuation: false,
+        fog: false,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false,
+      }),
+    )
+    this.estrellas.visible = false
+    this.escena.add(this.estrellas)
 
     // Fauna y gente de cada región, sobre su departamento
     const idx = new Map(DEPARTAMENTOS.map((z, i) => [z.id, i]))
@@ -907,7 +1174,7 @@ export class EscenaPeru {
         tx.offset.set((LON0 - calor.lonMin) / calor.spanLon, (LAT0 - calor.latMin) / calor.spanLat)
         return tx
       }
-      this.texCalor = { real: nueva(), rayado: nueva(), apagado: nueva() }
+      this.texCalor = { real: nueva(), punteado: nueva(), apagado: nueva() }
       this.dibujarCalor()
     }
     this.pintar()
@@ -938,11 +1205,13 @@ export class EscenaPeru {
   aplicarTema() {
     this.colores.clear()
     this.acento.set(this.color('--accent'))
-    const bg = new THREE.Color(this.color('--bg'))
     const claro = esTemaClaro()
+    // Neblina del horizonte: celeste de día, azul noche de noche (no depende del fondo de la página)
+    const bruma = claro ? '#d3e3f0' : '#1b2235'
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
-    this.escena.background = texturaCielo()
-    this.escena.fog = new THREE.Fog(bg, 95, 235)
+    this.escena.background = texturaCielo(claro, bruma)
+    if (this.escena.fog instanceof THREE.Fog) this.escena.fog.color.set(bruma)
+    else this.escena.fog = new THREE.Fog(bruma, 95, 235)
     const fondo = this.color('--bg')
     const mar = this.color('--sea')
     const fg = this.color('--fg')
@@ -953,25 +1222,33 @@ export class EscenaPeru {
     )
     U.uEspuma.value.set(hexMix(mar, claro ? '#ffffff' : fg, claro ? 0.8 : 0.35))
     U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
-    U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
-    U.uTierraAlta.value.set(hexMix(fondo, claro ? '#ffffff' : fg, claro ? 0.6 : 0.32))
+    // En claro, tierra seca y ocre de puna: antes las alturas salían casi blancas y parecían nieve
+    U.uTierraBaja.value.set(hexMix(fondo, claro ? '#6f7d58' : fg, claro ? 0.35 : 0.08))
+    U.uTierraAlta.value.set(hexMix(fondo, claro ? '#8b7656' : fg, claro ? 0.5 : 0.32))
     U.uNieve.value.set(claro ? '#ffffff' : hexMix(fondo, fg, 0.7))
     U.uAgua.value.set(hexMix(mar, claro ? fg : this.color('--accent-soft'), claro ? 0.25 : 0.35))
     U.uFrontera.value.set(hexMix(fondo, fg, claro ? 0.55 : 0.45))
-    U.fogColor.value.copy(bg)
+    U.fogColor.value.set(bruma)
     U.fogNear.value = 95
     U.fogFar.value = 235
     // En claro, luz más suave para que los colores no se "quemen"
     this.hemi.intensity = (claro ? 0.78 : 0.8) * LUZ
-    this.hemi.color.set(claro ? 0xf4f6f7 : 0xdbeaf3)
+    this.hemi.color.set(claro ? 0xf4f6f7 : 0xc9d8f0)
     this.hemi.groundColor.set(claro ? 0xa3aeb3 : 0x14202b)
+    // Sol cálido de día, luz fría de luna de noche (mismas intensidades: los datos se leen igual)
     this.sol.intensity = (claro ? 0.4 : 0.8) * LUZ
-    this.sol.color.set(claro ? 0xffffff : 0xfff4e0)
-    if (this.rayadas) Object.values(this.rayadas).forEach((t) => t.dispose())
-    this.rayadas = {
-      up: texturaRayada(this.color('--map-up')),
-      down: texturaRayada(this.color('--map-down')),
-      green: texturaRayada(this.color('--map-green')),
+    this.sol.color.set(claro ? 0xfff1dc : 0xd4defa)
+    U.uLuzColor.value.copy(this.sol.color)
+    U.uBrillo.value = claro ? 0.55 : 0.4
+    this.astro.material.map?.dispose()
+    this.astro.material.map = texturaAstro(claro)
+    this.astro.material.needsUpdate = true
+    this.estrellas.visible = !claro
+    if (this.punteadas) Object.values(this.punteadas).forEach((t) => t.dispose())
+    this.punteadas = {
+      up: texturaPunteada(this.color('--map-up')),
+      down: texturaPunteada(this.color('--map-down')),
+      green: texturaPunteada(this.color('--map-green')),
     }
     this.dibujarCalor()
     this.pintar()
@@ -1097,7 +1374,7 @@ export class EscenaPeru {
     U.uColor.value.set(
       hexMix(
         this.color(calor ? '--map-down' : '--map-up'),
-        claro ? '#1a2a33' : '#ffffff',
+        claro ? '#2a1f17' : '#ffffff',
         // El calor sube como un brillo casi blanco: sobre columnas ocre, el ocre no se vería
         calor ? (claro ? 0.5 : 0.78) : claro ? 0.25 : 0.5,
       ),
@@ -1110,6 +1387,7 @@ export class EscenaPeru {
     const maxPos = Math.max(0.0001, ...positivas)
     let total = 0
     const acumulado: number[] = []
+    const pesos: number[] = []
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       let w = 0
@@ -1119,7 +1397,14 @@ export class EscenaPeru {
         else if (d.status === 'real' && d.slope_per_decade > 0) w = d.slope_per_decade / maxPos
       }
       total += w
+      pesos.push(w)
       acumulado.push(total)
+    }
+    /** Departamento al azar, con probabilidad proporcional a su peso. */
+    const sortear = () => {
+      const r = Math.random() * total
+      const k = acumulado.findIndex((c) => c >= r)
+      return k < 0 ? 0 : k
     }
     const porPeso = calor ? 70 : this.anio ? 260 : 520
     const cuenta = Math.min(N_PARTICULAS, Math.round(total * porPeso))
@@ -1128,9 +1413,7 @@ export class EscenaPeru {
     const semilla = P.geo.attributes.aSemilla.array as Float32Array
     let n = 0
     for (let i = 0; i < cuenta; i++) {
-      const r = Math.random() * total
-      let k = acumulado.findIndex((c) => c >= r)
-      if (k < 0) k = 0
+      const k = sortear()
       const s = this.muestras[k]
       if (!s || !s.length) continue
       const p = s[(Math.random() * s.length) | 0]
@@ -1146,6 +1429,25 @@ export class EscenaPeru {
     P.geo.attributes.position.needsUpdate = true
     P.geo.attributes.aSemilla.needsUpdate = true
     P.puntos.visible = !reducido() && n > 0
+    // Nubes solo con lluvia: más y más grises donde llueve más (se ven también con «reducir movimiento», quietas)
+    const aNube = this.geoNubes.attributes.aNube as THREE.InstancedBufferAttribute
+    const wMax = Math.max(0.0001, ...pesos)
+    let m = 0
+    if (!calor && n > 0)
+      for (let i = 0; i < Math.min(N_NUBES, Math.ceil(total * 3)); i++) {
+        const k = sortear()
+        const s = this.muestras[k]
+        if (!s || !s.length) continue
+        const p = s[(Math.random() * s.length) | 0]
+        aNube.array.set([p[0], p[1], k, pesos[k] / wMax], m * 4)
+        m++
+      }
+    this.geoNubes.instanceCount = m
+    aNube.needsUpdate = true
+    this.nubes.visible = m > 0
+    const uNube = (this.nubes.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>)
+      .material.uniforms
+    uNube.uColor.value.set(claro ? '#f4f7f9' : hexMix(this.color('--bg'), '#9aa6b2', 0.6))
     this.pasoParticulas(0)
     this.sucio = true
   }
@@ -1153,7 +1455,7 @@ export class EscenaPeru {
   /** Por cuadro: el reloj y la altura de cada departamento (nada por partícula). */
   private pasoParticulas(dt: number) {
     const P = this.particulas
-    if (!P.puntos.visible) return
+    if (!P.puntos.visible && !this.nubes.visible) return // las nubes también leen uTope
     const U = P.puntos.material.uniforms
     U.uTime.value += dt
     const tope = U.uTope.value as Float32Array
@@ -1228,21 +1530,31 @@ export class EscenaPeru {
     this.fauna.destruir()
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
+    this.geoNubes.dispose()
+    for (const c of this.nubes.children) {
+      const mat = (c as THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>).material
+      mat.uniforms.uMapa.value.dispose() // compartida: dispose dos veces no falla
+      mat.dispose()
+    }
+    this.astro.material.map?.dispose()
+    this.astro.material.dispose()
+    this.estrellas.geometry.dispose()
+    this.estrellas.material.dispose()
     this.mar.geometry.dispose()
     this.relieve.geometry.dispose()
     this.mar.material.dispose()
     this.texturas.forEach((t) => t.dispose())
     if (this.texCalor) Object.values(this.texCalor).forEach((t) => t.dispose())
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
-    if (this.rayadas) Object.values(this.rayadas).forEach((t) => t.dispose())
+    if (this.punteadas) Object.values(this.punteadas).forEach((t) => t.dispose())
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.capaEtiquetas.replaceChildren()
   }
 
   private pintar() {
-    if (!this.rayadas) return
-    // Con malla (temperatura o lluvia): la tapa muestra el color por celda; el estado va en rayas y opacidad
+    if (!this.punteadas) return
+    // Con malla (temperatura o lluvia): la tapa muestra el color por celda; el estado va en punteado y opacidad
     const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
@@ -1254,18 +1566,22 @@ export class EscenaPeru {
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
       if (calor) {
-        // Opaco siempre: el estado va pintado en la textura (rayas o velo), sin columnas cortadas
+        // Opaco siempre: el estado va pintado en la textura (punteado o velo), sin columnas cortadas
         mat.color.set(0xffffff)
         mapa =
           calor[
-            d.status === 'real' ? 'real' : d.status === 'posible_casualidad' ? 'rayado' : 'apagado'
+            d.status === 'real'
+              ? 'real'
+              : d.status === 'posible_casualidad'
+                ? 'punteado'
+                : 'apagado'
           ]
       } else if (this.anio && valorAnio != null)
         mat.color.set(colorAnomalia(valorAnio, this.anio.max, this.variable))
       else if (d.status === 'real') mat.color.set(this.color(`--map-${clave}`))
       else if (d.status === 'posible_casualidad') {
         mat.color.set(0xffffff)
-        mapa = this.rayadas[clave]
+        mapa = this.punteadas[clave]
         transparente = true
         opacidad = 0.82
       } else {
@@ -1276,11 +1592,7 @@ export class EscenaPeru {
       // Recompilar el shader solo si cambia lo que lo define (textura, transparencia o modo calor)
       const conCalor = !!calor
       const defs = (mat.defines ??= {})
-      if (
-        !!mat.map !== !!mapa ||
-        mat.transparent !== transparente ||
-        'CALOR' in defs !== conCalor
-      )
+      if (!!mat.map !== !!mapa || mat.transparent !== transparente || 'CALOR' in defs !== conCalor)
         mat.needsUpdate = true
       if (conCalor) defs.CALOR = ''
       else delete defs.CALOR

@@ -171,7 +171,8 @@ export function Explorador() {
     <section
       aria-label={t.explorador}
       style={estilo}
-      className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px]"
+      // overflow-x-clip: el informe minimizado se corre a la derecha y no debe ensanchar la página
+      className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px] min-[901px]:overflow-x-clip"
     >
       {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
       <div

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
   CloudRain,
+  House,
   Moon,
   Sun,
   Thermometer,
@@ -10,7 +11,8 @@ import {
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
-import { useBusqueda } from '@/lib/busqueda'
+import { useRuta } from '@/hooks/ruta'
+import { useBusqueda, type Busqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { MenuMetodologia } from '@/components/MenuMetodologia'
 import { Button } from '@/components/ui/button'
@@ -31,6 +33,8 @@ const riel =
 /** Bajo 420 px solo queda "Detective" y bajo 360 px solo el logo: el nombre sigue en el aria-label */
 const resto = 'font-display font-semibold max-[419px]:hidden'
 const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed:shadow-sm'
+/** Al inicio viajan las opciones del mapa y el idioma (no el año ni la zona) */
+const aInicio = (p: Busqueda) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })
 
 /**
  * Barra superior: marca, variable, perfil, metodología, idioma y tema.
@@ -40,6 +44,7 @@ export function Cabecera() {
   // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
   const idioma = useApp((s) => s.idioma)
   const alternarTema = useApp((s) => s.alternarTema)
+  const enInicio = useRuta() === 'inicio'
   // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
   const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
   const t = TEXTOS[idioma]
@@ -49,7 +54,7 @@ export function Cabecera() {
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]">
       <Link
         to="/"
-        search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}
+        search={aInicio}
         className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
         aria-label={t.inicio}
       >
@@ -120,6 +125,21 @@ export function Cabecera() {
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
+        {/* Mismo aspecto que el botón de Metodología: texto en escritorio, solo icono en celular */}
+        <Button
+          asChild
+          variant="ghost"
+          data-activa={enInicio || undefined}
+          className="relative rounded-m px-2.5 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text sm:px-3"
+        >
+          <Link to="/" search={aInicio} aria-current={enInicio ? 'page' : undefined}>
+            <House className="size-4.5" aria-hidden="true" />
+            <span className="max-sm:sr-only">{t.inicioCorto}</span>
+            {enInicio && (
+              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
+            )}
+          </Link>
+        </Button>
         <MenuMetodologia />
         <span className="hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>

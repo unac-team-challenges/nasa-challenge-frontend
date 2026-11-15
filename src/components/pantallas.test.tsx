@@ -37,6 +37,20 @@ describe('explorador con la URL', () => {
     )
   })
 
+  it('desde /metodologia, la variable y el perfil llevan al mapa', async () => {
+    const router = renderRuta('/metodologia')
+    const grupo = await screen.findByRole('group', { name: 'Variable' })
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Temperatura' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ variable: 'temperatura' })
+
+    router.history.push('/metodologia')
+    await screen.findByRole('heading', { level: 1, name: /Metodología/ })
+    await userEvent.selectOptions(screen.getByLabelText('Perfil'), 'estudiante')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ perfil: 'estudiante' })
+  })
+
   it('tocar un departamento en el mapa 2D lleva a su /zona/:id', async () => {
     const router = renderRuta('/explorar')
     const mapa = await screen.findByRole('group', { name: 'Mapa del Perú en 2D' })

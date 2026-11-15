@@ -5,7 +5,7 @@ import { useRango } from '@/hooks/useZonas'
 import type { Ruta } from '@/hooks/ruta'
 
 /** Fondo de cada tema (--bg de src/index.css): el color de la barra del navegador en el celular. */
-const COLOR = { claro: '#dce2e3', oscuro: '#0f1c26' }
+const COLOR = { claro: '#d6c3a5', oscuro: '#201c19' }
 
 const poner = (selector: string, valor: string) =>
   document.querySelector(selector)?.setAttribute('content', valor)

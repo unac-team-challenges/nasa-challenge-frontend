@@ -198,7 +198,7 @@ interface Props {
 /**
  * Mapa 2D en SVG: respaldo cuando no hay WebGL y vista alternativa del explorador.
  * Mismo suelo real que el 3D (mar, relieve, ríos y fronteras) y el mismo semáforo por forma:
- * color pleno, rayado o contorno punteado.
+ * color pleno, punteado o contorno de guiones.
  */
 export function Mapa2D({ interactivo = true }: Props) {
   const { idioma, periodo } = useApp()
@@ -433,28 +433,35 @@ export function Mapa2D({ interactivo = true }: Props) {
             {(['up', 'down', 'green'] as const).map((k) => (
               <pattern
                 key={k}
-                id={`rayado-${k}`}
-                width={0.24}
-                height={0.24}
+                id={`punteado-${k}`}
+                width={0.2}
+                height={0.2}
                 patternUnits="userSpaceOnUse"
-                patternTransform="rotate(45)"
               >
-                <rect width={0.24} height={0.24} style={{ fill: 'var(--panel)' }} />
-                <rect width={0.12} height={0.24} style={{ fill: `var(--map-${k})` }} />
+                {/* Color lavado con el panel y puntos del color pleno al tresbolillo */}
+                <rect
+                  width={0.2}
+                  height={0.2}
+                  style={{ fill: `color-mix(in srgb, var(--map-${k}) 50%, var(--panel))` }}
+                />
+                <circle cx={0.05} cy={0.05} r={0.032} style={{ fill: `var(--map-${k})` }} />
+                <circle cx={0.15} cy={0.15} r={0.032} style={{ fill: `var(--map-${k})` }} />
               </pattern>
             ))}
-            {/* Sobre el calor: rayas del fondo, translúcidas, para «posible casualidad» */}
-            <pattern
-              id="rayado-calor"
-              width={0.24}
-              height={0.24}
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(45)"
-            >
-              <rect
-                width={0.12}
-                height={0.24}
-                style={{ fill: 'var(--panel)', fillOpacity: 0.45 }}
+            {/* Sobre el calor, «posible casualidad»: velo leve y puntos del panel, translúcidos */}
+            <pattern id="punteado-calor" width={0.2} height={0.2} patternUnits="userSpaceOnUse">
+              <rect width={0.2} height={0.2} style={{ fill: 'var(--panel)', fillOpacity: 0.25 }} />
+              <circle
+                cx={0.05}
+                cy={0.05}
+                r={0.024}
+                style={{ fill: 'var(--panel)', fillOpacity: 0.4 }}
+              />
+              <circle
+                cx={0.15}
+                cy={0.15}
+                r={0.024}
+                style={{ fill: 'var(--panel)', fillOpacity: 0.4 }}
               />
             </pattern>
             <clipPath id="silueta-peru">
@@ -546,9 +553,9 @@ export function Mapa2D({ interactivo = true }: Props) {
             let opacidadTrazo = 0.7
             const valorAnio = an?.porId[id]?.[anio ?? 0]
             if (urlCalor)
-              relleno = d.status === 'posible_casualidad' ? 'url(#rayado-calor)' : 'transparent'
+              relleno = d.status === 'posible_casualidad' ? 'url(#punteado-calor)' : 'transparent'
             else if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
-            else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
+            else if (d.status === 'posible_casualidad') relleno = `url(#punteado-${clave})`
             if (d.status === 'pocos_datos') {
               relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'
               trazo = 'var(--muted)'

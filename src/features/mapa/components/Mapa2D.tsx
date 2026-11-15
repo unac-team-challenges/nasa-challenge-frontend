@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -16,6 +17,8 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
+import { dibujarCalor, tieneAnio } from '@/features/mapa/utils/calor'
+import { useCalor } from '@/features/mapa/hooks/useCalor'
 
 const LON0 = -75.0
 const LAT0 = -9.2
@@ -210,6 +213,7 @@ export function Mapa2D({ interactivo = true }: Props) {
   const lienzo = useRef<HTMLCanvasElement>(null)
   const caja = useRef<HTMLDivElement>(null)
   const [tam, setTam] = useState({ w: 0, h: 0 })
+  const calor = useCalor()
   // Zoom y desplazamiento hechos con los dedos; null = sigue el zoom automático a la zona elegida
   const [manual, setManual] = useState<Vista | null>(null)
   const [gestando, setGestando] = useState(false)
@@ -243,6 +247,17 @@ export function Mapa2D({ interactivo = true }: Props) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  // Mapa de calor (temperatura): la malla como imagen de 1 px por celda; el navegador la suaviza
+  const conCalor = !!calor && tieneAnio(calor, anio)
+  const urlCalor = useMemo(() => {
+    if (!calor || !conCalor) return null
+    const cv = document.createElement('canvas')
+    dibujarCalor(cv, calor, anio ?? null)
+    return cv.toDataURL()
+    // tema y esquema: los colores se leen del tema
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calor, conCalor, anio, tema, esquema])
+
   const s = Math.min(tam.w / VB.w, tam.h / VB.h) || 0
   const oX = (tam.w - VB.w * s) / 2
   const oY = (tam.h - VB.h * s) / 2
@@ -418,6 +433,25 @@ export function Mapa2D({ interactivo = true }: Props) {
                 <rect width={0.12} height={0.24} style={{ fill: `var(--map-${k})` }} />
               </pattern>
             ))}
+            {/* Sobre el calor: rayas del fondo, translúcidas, para «posible casualidad» */}
+            <pattern
+              id="rayado-calor"
+              width={0.24}
+              height={0.24}
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect
+                width={0.12}
+                height={0.24}
+                style={{ fill: 'var(--panel)', fillOpacity: 0.45 }}
+              />
+            </pattern>
+            <clipPath id="silueta-peru">
+              {RUTAS.map(({ id, d }) => (
+                <path key={id} d={d} clipRule="evenodd" />
+              ))}
+            </clipPath>
           </defs>
 
           {/* Retícula cada 5° */}
@@ -459,6 +493,19 @@ export function Mapa2D({ interactivo = true }: Props) {
             ))}
           </g>
 
+          {calor && urlCalor && (
+            <image
+              href={urlCalor}
+              x={(calor.lonMin - LON0) * COSLAT}
+              y={-(calor.latMin + calor.spanLat - LAT0)}
+              width={calor.spanLon * COSLAT}
+              height={calor.spanLat}
+              preserveAspectRatio="none"
+              clipPath="url(#silueta-peru)"
+              aria-hidden
+            />
+          )}
+
           {orden.map(({ id, d: ruta }) => {
             const d = zonas[id]
             const clave = claveMapa(d.slope_per_decade, variable)
@@ -468,7 +515,9 @@ export function Mapa2D({ interactivo = true }: Props) {
             let guiones = ''
             let opacidadTrazo = 0.7
             const valorAnio = an?.porId[id]?.[anio ?? 0]
-            if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
+            if (urlCalor)
+              relleno = d.status === 'posible_casualidad' ? 'url(#rayado-calor)' : 'transparent'
+            else if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
             else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
             if (d.status === 'pocos_datos') {
               relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'

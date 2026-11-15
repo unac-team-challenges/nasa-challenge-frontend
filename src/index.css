@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/newsreader';
 @import '@fontsource-variable/public-sans';
+@import '@fontsource-variable/fraunces/wonk-italic.css';
 @import './shadcn.css';
 
 /*
@@ -26,6 +27,15 @@
   --map-up: #5e95c8;
   --map-down: #c49061;
   --map-green: #5fa07c;
+  /* Mapa de calor (temperatura): azul (frío) → neutro → amarillo → naranja → rojo, igual en claro y oscuro */
+  --frio-2: #2a64ad;
+  --frio-1: #7fb3df;
+  --calor-0: #eef0e6;
+  --calor-1: #ffe38a;
+  --calor-2: #fdb54a;
+  --calor-3: #f57c2b;
+  --calor-4: #d9382a;
+  --calor-5: #96172a;
   --accent: #a8285a;
   --accent-text: #a8285a;
   --accent-fg: #ffffff;
@@ -114,6 +124,7 @@
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
   --font-display: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --font-brand: 'Fraunces Variable', Georgia, serif;
   --font-sans: 'Public Sans Variable', 'Segoe UI', system-ui, sans-serif;
   --radius-s: 6px;
   --radius-m: 10px;
@@ -146,6 +157,27 @@ h1,
 h2,
 h3 {
   text-wrap: balance;
+}
+
+/* Tema oscuro efectivo: forzado con data-theme o heredado del sistema */
+@custom-variant oscuro {
+  :root[data-theme='dark'] & {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) & {
+      @slot;
+    }
+  }
+}
+
+/* Palabra destacada de la marca: Fraunces italic con el eje WONK (letras "raras"); solo baja ese subset (~46 KB) */
+.marca {
+  font-family: var(--font-brand);
+  font-style: italic;
+  font-weight: 620;
+  font-variation-settings: 'WONK' 1;
+  letter-spacing: -0.015em;
 }
 
 /* Botones que responden al presionar (v18): escala 0.97 en 150 ms */
@@ -471,5 +503,34 @@ h3 {
   .zoom2d,
   .lbl2d {
     transition: none;
+  }
+}
+
+/* Deslizador de la máquina del tiempo en celular: va encima del riel de franjas, sin pista propia */
+@media (max-width: 900px) {
+  .deslizador-riel {
+    appearance: none;
+    background: transparent;
+  }
+  .deslizador-riel::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .deslizador-riel::-moz-range-track {
+    background: transparent;
+  }
+  .deslizador-riel::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 22px;
+    border-radius: 4px;
+    border: 2px solid var(--panel);
+    background: var(--accent);
+  }
+  .deslizador-riel::-moz-range-thumb {
+    width: 8px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid var(--panel);
+    background: var(--accent);
   }
 }

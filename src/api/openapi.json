@@ -9,6 +9,48 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/celdas": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "T2M anual de cada celda de NASA POWER (~0,5° × 0,625°) dentro de Perú, para el mapa de calor.\nSolo existe para `temperatura`.",
+        "operationId": "celdas",
+        "parameters": [
+          {
+            "name": "variable",
+            "in": "query",
+            "description": "Obligatoria; solo temperatura",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Variable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Malla"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cobertura-arboles": {
       "get": {
         "tags": [
@@ -245,6 +287,37 @@
         },
         "additionalProperties": false
       },
+      "Celda": {
+        "type": "object",
+        "required": [
+          "lat",
+          "lon",
+          "t2m"
+        ],
+        "properties": {
+          "lat": {
+            "type": "number",
+            "format": "double",
+            "description": "Centro de la celda."
+          },
+          "lon": {
+            "type": "number",
+            "format": "double"
+          },
+          "t2m": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "description": "Media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el año no está completo."
+          }
+        },
+        "additionalProperties": false
+      },
       "ErrorRespuesta": {
         "type": "object",
         "description": "Cuerpo de los errores 400 y 404.",
@@ -256,6 +329,58 @@
             "type": "string"
           }
         }
+      },
+      "Malla": {
+        "type": "object",
+        "description": "`data/celdas/temperatura.json`, tal cual lo deja `pipeline/power.py`.",
+        "required": [
+          "fuente",
+          "unidad",
+          "dlat",
+          "dlon",
+          "anio_inicio",
+          "anio_fin",
+          "celdas"
+        ],
+        "properties": {
+          "anio_fin": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "anio_inicio": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "celdas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Celda"
+            }
+          },
+          "dlat": {
+            "type": "number",
+            "format": "double",
+            "description": "Alto de la celda en grados de latitud.",
+            "example": 0.5
+          },
+          "dlon": {
+            "type": "number",
+            "format": "double",
+            "description": "Ancho de la celda en grados de longitud.",
+            "example": 0.625
+          },
+          "fuente": {
+            "type": "string",
+            "example": "MERRA-2 vía NASA POWER (T2M)"
+          },
+          "unidad": {
+            "type": "string",
+            "example": "°C"
+          }
+        },
+        "additionalProperties": false
       },
       "Punto": {
         "type": "object",
@@ -688,7 +813,7 @@
           },
           "tipo": {
             "type": "string",
-            "description": "P. ej. \"valle irrigado\"."
+            "description": "P. ej. \"valle irrigado\" o, en Olmos, \"riego nuevo y bosque seco\"."
           },
           "ubigeo": {
             "type": "string",

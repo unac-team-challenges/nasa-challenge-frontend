@@ -31,3 +31,20 @@ Decisión de producto (opción C): **POWER es la lluvia del mapa e IMERG, la seg
 
 ## Pendiente
 - Mezclar después de que el PR #53 del backend se mezcle y se despliegue en Render. Antes de eso, la web sigue igual que hoy: el bloque no aparece porque la API todavía sirve IMERG como lluvia principal.
+
+## Ajustes tras la revisión de Leandro
+1. **Actualizado con `developer`** (ya entraron #30 y el backend #53). En `src/api/consultas.ts` y `consultas.test.ts` se conservan las dos partes: `vegetacionDeApi` (#30) e `imergDeApi`, con sus pruebas. `openapi.json` es igual al del backend actual y `schema.d.ts` se regeneró con `pnpm gen`: la mezcla automática lo había dejado con `anios` en vez de `serie`.
+2. **«Coinciden» ya no depende solo del signo.** `veredictoDosFuentes()` (`src/features/ficha/utils/dosFuentes.ts`, con 5 pruebas) compara los rangos probables:
+   - mismo sentido → «coinciden», o «ninguna de las dos es segura» si los dos rangos cruzan el cero;
+   - sentido contrario y rangos que no se tocan → «no coinciden», con la explicación de 2014;
+   - sentido contrario y rangos que se tocan → «no se puede decir que se contradigan».
+
+   Con los datos actuales, «no coinciden» baja de 11 a 8 departamentos (3 pasan a «dudoso»).
+3. **Revertido el reformateo ajeno de `src/i18n/textos.ts`** (bloque `FAUNA_TEXTOS`): el diff de ese archivo queda solo con los textos del PR.
+4. **Menores:**
+   - `imergDeApi` toma la unidad de `/api/variables` con `factorUnidad`, en vez de fijar `× 365`;
+   - `useSegundaFuente` ya no mira el texto de la fuente: si la lluvia de la ficha viene de la API, IMERG también (un backend sin `lluvia_imerg` da `null` y no se compara); si viene de la copia local, usa la copia de IMERG.
+
+Probado en el navegador:
+- con la API de Render actual (todavía sirve IMERG como lluvia principal), el bloque no aparece;
+- con la copia local, Puno sale «No coinciden» (+141 frente a −91 mm, con rangos que no se tocan).

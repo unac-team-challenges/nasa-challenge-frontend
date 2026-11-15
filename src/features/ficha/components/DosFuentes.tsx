@@ -1,6 +1,7 @@
 import type { Zona } from '@/data/datos'
 import type { TendenciaImerg } from '@/api/consultas'
 import { TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
+import { veredictoDosFuentes } from '@/features/ficha/utils/dosFuentes'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtValor } from '@/utils/formato'
 
@@ -27,9 +28,16 @@ export function DosFuentes({ power, imerg, idioma, perfil }: Props) {
   ]
   // Las dos barras usan la misma escala, para que se puedan comparar a simple vista
   const max = Math.max(...filas.map((f) => Math.abs(f.d.slope_per_decade)), 1e-9)
-  const pocos = power.status === 'pocos_datos' || imerg.status === 'pocos_datos'
+  // Se compara por rangos probables, no solo por el signo (ver veredictoDosFuentes)
+  const veredicto = veredictoDosFuentes(power, imerg)
   const sube = power.slope_per_decade >= 0
-  const coinciden = sube === imerg.slope_per_decade >= 0
+  const frase = {
+    pocos: t.dosPocos,
+    coinciden: t.dosSi(sube),
+    coincidenDebil: t.dosSiDebil(sube),
+    noCoinciden: t.dosNo(sube),
+    dudoso: t.dosDudoso,
+  }[veredicto]
 
   return (
     <section
@@ -79,10 +87,8 @@ export function DosFuentes({ power, imerg, idioma, perfil }: Props) {
           )
         })}
       </ul>
-      <p className="m-0 text-sm">
-        {pocos ? t.dosPocos : coinciden ? t.dosSi(sube) : t.dosNo(sube)}
-      </p>
-      {!pocos && !coinciden && <p className="m-0 text-xs text-muted">{t.dosPorQue}</p>}
+      <p className="m-0 text-sm">{frase}</p>
+      {veredicto === 'noCoinciden' && <p className="m-0 text-xs text-muted">{t.dosPorQue}</p>}
     </section>
   )
 }

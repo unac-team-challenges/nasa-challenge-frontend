@@ -130,7 +130,7 @@ export function useSegundaFuente(): Record<string, TendenciaImerg> | null {
   const decidida = useApp((s) => s.fuente)
   const sinNino = useApp((s) => s.sinNino)
   const periodo = useApp((s) => s.periodo)
-  const { fuente } = useVista('lluvia')
+  const { api } = useVista('lluvia')
   const { data } = useQuery({
     queryKey: ['imerg'],
     queryFn: imergDeApi,
@@ -138,6 +138,9 @@ export function useSegundaFuente(): Record<string, TendenciaImerg> | null {
     staleTime: Infinity,
     retry: false,
   })
-  if (sinNino || periodo !== 'reciente' || !/POWER/.test(fuente)) return null
-  return (decidida === 'api' && data) || (imergLocal.zonas as Record<string, TendenciaImerg>)
+  if (sinNino || periodo !== 'reciente') return null
+  // Si la lluvia de la ficha viene de la API, IMERG también: un backend sin lluvia_imerg (el viejo,
+  // con IMERG como lluvia principal) da null y no se compara. Si viene de la copia local, la de IMERG.
+  if (api) return data ?? null
+  return imergLocal.zonas as Record<string, TendenciaImerg>
 }

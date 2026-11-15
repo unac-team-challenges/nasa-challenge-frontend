@@ -89,7 +89,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
+      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
         <div className={riel} role="group" aria-label={t.variableLbl}>
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]

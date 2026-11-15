@@ -21,6 +21,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vegetacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vegetación (NDVI de MODIS) de los valles irrigados de la costa, para el Caso 2: cada zona con su
+         *     serie anual (`ndvi_anual`, `area_verde_km2`), su tendencia y su `unidad_geografica` (un recuadro
+         *     sobre el valle, **no** el promedio del departamento).
+         */
+        get: operations["vegetacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/zonas": {
         parameters: {
             query?: never;
@@ -59,6 +80,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Medidas de un año completo (12 meses válidos). */
+        AnioVegetacion: {
+            /**
+             * Format: double
+             * @description Área con NDVI medio del año mayor que `umbral_verde_ndvi`, en km².
+             */
+            area_verde_km2: number;
+            /**
+             * Format: double
+             * @description NDVI medio del año en el recuadro (−1 a 1).
+             */
+            ndvi_anual: number;
+        };
         /** @description Cuerpo de los errores 400 y 404. */
         ErrorRespuesta: {
             error: string;
@@ -176,6 +210,44 @@ export interface components {
             unidad: string;
             variable: string;
         };
+        /** @description `GET /api/vegetacion`: una zona (recuadro sobre un valle) con su serie anual y su tendencia. */
+        ZonaVegetacion: {
+            /** @description Por año ("2001", ...): solo años completos. */
+            anios: {
+                [key: string]: components["schemas"]["AnioVegetacion"];
+            };
+            /** @description `[oeste, sur, este, norte]` en grados. */
+            bbox: number[];
+            /** @description Departamento donde está el recuadro. */
+            departamento: string;
+            fuente: string;
+            /** @description Identificador del recuadro, p. ej. "chavimochic". */
+            id: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            nombre: string;
+            /**
+             * Format: int32
+             * @description Píxeles MODIS (~1 km) del recuadro.
+             */
+            pixeles: number;
+            stats: components["schemas"]["Stats"];
+            /** @description Sobre qué campo de `anios` se calcula `stats` (hoy, "ndvi_anual"). */
+            tendencia_de: string;
+            /** @description P. ej. "valle irrigado". */
+            tipo: string;
+            /** @description Ubigeo del departamento, como texto ("01"–"25"). */
+            ubigeo: string;
+            /**
+             * Format: double
+             * @description NDVI desde el que un píxel cuenta como área verde.
+             */
+            umbral_verde_ndvi: number;
+            /** @description Qué área se promedia: un recuadro, **no** el departamento. La ficha debe mostrarlo. */
+            unidad_geografica: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -200,6 +272,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VariableInfo"][];
+                };
+            };
+        };
+    };
+    vegetacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaVegetacion"][];
                 };
             };
         };

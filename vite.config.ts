@@ -13,6 +13,6 @@ export default defineConfig({
     // e2e/ es de Playwright, no de Vitest
     exclude: [...configDefaults.exclude, 'e2e/**'],
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/testing/setup.ts'],
   },
 })

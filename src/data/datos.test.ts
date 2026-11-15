@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anomaliasAnio, anomaliasPeru, ninoEn, PERIODOS, serie } from './datos'
+import { anomaliasAnio, anomaliasPeru, ninoEn, PERIODOS, serie } from '@/data/datos'
 
 const API = { year_start: 2001, year_end: 2024 }
 

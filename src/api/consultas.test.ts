@@ -73,7 +73,7 @@ function simularApi(zonas: unknown, vars: unknown = variables) {
 
 async function cargar() {
   vi.resetModules()
-  return import('./consultas')
+  return import('@/api/consultas')
 }
 
 describe('datosDeApi (cliente con respaldo)', () => {

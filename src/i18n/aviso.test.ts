@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TEXTOS } from './textos'
+import { TEXTOS } from '@/i18n/textos'
 
 describe('avisoFijo (aviso de la API traducido)', () => {
   const { en, es } = TEXTOS

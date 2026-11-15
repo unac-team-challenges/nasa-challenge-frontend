@@ -279,7 +279,7 @@ const es = {
   tecCorreccion: 'Corrección por pruebas múltiples',
   tecCorreccionV: (m: number) => `Benjamini-Hochberg entre ${m} zonas, α = 0,05`,
   tecCriterio: 'Criterio de «cambio real»',
-  tecCriterioV: 'q < 0,05, IC 95 % que no cruza el cero y lag1 ≤ 0,5',
+  tecCriterioV: 'q < 0,05, IC 95 % que no cruza el cero y |lag1| ≤ 0,5',
   tecGenerado: 'Datos generados el',
   limH: 'Limitaciones',
   lim: (n: number) => [
@@ -693,7 +693,7 @@ const en: Textos = {
   tecCorreccion: 'Multiple-testing correction',
   tecCorreccionV: (m) => `Benjamini-Hochberg across ${m} areas, α = 0.05`,
   tecCriterio: '“Real change” criterion',
-  tecCriterioV: 'q < 0.05, 95 % CI not crossing zero and lag1 ≤ 0.5',
+  tecCriterioV: 'q < 0.05, 95 % CI not crossing zero and |lag1| ≤ 0.5',
   tecGenerado: 'Data generated on',
   limH: 'Limitations',
   lim: (n) => [
@@ -885,7 +885,7 @@ export const CAUSAS_TEXTOS: Record<
     },
     bosque: {
       campo:
-        'Donde se pierde bosque llueve menos: se ha medido con satélites en la Amazonía y otras selvas.',
+        'Donde se pierde bosque suele llover menos: se ha medido con satélites en la Amazonía y otras selvas. Aquí es una posible explicación, no una prueba.',
       estudiante:
         'Smith et al. (2023) comparan, con satélites (2003–2017), zonas deforestadas con zonas vecinas de bosque en la Amazonía, el Congo y el sudeste asiático: la lluvia baja tras la deforestación, y baja más cuanto mayor es el área perdida. El efecto es robusto a escalas mayores de 50 km y las estaciones en tierra no lo detectan. Para esta zona es una hipótesis; nuestros datos no la prueban.',
     },
@@ -896,7 +896,8 @@ export const CAUSAS_TEXTOS: Record<
         'Vuille et al. (2018) relacionan el retroceso glaciar de los Andes tropicales con el aumento observado de la temperatura del aire en altura.',
     },
     calentamientoRegion: {
-      campo: 'Es parte del calentamiento del planeta: en la región hay cada vez más calor extremo.',
+      campo:
+        'Puede ser parte del calentamiento del planeta: en la región hay cada vez más calor extremo. Para esta zona no está probado.',
       estudiante:
         'El IPCC (2022, cap. 12) evalúa como probable que en varias subregiones de Sudamérica hayan aumentado los extremos cálidos y disminuido los fríos, y que el calentamiento global ha hecho perder a los glaciares andinos entre el 30 % y más del 50 % de su área desde los años 1980. Nuestra pendiente es local: atribuirla al calentamiento global exige un estudio de atribución.',
     },
@@ -938,7 +939,7 @@ export const CAUSAS_TEXTOS: Record<
     },
     bosque: {
       campo:
-        'Where forest is lost it rains less: it has been measured by satellite in the Amazon and other rainforests.',
+        'Where forest is lost it tends to rain less: it has been measured by satellite in the Amazon and other rainforests. Here it is a possible explanation, not proof.',
       estudiante:
         'Smith et al. (2023) compare, by satellite (2003–2017), deforested areas with nearby forest in the Amazon, the Congo and Southeast Asia: rainfall drops after deforestation, and drops more the larger the area lost. The effect is robust at scales above 50 km, and ground stations do not detect it. For this area it is a hypothesis; our data do not prove it.',
     },
@@ -949,7 +950,8 @@ export const CAUSAS_TEXTOS: Record<
         'Vuille et al. (2018) link glacier retreat in the tropical Andes with the observed rise in high-elevation air temperature.',
     },
     calentamientoRegion: {
-      campo: 'It is part of the planet warming: in the region there is more and more extreme heat.',
+      campo:
+        'It may be part of the planet warming: in the region there is more and more extreme heat. For this area it is not proven.',
       estudiante:
         'The IPCC (2022, ch. 12) assesses as likely that warm extremes have increased and cold extremes decreased in several South American subregions, and that global warming has caused Andean glaciers to lose 30% to more than 50% of their area since the 1980s. Our slope is local: attributing it to global warming requires an attribution study.',
     },

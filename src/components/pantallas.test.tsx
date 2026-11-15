@@ -21,7 +21,11 @@ describe('explorador con la URL', () => {
     expect(
       await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] }),
     ).toBeVisible()
-    expect(screen.getByLabelText('Perfil')).toHaveValue('agricultor')
+    expect(
+      within(screen.getByRole('group', { name: 'Perfil' })).getByRole('button', {
+        name: /Agricultor/,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('cambiar la variable escribe en la URL y marca el botón', async () => {

@@ -1,17 +1,20 @@
-import { anomaliasPeru, PERIODOS, type Periodo } from '../data/datos'
+import { anomaliasPeru } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { colorAnomalia, pct } from '../lib/color'
+import { useRango } from '../lib/useZonas'
 import { useApp } from '../store'
 
 /** Franjas del Perú: una por año, con la lluvia nacional frente al promedio del periodo. */
-export function FranjasPeru({ periodo = 'largo' }: { periodo?: Periodo }) {
+export function FranjasPeru() {
   const idioma = useApp((s) => s.idioma)
   // Se suscribe al tema para volver a pintar: los colores se leen de las variables CSS
   useApp((s) => s.tema)
   const t = TEXTOS[idioma]
-  const { filas, max } = anomaliasPeru('lluvia', periodo)
+  const periodo = useApp((s) => s.periodo)
+  const rango = useRango('lluvia')
+  const { filas, max } = anomaliasPeru('lluvia', periodo, rango)
   const franjas = filas.map((fila) => ({ ...fila, color: colorAnomalia(fila.a, max) }))
-  const { year_start: a, year_end: b } = PERIODOS[periodo]
+  const { year_start: a, year_end: b } = rango
 
   return (
     <figure className="m-0 flex flex-col gap-1.5">

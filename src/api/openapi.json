@@ -249,7 +249,7 @@
       },
       "ZonaDetalle": {
         "type": "object",
-        "description": "`GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Josue.",
+        "description": "`GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Sebastian.",
         "required": [
           "id",
           "nombre",
@@ -277,6 +277,13 @@
           },
           "nombre": {
             "type": "string"
+          },
+          "nota": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha."
           },
           "serie": {
             "type": "array",

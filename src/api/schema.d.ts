@@ -92,7 +92,7 @@ export interface components {
             lon: number;
             nombre: string;
         };
-        /** @description `GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Josue. */
+        /** @description `GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Sebastian. */
         ZonaDetalle: {
             fuente: string;
             id: string;
@@ -101,6 +101,8 @@ export interface components {
             /** Format: double */
             lon: number;
             nombre: string;
+            /** @description Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha. */
+            nota?: string | null;
             serie: components["schemas"]["Punto"][];
             unidad: string;
             variable: string;

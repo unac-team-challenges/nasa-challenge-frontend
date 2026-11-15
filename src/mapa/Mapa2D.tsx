@@ -4,7 +4,7 @@ import { colorAnomalia } from '../lib/color'
 import { TEXTOS } from '../i18n/textos'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useRango, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 
 const LON0 = -75.0
@@ -61,7 +61,8 @@ interface Props {
 export function Mapa2D({ interactivo = true }: Props) {
   const { idioma, variable, sel, seleccionar, anio, periodo } = useApp()
   useApp((s) => s.tema) // los colores del año se leen del tema
-  const an = anio == null ? null : anomaliasAnio(variable, periodo)
+  const rango = useRango()
+  const an = anio == null ? null : anomaliasAnio(variable, periodo, rango)
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const [tip, setTip] = useState<{ id: string; x: number; y: number } | null>(null)

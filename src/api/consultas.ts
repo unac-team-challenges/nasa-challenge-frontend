@@ -5,7 +5,7 @@
  *      de datos reales (src/data/power.json, mismo método que el pipeline de Josue).
  * Así la app ya "habla" con el backend y la demo nunca se cae.
  */
-import type { Estado, Variable, Zona } from '../data/datos'
+import { VARIABLES, type Estado, type Rango, type Variable, type Zona } from '../data/datos'
 import { api, hayApi } from './cliente'
 
 /** Campos de tendencia que la ficha necesita (contrato, `stats`). */
@@ -61,37 +61,63 @@ function aZona(id: string, s: StatsApi, factor: number): Zona {
   }
 }
 
-/**
- * Zonas desde la API. Devuelve null si hay que usar la copia local
- * (sin API, error, demora, o respuesta sin tendencias para alguna de las 25 zonas).
- */
-export async function zonasDeApi(variable: Variable): Promise<Record<string, Zona> | null> {
-  if (!hayApi) return null
-  try {
-    const [zonas, vars] = await Promise.all([
-      api.GET('/api/zonas', { params: { query: { variable } } }),
-      api.GET('/api/variables'),
-    ])
-    const lista = zonas.data as unknown[] | undefined
-    if (!lista || lista.length !== 25 || !lista.every(tieneStats)) return null
-    const unidad = vars.data?.find((v) => v.id === variable)?.unidad
-    const f = factorUnidad(variable, unidad)
-    return Object.fromEntries(
+/** Lo que la API sirve de una variable: tendencias por zona, años que cubren y de dónde salen. */
+export interface DatosApi {
+  zonas: Record<string, Zona>
+  rango: Rango
+  fuente: string
+}
+
+/** Una variable desde la API, o null si le falta algo (tendencias, zonas o rango de años). */
+async function variableDeApi(
+  variable: Variable,
+  info: { unidad: string; fuente: string; anio_inicio?: number | null; anio_fin?: number | null },
+): Promise<DatosApi | null> {
+  if (info.anio_inicio == null || info.anio_fin == null) return null
+  const r = await api.GET('/api/zonas', { params: { query: { variable } } })
+  // Pendiente: validación manual hasta que el contrato traiga `stats`; luego, tipos generados
+  const lista = r.data as unknown[] | undefined
+  if (!lista || lista.length !== 25 || !lista.every(tieneStats)) return null
+  const f = factorUnidad(variable, info.unidad)
+  return {
+    zonas: Object.fromEntries(
       (lista as ({ id: string } & { stats: StatsApi })[]).map((z) => [
         z.id,
         aZona(z.id, z.stats, f),
       ]),
-    )
+    ),
+    rango: { year_start: info.anio_inicio, year_end: info.anio_fin },
+    fuente: info.fuente,
+  }
+}
+
+/**
+ * Las dos variables desde la API, pedidas a la vez. Una variable que no viene completa
+ * va con la copia local (null). Devuelve null si ninguna sirve (sin API, error o demora).
+ */
+export async function datosDeApi(): Promise<Record<Variable, DatosApi | null> | null> {
+  if (!hayApi) return null
+  try {
+    const vars = (await api.GET('/api/variables')).data
+    const datos = Object.fromEntries(
+      await Promise.all(
+        VARIABLES.map(async (v) => {
+          const info = vars?.find((x) => x.id === v)
+          return [v, info ? await variableDeApi(v, info).catch(() => null) : null] as const
+        }),
+      ),
+    ) as Record<Variable, DatosApi | null>
+    return VARIABLES.some((v) => datos[v]) ? datos : null
   } catch {
     return null
   }
 }
 
-/** Serie anual de una zona desde la API (solo se usa cuando las zonas también vinieron de la API). */
-export async function serieDeApi(
+/** Serie anual y aviso de una zona desde la API (solo cuando sus tendencias también vienen de la API). */
+export async function detalleDeApi(
   id: string,
   variable: Variable,
-): Promise<{ y: number; v: number }[] | null> {
+): Promise<{ serie: { y: number; v: number }[]; nota: string | null } | null> {
   if (!hayApi) return null
   try {
     const r = await api.GET('/api/zonas/{id}', {
@@ -99,7 +125,10 @@ export async function serieDeApi(
     })
     if (!r.data?.serie?.length) return null
     const f = factorUnidad(variable, r.data.unidad)
-    return r.data.serie.map((p) => ({ y: p.anio, v: p.valor * f }))
+    return {
+      serie: r.data.serie.map((p) => ({ y: p.anio, v: p.valor * f })),
+      nota: r.data.nota ?? null,
+    }
   } catch {
     return null
   }

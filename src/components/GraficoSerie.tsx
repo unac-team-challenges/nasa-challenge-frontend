@@ -1,12 +1,12 @@
-import { NOMBRE, ninoEn, type Periodo, type Variable, type Zona } from '../data/datos'
-import { useSerie } from '../lib/useZonas'
+import { NOMBRE, ninoEn, type Variable, type Zona } from '../data/datos'
 import { TEXTOS, type Idioma } from '../i18n/textos'
 import { fmtValor, num } from '../lib/formato'
 
 interface Props {
   zona: Zona
   variable: Variable
-  periodo: Periodo
+  /** Serie anual (null = cargando o sin datos de la API) */
+  pts: { y: number; v: number }[] | null
   sinNino: boolean
   idioma: Idioma
   /** Token del color de la tendencia: --up o --down */
@@ -26,7 +26,7 @@ function pasoRedondo(rango: number, objetivo: number) {
  * Serie anual real a escala (SVG, portada del prototipo): puntos por año, línea de
  * tendencia de Sen, banda del rango probable (IC 95 %) y años de El Niño.
  */
-export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, color, anio }: Props) {
+export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, anio }: Props) {
   const t = TEXTOS[idioma]
   const W = 400
   const H = 214
@@ -34,8 +34,7 @@ export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, colo
   const mr = 10
   const mt = 12
   const mb = 28
-  const pts = useSerie(d.id)
-  if (pts.length < 2) return null
+  if (!pts || pts.length < 2) return null
   const y0 = pts[0].y
   const y1 = pts[pts.length - 1].y
   // Recta de Sen que pasa por la mediana: pivote en el año central con el valor de la tendencia
@@ -58,7 +57,7 @@ export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, colo
   const lineas: number[] = []
   for (let v = lo; v <= hi + paso / 2; v += paso) lineas.push(v)
   const marcas: number[] = []
-  for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += periodo === 'largo' ? 10 : 5) marcas.push(y)
+  for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += y1 - y0 > 30 ? 10 : 5) marcas.push(y)
   const banda = (
     [
       [y0, d.ci_low],
@@ -81,7 +80,7 @@ export function GraficoSerie({ zona: d, variable, periodo, sinNino, idioma, colo
     >
       {variable === 'lluvia' &&
         !sinNino &&
-        ninoEn(periodo).map((y) => (
+        ninoEn({ year_start: y0, year_end: y1 }).map((y) => (
           <rect
             key={y}
             x={f(X(y) - 4)}

@@ -9,7 +9,7 @@ import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
 import { tieneAnio } from '@/features/mapa/utils/calor'
 
-/** La rampa de la malla (frío → calor o seco → verde): los mismos tokens que pinta el mapa. */
+/** Degradado con los mismos tokens que pinta el mapa de color de la variable (`calor.paradas`). */
 const rampa = (paradas: string[]) =>
   `linear-gradient(to right, ${paradas.map((v) => `var(${v})`).join(', ')})`
 
@@ -55,12 +55,11 @@ export function Leyenda() {
   const cols = anio == null ? t.legCols[variable] : t.legColsT
   const calor = useCalor()
   const conCalor = !!calor && tieneAnio(calor, anio)
-  const RAMPA = calor ? rampa(calor.paradas) : ''
   // Con malla, el color es el valor de cada celda: las muestras de estado lo llevan debajo
-  const lleno = conCalor ? RAMPA : sube
-  const veg = variable === 'vegetacion'
-  const extremo = (x: number) => (veg ? num(x, 2, idioma) + ' NDVI' : `${Math.round(x)} °C`)
-  const textoCalor = t.calor[veg ? 'vegetacion' : 'temperatura']
+  const lleno = calor && conCalor ? rampa(calor.paradas) : sube
+  // Extremos de la rampa en la unidad de la malla: el NDVI con 2 decimales, °C y mm/año enteros
+  const extremo = (x: number) =>
+    `${calor?.unidad === 'NDVI' ? num(x, 2, idioma) : Math.round(x)} ${calor?.unidad ?? ''}`
   // 0 si ninguna zona tiene tendencia (todas pocos_datos): sin el 0 saldría −Infinity
   const maxima = Math.max(
     0,
@@ -123,6 +122,7 @@ export function Leyenda() {
         />
       )}
       <div
+        data-cubre-mapa
         className={`absolute left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))] ${
           anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
         } ${hoja}`}
@@ -212,7 +212,7 @@ export function Leyenda() {
                     className={muestra}
                     style={{
                       background: conCalor
-                        ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${RAMPA}`
+                        ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${calor ? rampa(calor.paradas) : sube}`
                         : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
                       border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
                       opacity: 0.85,
@@ -231,19 +231,19 @@ export function Leyenda() {
             <div className="mt-1.5 grid gap-0.5 text-xs">
               <span className="text-fg">
                 {anio == null
-                  ? textoCalor.media(calor.anio0, calor.anio0 + calor.anios - 1)
-                  : textoCalor.anio(anio)}
+                  ? t.calorMedia(t.calorCosa[variable], calor.anio0, calor.anio0 + calor.anios - 1)
+                  : t.calorAnio(t.calorCosa[variable], anio)}
               </span>
               <span
                 className="h-2.5 rounded-[3px] border border-line"
-                style={{ background: RAMPA }}
+                style={{ background: rampa(calor.paradas) }}
                 aria-hidden
               />
               <span className="flex justify-between text-muted">
                 <span>{extremo(calor.min)}</span>
                 <span>{extremo(calor.max)}</span>
               </span>
-              <span className="text-muted">{textoCalor.nota}</span>
+              <span className="text-muted">{t.calorNota[variable]}</span>
             </div>
           )}
           <p className="m-0 mt-1 text-xs text-fg">

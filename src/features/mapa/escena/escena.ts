@@ -1244,8 +1244,8 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    // Variable con malla (temperatura o vegetación): la tapa muestra el valor por celda; el estado va
-    // en rayas y opacidad. useCalor solo da malla a esas dos variables.
+    // Variable con malla (temperatura, lluvia o vegetación): la tapa muestra el color por celda; el
+    // estado va en rayas y opacidad.
     const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]

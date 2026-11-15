@@ -1,8 +1,8 @@
 /**
- * Mapa de color por celda: la T2M de NASA POWER (~0,5° × 0,625°) o el NDVI de MODIS (0,25°) como
+ * Mapa de color por celda: la T2M o la lluvia de NASA POWER (~0,5° × 0,625°) o el NDVI de MODIS (0,25°) como
  * una imagen de 1 píxel por celda. El 3D la usa de textura y el 2D de <image>; los dos la estiran
  * con interpolación bilineal y la recortan con los polígonos de los departamentos. Cada malla trae
- * su rampa de color (`paradas`): frío → calor en temperatura, seco → verde en vegetación.
+ * su rampa de color (`paradas`): frío → calor en temperatura, seco → azul en lluvia, seco → verde en vegetación.
  */
 import type { Malla } from '@/api/consultas'
 import { cssVar, hexMix } from '@/utils/color'
@@ -20,7 +20,7 @@ export interface Calor {
   anios: number
   /** Celda i → índice de su píxel. */
   pix: Int32Array
-  /** T2M de la celda i en el año anio0 + k: serie[i * anios + k] (NaN si falta). */
+  /** Valor de la celda i en el año anio0 + k: serie[i * anios + k] (NaN si falta). */
   serie: Float32Array
   /** Media de cada celda en todo el periodo. */
   media: Float32Array
@@ -28,6 +28,8 @@ export interface Calor {
    * La misma para la media y para cada año, así los años se comparan entre sí. */
   min: number
   max: number
+  /** Unidad de los valores ('°C', 'mm/año' o 'NDVI'), la que trae la malla. */
+  unidad: string
   /** Tokens CSS de la rampa, del valor más bajo al más alto (los mismos que la leyenda). */
   paradas: string[]
 }
@@ -84,6 +86,7 @@ export function prepararCalor(m: Malla, paradas: string[] = PARADAS_CALOR): Calo
     media,
     min: percentil(serie, 0.02),
     max: percentil(serie, 0.98),
+    unidad: m.unidad,
     paradas,
   }
 }
@@ -161,6 +164,17 @@ export const PARADAS_CALOR = [
   '--calor-3',
   '--calor-4',
   '--calor-5',
+]
+
+/** Lluvia: seco ocre → verde oliva → turquesa → azul → azul profundo → violeta (más lluvia = más oscuro). */
+export const PARADAS_LLUVIA = [
+  '--lluvia-0',
+  '--lluvia-1',
+  '--lluvia-2',
+  '--lluvia-3',
+  '--lluvia-4',
+  '--lluvia-5',
+  '--lluvia-6',
 ]
 
 /**

@@ -10,6 +10,7 @@ import {
   valoresAnio,
 } from '@/features/mapa/utils/calor'
 import malla from '@/data/celdas_temperatura.json'
+import lluvia from '@/data/celdas_lluvia.json'
 
 // 2 × 2 celdas, falta la del sureste
 const chica = {
@@ -77,6 +78,15 @@ describe('calor', () => {
     expect(new Set(c.pix).size).toBe(c.pix.length) // una celda por píxel
     expect(c.min).toBeGreaterThan(-5)
     expect(c.max).toBeLessThan(30)
+  })
+
+  it('la lluvia por celda usa las mismas celdas que la temperatura', () => {
+    const celdas = lluvia.celdas.map(({ lat, lon, valor }) => ({ lat, lon, t2m: valor }))
+    const c = prepararCalor({ ...lluvia, celdas }, ['--lluvia-0', '--lluvia-6'])
+    expect(c.pix).toEqual(prepararCalor(malla).pix)
+    expect(c.unidad).toBe('mm/año')
+    expect(c.min).toBeGreaterThanOrEqual(0)
+    expect(c.max).toBeLessThan(6000)
   })
 })
 

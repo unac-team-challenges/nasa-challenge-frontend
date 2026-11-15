@@ -71,19 +71,21 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
-  /** Mapa de color por celda (temperatura o vegetación) */
-  calor: {
-    temperatura: {
-      media: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
-      anio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
-      nota: 'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
-    },
-    vegetacion: {
-      media: (a: number, b: number) => `Color: verdor medio (NDVI) ${a}–${b} en cada celda`,
-      anio: (anio: number) => `Color: verdor (NDVI) de ${anio} en cada celda`,
-      nota: 'Celdas de ~27 km con el NDVI de MODIS (NASA): cada año, la media de al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
-    },
-  },
+  calorCosa: {
+    lluvia: 'lluvia anual',
+    temperatura: 'temperatura media',
+    vegetacion: 'verdor medio (NDVI)',
+  } as PorVariable<string>,
+  calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
+  calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
+  calorNota: {
+    lluvia:
+      'Celdas NASA POWER de ~50 km (MERRA-2). Más oscuro = llueve más: la costa es ocre y la selva, violeta. En los Andes el valor sale suavizado.',
+    temperatura:
+      'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+    vegetacion:
+      'Celdas de ~27 km con el NDVI de MODIS (NASA): cada año, la media de al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
+  } as PorVariable<string>,
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -324,17 +326,20 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
-  calor: {
-    temperatura: {
-      media: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
-      anio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
-      nota: 'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
-    },
-    vegetacion: {
-      media: (a, b) => `Colour: mean greenness (NDVI) ${a}–${b} in each cell`,
-      anio: (anio) => `Colour: greenness (NDVI) of ${anio} in each cell`,
-      nota: 'Cells of ~27 km with MODIS NDVI (NASA): each year, the mean of at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
-    },
+  calorCosa: {
+    lluvia: 'annual rainfall',
+    temperatura: 'mean temperature',
+    vegetacion: 'mean greenness (NDVI)',
+  },
+  calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
+  calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
+  calorNota: {
+    lluvia:
+      'NASA POWER cells of ~50 km (MERRA-2). Darker = more rain: the coast is ochre and the jungle, violet. In the Andes values are smoothed.',
+    temperatura:
+      'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+    vegetacion:
+      'Cells of ~27 km with MODIS NDVI (NASA): each year, the mean of at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   },
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {

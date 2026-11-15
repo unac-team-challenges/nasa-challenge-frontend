@@ -2,10 +2,9 @@ import { lazy, useDeferredValue } from 'react'
 import { Download } from 'lucide-react'
 import { NOMBRE, ninoEn, type Zona } from '@/data/datos'
 import { TEXTOS, type Perfil } from '@/i18n/textos'
-import { useAnio, useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda, useSinNino } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { useDetalle, useVista } from '@/hooks/useZonas'
-import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { Figura } from '@/features/ficha/components/Figura'
 import { peoresAnios, serieCsv } from '@/features/ficha/utils/serie'
@@ -29,7 +28,8 @@ const GraficoSerie = lazy(() =>
  * y sus años más secos o calurosos. Estudiante: valores, tendencia, rango probable y el CSV.
  */
 export function SerieZona({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
-  const { idioma, sinNino } = useApp(useShallow((s) => ({ idioma: s.idioma, sinNino: s.sinNino })))
+  const idioma = useApp((s) => s.idioma)
+  const sinNino = useSinNino()
   const { variable, sel } = useBusqueda()
   // El año de la barra de tiempo, con prioridad baja: la barra y el mapa responden primero
   const anio = useDeferredValue(useAnio())

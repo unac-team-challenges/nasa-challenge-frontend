@@ -1,8 +1,10 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
-import { VARIABLES, type Variable } from '@/data/datos'
+import { VARIABLES, type Periodo, type Variable } from '@/data/datos'
 import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
+
+const PERIODOS_URL: Periodo[] = ['largo', 'reciente']
 
 /**
  * Lo que va en la URL (y se comparte): /zona/20?variable=temperatura&perfil=agricultor&anio=2017
@@ -20,6 +22,13 @@ const esquema = z.object({
     .catch(undefined),
   /** Idioma: sin él, español. Un enlace compartido en inglés se abre en inglés. */
   lang: z.enum(['es', 'en']).optional().catch(undefined),
+  /** Periodo de la tendencia: sin él, `reciente` (2001–2024). `largo` es 1981–2024. */
+  periodo: z
+    .enum(PERIODOS_URL as [Periodo, ...Periodo[]])
+    .optional()
+    .catch(undefined),
+  /** `1` = tendencia sin los años de El Niño (solo lluvia); sin él, con todos los años. */
+  sinnino: z.literal('1').optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
   anio: z.coerce.number().int().min(1981).max(2100).optional().catch(undefined),
 })
@@ -51,6 +60,16 @@ export function useAnio(): number | null {
   return useSearch({ strict: false, select: (s) => (s as Busqueda).anio ?? null })
 }
 
+/** Periodo de la tendencia (de la URL; `reciente` por defecto). */
+export function usePeriodo(): Periodo {
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).periodo ?? 'reciente' })
+}
+
+/** ¿La tendencia va sin los años de El Niño? (de la URL) */
+export function useSinNino(): boolean {
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).sinnino === '1' })
+}
+
 /**
  * Variable, perfil y zona de la URL, con sus funciones para cambiarlos (sin apilar historial).
  * Cada valor se lee con un selector: el componente se redibuja solo si cambia ese valor, no al
@@ -72,10 +91,14 @@ export function useBusqueda() {
     variable: variable ?? 'lluvia',
     perfil: perfil ?? 'agricultor',
     sel: id ?? null,
-    setVariable: (variable: Variable) => {
-      useApp.getState().setSinNino(false)
-      return poner({ variable })
+    // Cambiar de variable quita «sin El Niño» (solo existe para la lluvia)
+    setVariable: (variable: Variable) => poner({ variable, sinnino: undefined }),
+    /** Cambiar el periodo detiene la reproducción de la barra de tiempo. */
+    setPeriodo: (periodo: Periodo) => {
+      useApp.getState().setReproduciendo(false)
+      return poner({ periodo: periodo === 'reciente' ? undefined : periodo })
     },
+    setSinNino: (sin: boolean) => poner({ sinnino: sin ? '1' : undefined }),
     setPerfil: (perfil: Perfil) => poner({ perfil }),
     /** El idioma queda también en la URL (solo `en`; el español es el valor por defecto) */
     setIdioma: (idioma: Idioma) => {

@@ -14,7 +14,7 @@ import { claveMapa } from '@/utils/direccion'
 import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
 import { useRango, useZonas } from '@/hooks/useZonas'
-import { useAnio, useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { SIN_MARGEN } from '@/utils/margenMapa'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
@@ -201,7 +201,8 @@ interface Props {
  * color pleno, rayado o contorno punteado.
  */
 export function Mapa2D({ interactivo = true }: Props) {
-  const { idioma, periodo } = useApp()
+  const { idioma } = useApp()
+  const periodo = usePeriodo()
   const { variable, sel, seleccionar } = useBusqueda()
   const anio = useAnio()
   const tema = useApp((s) => s.tema) // el suelo y los colores del año se leen del tema

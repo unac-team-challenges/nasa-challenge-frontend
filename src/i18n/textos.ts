@@ -296,9 +296,7 @@ const es = {
   citarH: 'Cómo citar',
   citarCopiar: 'Copiar',
   citarCopiado: 'Copiado',
-  citarEnlace: 'Enlace a esta zona, variable y año',
-  citarEnlaceNota:
-    'No guarda el periodo ni «sin El Niño»: se eligen de nuevo al abrirlo (los años de los datos van en la cita).',
+  citarEnlace: 'Enlace a esta vista exacta',
   reproH: 'Reprodúcelo',
   reproApi: 'La API devuelve estos mismos números:',
   reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
@@ -710,9 +708,7 @@ const en: Textos = {
   citarH: 'How to cite',
   citarCopiar: 'Copy',
   citarCopiado: 'Copied',
-  citarEnlace: 'Link to this area, variable and year',
-  citarEnlaceNota:
-    'It does not save the period or “without El Niño”: choose them again when opening it (the data years are in the citation).',
+  citarEnlace: 'Link to this exact view',
   reproH: 'Reproduce it',
   reproApi: 'The API returns these same numbers:',
   reproSinApi: 'This session uses the local copy; with the project API, the query is:',

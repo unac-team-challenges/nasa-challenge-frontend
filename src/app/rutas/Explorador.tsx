@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
@@ -32,7 +32,7 @@ const RETRASO_INFO_S = 1.3
  * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
-  const { idioma, sinNino, informeMin, setInformeMin } = useApp()
+  const { idioma, sinNino, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
   const { variable, sel, anio, seleccionar } = useBusqueda()
   const en3d = modoMapa === '3d'
@@ -52,7 +52,7 @@ export function Explorador() {
   if (sel !== previa.sel || informeMin !== previa.informeMin) {
     setPrevia({ sel, informeMin })
     if (sel !== previa.sel) {
-      const animar = !!sel && !reducido()
+      const animar = !!sel && zonaDesdeMapa && !reducido()
       setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
       // si el informe estaba cerrado, se abre cuando la presentación termina
       setAbrirTarde(animar && previa.informeMin)
@@ -63,6 +63,18 @@ export function Explorador() {
     const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
     return () => clearTimeout(fin)
   }, [intro])
+
+  // Si el informe nuevo es más corto, el navegador baja la página sin avisar: se lleva la vista
+  // al principio del informe (nunca al mapa). Si cabe, la posición no se toca.
+  const ultimoY = useRef(0)
+  useEffect(() => {
+    const guardar = () => (ultimoY.current = window.scrollY)
+    window.addEventListener('scroll', guardar, { passive: true })
+    return () => window.removeEventListener('scroll', guardar)
+  }, [])
+  useLayoutEffect(() => {
+    if (window.scrollY < ultimoY.current - 1) informe.current?.scrollIntoView({ block: 'start' })
+  }, [sel])
 
   // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
   useEffect(() => {
@@ -258,7 +270,6 @@ export function Explorador() {
           >
             {/* La información entra suave cuando termina la presentación del departamento */}
             <div
-              key={sel ?? 'ninguna'}
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >

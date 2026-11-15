@@ -113,10 +113,12 @@ export function Cabecera() {
             size="sm"
             className={opcion}
             aria-pressed={vegetacion}
+            title={t.vegetacionBtn}
             onClick={() => setVegetacion()}
           >
             <Leaf className="size-4" aria-hidden="true" />
-            {t.vegetacionBtn}
+            {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
+            <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
           </Button>
         </div>
         <div className={riel} role="group" aria-label={t.perfilLbl}>

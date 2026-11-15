@@ -219,6 +219,8 @@ export interface OpcionesEscena {
   alElegir?: (id: string) => void
   /** Se llama cuando cambia el giro automático. */
   alGirar?: (girando: boolean) => void
+  /** Se llama si el navegador pierde el contexto WebGL (memoria de la tarjeta, cambio de pestaña en celular). */
+  alPerderContexto?: () => void
 }
 
 const proyectar = ([lon, lat]: number[]) =>
@@ -797,6 +799,10 @@ export class EscenaPeru {
     r.domElement.style.height = '100%'
     r.domElement.style.touchAction = 'none'
     contenedor.prepend(r.domElement)
+    r.domElement.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault()
+      op.alPerderContexto?.()
+    })
     this.renderer = r
 
     const c = new OrbitControls(this.camara, r.domElement)

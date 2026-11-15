@@ -45,12 +45,23 @@ export function Mapa3D({ modo }: Props) {
   // Crear y destruir la escena (solo al montar)
   useEffect(() => {
     if (!conWebgl || !contenedor.current || !capa.current) return
-    const e = new EscenaPeru(contenedor.current, capa.current, {
-      oceano: TEXTOS[useApp.getState().idioma].ocean,
-      modo: modoInicial.current,
-      alElegir: (id) => busquedaRef.current.seleccionar(id, true),
-      alGirar: (g) => useApp.getState().setGirando(g),
-    })
+    // WebGL que se creó pero no funciona (el navegador lo ofrece y luego falla, o se pierde el
+    // contexto): se sigue con el mapa 2D en vez de la pantalla de error
+    const a2d = () => useApp.setState({ conWebgl: false, modoMapa: '2d' })
+    let e: EscenaPeru
+    try {
+      e = new EscenaPeru(contenedor.current, capa.current, {
+        oceano: TEXTOS[useApp.getState().idioma].ocean,
+        modo: modoInicial.current,
+        alElegir: (id) => busquedaRef.current.seleccionar(id, true),
+        alGirar: (g) => useApp.getState().setGirando(g),
+        alPerderContexto: a2d,
+      })
+    } catch (err) {
+      console.error('No se pudo crear la escena 3D; se usa el mapa 2D', err)
+      a2d()
+      return
+    }
     escena.current = e
     escenaActiva.current = e
     e.aplicarTema()

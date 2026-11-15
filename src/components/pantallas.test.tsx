@@ -94,6 +94,24 @@ describe('explorador con la URL', () => {
     )
   })
 
+  it('desde /metodologia, la variable y el perfil llevan al mapa', async () => {
+    const router = renderRuta('/metodologia')
+    const grupo = await screen.findByRole('group', { name: 'Variable' })
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Temperatura' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ variable: 'temperatura' })
+
+    router.history.push('/metodologia')
+    await screen.findByRole('heading', { level: 1, name: /Metodología/ })
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Perfil' })).getByRole('button', {
+        name: /Estudiante/,
+      }),
+    )
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ perfil: 'estudiante' })
+  })
+
   it('«sin El Niño» vive en la URL: se abre marcado, se escribe al marcar y se quita al cambiar de variable', async () => {
     const router = renderRuta('/zona/20?perfil=estudiante&sinnino=1')
     const informe = await screen.findByRole('complementary', { name: /informe/i })

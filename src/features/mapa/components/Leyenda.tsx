@@ -230,7 +230,7 @@ export function Leyenda() {
                 {rotulo(280, cols[2])}
               </svg>
               <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
-                {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
+                {/* En modo año el color es la anomalía: pleno y punteado no aplican (como el prototipo) */}
                 {anio == null && (
                   <>
                     <span className="flex items-center gap-1.5">
@@ -241,9 +241,10 @@ export function Leyenda() {
                       <span
                         className={muestra}
                         style={{
+                          // Mismo punteado que el mapa: puntos al tresbolillo sobre el color lavado
                           background: conCalor
-                            ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${calor ? rampa(calor.paradas) : sube}`
-                            : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                            ? `radial-gradient(circle, color-mix(in srgb, var(--panel) 60%, transparent) 1.1px, transparent 1.5px) 0 0 / 5px 5px, radial-gradient(circle, color-mix(in srgb, var(--panel) 60%, transparent) 1.1px, transparent 1.5px) 2.5px 2.5px / 5px 5px, linear-gradient(color-mix(in srgb, var(--panel) 25%, transparent), color-mix(in srgb, var(--panel) 25%, transparent)), ${calor ? rampa(calor.paradas) : sube}`
+                            : `radial-gradient(circle, ${sube} 1.1px, transparent 1.5px) 0 0 / 5px 5px, radial-gradient(circle, ${sube} 1.1px, transparent 1.5px) 2.5px 2.5px / 5px 5px, color-mix(in srgb, ${sube} 50%, var(--panel))`,
                           border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
                           opacity: 0.85,
                         }}

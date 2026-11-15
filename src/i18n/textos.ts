@@ -12,6 +12,7 @@ type Veredicto = 'mas' | 'menos' | 'igual'
 const es = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
+  inicioCorto: 'Inicio',
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
@@ -58,7 +59,7 @@ const es = {
   } as PorVariable<[string, string][]>,
   noChange: 'sin cambio',
   texReal: 'Pleno: cambio real',
-  texCas: 'Rayado: posible casualidad',
+  texCas: 'Punteado: posible casualidad',
   texFew: 'Contorno: pocos datos',
   calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
   calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
@@ -463,6 +464,7 @@ type Textos = typeof es
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
+  inicioCorto: 'Home',
   lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',
   cambiarTema: 'Change theme',
@@ -505,7 +507,7 @@ const en: Textos = {
   },
   noChange: 'no change',
   texReal: 'Solid: real change',
-  texCas: 'Striped: possibly chance',
+  texCas: 'Dotted: possibly chance',
   texFew: 'Outline: not enough data',
   calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,

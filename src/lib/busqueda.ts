@@ -1,4 +1,10 @@
-import { useNavigate, useParams, useRouterState, useSearch } from '@tanstack/react-router'
+import {
+  useNavigate,
+  useParams,
+  useRouter,
+  useRouterState,
+  useSearch,
+} from '@tanstack/react-router'
 import { z } from 'zod'
 import { VARIABLES, type Periodo, type Variable } from '@/data/datos'
 import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
@@ -95,13 +101,17 @@ export function useBusqueda() {
     select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
   })
   const vegetacion = enMapa && capa === 'vegetacion'
-  const poner = (cambio: Partial<Busqueda>) =>
-    navigate({
-      to: '.',
+  const router = useRouter() // sin suscripción: la ruta se lee solo al hacer clic
+  const poner = (cambio: Partial<Busqueda>) => {
+    // En la metodología la variable y el perfil no tienen dónde verse: se va al mapa con ellos
+    const alMapa = !('lang' in cambio) && router.state.location.pathname.startsWith('/metodologia')
+    return navigate({
+      to: alMapa ? '/explorar' : '.',
       search: (p: Busqueda) => ({ ...p, ...cambio }),
-      replace: true,
-      resetScroll: false,
+      replace: !alMapa, // ir al mapa sí entra al historial: «atrás» vuelve a la metodología
+      resetScroll: alMapa,
     })
+  }
   return {
     variable: variable ?? 'lluvia',
     perfil: perfil ?? 'agricultor',

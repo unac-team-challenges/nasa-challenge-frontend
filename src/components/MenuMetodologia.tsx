@@ -56,7 +56,7 @@ export function MenuMetodologia() {
         <Button
           variant="ghost"
           data-activa={activa || undefined}
-          className="group relative rounded-m px-2.5 hover:bg-panel-2 hover:no-underline data-[state=open]:bg-panel-2 data-activa:text-accent-text sm:px-3"
+          className="group relative rounded-m px-2 hover:bg-panel-2 hover:no-underline data-[state=open]:bg-panel-2 data-activa:text-accent-text sm:px-3"
         >
           <BookOpen className="size-4.5" aria-hidden="true" />
           <span className="max-sm:sr-only">{t.metodologiaCorto}</span>

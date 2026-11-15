@@ -125,11 +125,8 @@ export function BarraTiempo() {
                     <button
                       key={fila.y}
                       type="button"
-                      className="min-h-0 min-w-0 flex-1 cursor-pointer border-0 p-0"
-                      style={{
-                        background: colorAnomalia(fila.a, max, variable),
-                        boxShadow: anio === fila.y ? 'inset 0 0 0 2px var(--fg)' : undefined,
-                      }}
+                      className="franja min-h-0 min-w-0 flex-1 cursor-pointer border-0 p-0"
+                      style={{ backgroundColor: colorAnomalia(fila.a, max, variable) }}
                       title={etiqueta}
                       aria-label={etiqueta}
                       aria-current={anio === fila.y}
@@ -155,7 +152,7 @@ export function BarraTiempo() {
                   setReproduciendo(false)
                   setAnio(Number(e.target.value))
                 }}
-                className="deslizador-riel absolute inset-0 m-0 size-full cursor-pointer min-[901px]:static min-[901px]:h-auto min-[901px]:w-5 min-[901px]:accent-accent min-[901px]:[direction:rtl] min-[901px]:[writing-mode:vertical-lr]"
+                className="deslizador-riel absolute inset-0 m-0 size-full cursor-pointer min-[901px]:static min-[901px]:h-auto min-[901px]:w-5 min-[901px]:self-stretch min-[901px]:accent-accent min-[901px]:[direction:rtl] min-[901px]:[writing-mode:vertical-lr]"
               />
             </div>
             <span className="order-3 text-xs text-muted min-[901px]:order-1">{b}</span>

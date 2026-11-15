@@ -31,13 +31,13 @@ export function esTemaClaro(): boolean {
 
 /**
  * Color de una anomalía según la dirección del dato (lluvia: azul = más; temperatura: ocre = más calor).
- * Nunca menos de 40 % de color, para que no quede casi blanco.
+ * Rampa amplia (25–100 % de color): un año débil sale claro y uno fuerte, intenso.
  */
 export function colorAnomalia(a: number, max: number, variable: Variable = 'lluvia'): string {
   const clave = claveMapa(a, variable)
   const fuerte = cssVar(`--map-${clave}`)
   const suave = cssVar(`--${clave}-soft`)
-  return hexMix(suave, fuerte, 0.4 + 0.6 * Math.min(1, Math.abs(a) / max))
+  return hexMix(suave, fuerte, 0.25 + 0.75 * Math.min(1, Math.abs(a) / max))
 }
 
 export function pct(a: number): string {

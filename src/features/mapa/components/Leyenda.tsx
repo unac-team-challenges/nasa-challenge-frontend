@@ -116,7 +116,9 @@ export function Leyenda() {
         />
       )}
       <div
-        className={`absolute bottom-[86px] left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))] ${hoja}`}
+        className={`absolute left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))] ${
+          anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
+        } ${hoja}`}
       >
         <details
           className="group"

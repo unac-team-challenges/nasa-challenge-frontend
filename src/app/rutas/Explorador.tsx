@@ -229,7 +229,9 @@ export function Explorador() {
             <Popover.Trigger asChild>
               <Button
                 size="icon"
-                className={`${boton} pointer-events-auto absolute right-4 bottom-[86px] z-[3] min-[901px]:hidden`}
+                className={`${boton} pointer-events-auto absolute right-4 z-[3] min-[901px]:hidden ${
+                  anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
+                }`}
                 aria-label={t.mapaControles}
                 title={t.mapaControles}
               >

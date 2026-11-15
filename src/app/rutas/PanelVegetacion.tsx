@@ -13,7 +13,7 @@ import { useApp } from '@/stores/app'
 export function PanelVegetacion() {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
-  const { sel, seleccionar } = useBusqueda()
+  const { sel, perfil, seleccionar } = useBusqueda()
   const lugar = lugarDe(sel)
 
   const lista = (otros: typeof LUGARES_VEGETACION) => (
@@ -47,7 +47,7 @@ export function PanelVegetacion() {
             {NOMBRE[sel]}
           </h2>
         </div>
-        <AntesDespues departamento={sel} />
+        <AntesDespues departamento={sel} perfil={perfil} />
         <h3 className="m-0 text-sm font-semibold">{t.vegOtros}</h3>
         {lista(LUGARES_VEGETACION.filter((l) => l.id !== lugar.id))}
       </div>

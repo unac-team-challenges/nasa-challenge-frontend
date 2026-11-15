@@ -1,16 +1,18 @@
 import { Link } from '@tanstack/react-router'
+import { useRef } from 'react'
 import {
-  ChevronDown,
   CloudRain,
+  GraduationCap,
   Leaf,
   Moon,
+  Sprout,
   Sun,
   Thermometer,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
+import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { MenuMetodologia } from '@/components/MenuMetodologia'
@@ -19,6 +21,11 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+}
+
+const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
+  agricultor: Sprout,
+  estudiante: GraduationCap,
 }
 
 const IDIOMAS = [
@@ -47,8 +54,15 @@ export function Cabecera() {
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
+  // En celular la cabecera se esconde al bajar por la página y vuelve al subir (más sitio para leer)
+  const barra = useRef<HTMLElement>(null)
+  const oculta = useOcultarAlBajar(barra, '(max-width: 900px)')
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]">
+    <header
+      ref={barra}
+      data-oculta={oculta}
+      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md max-[900px]:transition-transform max-[900px]:duration-200 max-[900px]:data-[oculta=true]:-translate-y-full max-[900px]:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+    >
       <Link
         to="/"
         search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}
@@ -105,30 +119,25 @@ export function Cabecera() {
             {t.vegetacionBtn}
           </Button>
         </div>
-        <label className="sr-only" htmlFor="perfil">
-          {t.perfilLbl}
-        </label>
-        <div className={`${riel} relative`}>
-          <UserRound
-            className="pointer-events-none absolute left-3 size-4 text-muted"
-            aria-hidden="true"
-          />
-          <select
-            id="perfil"
-            value={perfil}
-            onChange={(e) => setPerfil(e.target.value as Perfil)}
-            className="min-h-9 cursor-pointer appearance-none rounded-[8px] border-0 bg-transparent pr-8 pl-9 text-sm font-medium hover:bg-panel"
-          >
-            {ORDEN_PERFILES.map((p) => (
-              <option key={p} value={p}>
-                {t.perfiles[p][0]}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 size-4 text-muted"
-            aria-hidden="true"
-          />
+        <div className={riel} role="group" aria-label={t.perfilLbl}>
+          {ORDEN_PERFILES.map((p) => {
+            const Icono = ICONO_PERFIL[p]
+            return (
+              <Button
+                key={p}
+                variant="toggle"
+                size="sm"
+                className={opcion}
+                aria-pressed={perfil === p}
+                title={`${t.perfiles[p][0]}: ${t.perfiles[p][1]}`}
+                onClick={() => setPerfil(p)}
+              >
+                <Icono className="size-4" aria-hidden="true" />
+                {/* En celular solo el ícono: con texto, el segundo botón quedaba fuera de la tira */}
+                <span className="max-[479px]:sr-only">{t.perfiles[p][0]}</span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 

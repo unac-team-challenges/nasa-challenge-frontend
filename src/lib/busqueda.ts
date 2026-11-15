@@ -45,16 +45,37 @@ export type Busqueda = z.output<typeof esquema>
 
 export const validarBusqueda = (s: Record<string, unknown>): Busqueda => esquema.parse(s)
 
-/** Variable, perfil, zona y año de la URL, con sus funciones para cambiarlos (sin apilar historial). */
+/**
+ * Año de la máquina del tiempo (null = tendencia). Va aparte de useBusqueda a propósito: al
+ * arrastrar la barra cambia muchas veces por segundo, y solo deben redibujarse quienes lo usan.
+ */
+export function useAnio(): number | null {
+  // En el modo Vegetación no hay máquina del tiempo: un ?anio suelto no se aplica
+  return useSearch({
+    strict: false,
+    select: (s) => {
+      const b = s as Busqueda
+      return b.capa === 'vegetacion' ? null : (b.anio ?? null)
+    },
+  })
+}
+
+/**
+ * Variable, perfil y zona de la URL, con sus funciones para cambiarlos (sin apilar historial).
+ * Cada valor se lee con un selector: el componente se redibuja solo si cambia ese valor, no al
+ * cambiar el año (para el año, useAnio).
+ */
 export function useBusqueda() {
-  const s = useSearch({ strict: false }) as Busqueda
-  const { id } = useParams({ strict: false }) as { id?: string }
+  const variable = useSearch({ strict: false, select: (s) => (s as Busqueda).variable })
+  const perfil = useSearch({ strict: false, select: (s) => (s as Busqueda).perfil })
+  const capa = useSearch({ strict: false, select: (s) => (s as Busqueda).capa })
+  const id = useParams({ strict: false, select: (p) => (p as { id?: string }).id })
   const navigate = useNavigate()
   // El modo Vegetación es del explorador: en la portada o en la metodología, ?capa no cambia nada
   const enMapa = useRouterState({
     select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
   })
-  const vegetacion = enMapa && s.capa === 'vegetacion'
+  const vegetacion = enMapa && capa === 'vegetacion'
   const poner = (cambio: Partial<Busqueda>) =>
     navigate({
       to: '.',
@@ -63,17 +84,15 @@ export function useBusqueda() {
       resetScroll: false,
     })
   return {
-    variable: s.variable ?? 'lluvia',
-    perfil: s.perfil ?? 'agricultor',
+    variable: variable ?? 'lluvia',
+    perfil: perfil ?? 'agricultor',
     sel: id ?? null,
-    // En el modo Vegetación no hay máquina del tiempo: un ?anio suelto no se aplica
-    anio: vegetacion ? null : (s.anio ?? null),
     /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
     vegetacion,
     setVariable: (variable: Variable) => {
       useApp.getState().setSinNino(false)
       // Al salir del modo Vegetación también se suelta un ?anio que no se veía
-      return poner({ variable, capa: undefined, ...(s.capa ? { anio: undefined } : {}) })
+      return poner({ variable, capa: undefined, ...(capa ? { anio: undefined } : {}) })
     },
     /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
     setVegetacion: () => {

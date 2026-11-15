@@ -399,7 +399,7 @@ export const FRASES = {
   },
 }
 
-/** Nombre y dato de cada personaje de la fauna del mapa 3D (src/mapa/fauna.ts), por especie. */
+/** Nombre y dato de cada personaje de la fauna del mapa 3D (src/features/mapa/escena/fauna.ts), por especie. */
 export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
   es: {
     alpaca: ['Alpaca · Puno', 'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.'],

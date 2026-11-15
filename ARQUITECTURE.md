@@ -1,6 +1,6 @@
 # ARQUITECTURE.md
 
-Arquitectura de carpetas del frontend (`src/`). Basada en [bulletproof-react](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md), adaptada a este proyecto. **Estado: implementada** en la rama `refactor/arquitectura` (pendiente de rebase sobre las ramas de features). La migración siguió `docs/superpowers/plans/2026-11-14-migracion-arquitectura.md`; lo que se rompió o se desvió y cómo hacer el rebase está en `docs/migracion-roturas.md`.
+Arquitectura de carpetas del frontend (`src/`). Basada en [bulletproof-react](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md), adaptada a este proyecto. **Estado: implementada** en la rama `refactor/arquitectura`, ya al día con `origin/developer` (merge que trae el mapa 3D único de fondo). La migración siguió `docs/superpowers/plans/2026-11-14-migracion-arquitectura.md`; lo que se rompió o se desvió y cómo se hizo el merge está en `docs/migracion-roturas.md`.
 
 ## 1. Idea en una línea
 
@@ -25,17 +25,16 @@ src
 ├── index.css, shadcn.css    # estilos globales
 │
 ├── app/                     # une features: aquí SÍ se mezclan
-│   ├── App.tsx              # layout raíz (Cabecera + <Outlet>)
+│   ├── App.tsx              # layout raíz (Cabecera + mapa 3D único de fondo + <Outlet>)
 │   ├── router.tsx           # TanStack Router (definición de rutas)
 │   └── rutas/
-│       ├── Inicio.tsx       # Portada + Mapa3D
 │       └── Explorador.tsx   # Mapa + Leyenda + BarraTiempo + Ficha
 │
 ├── features/
 │   ├── mapa/                # mapa del Perú: 3D (three.js) y 2D (SVG)
 │   │   ├── components/      # Mapa2D, Mapa3D, Leyenda
 │   │   ├── escena/          # escena.ts, fauna.ts (three.js)
-│   │   └── utils/           # suelo2d.ts
+│   │   └── utils/           # suelo2d.ts, tarjeta.ts (ficha técnica al pasar el puntero)
 │   ├── ficha/               # informe de una zona
 │   │   ├── components/      # Ficha, GraficoSerie, AntesDespues
 │   │   └── data/            # caso2.ts (valles del Caso 2)
@@ -48,7 +47,7 @@ src
 │   ├── Cabecera.tsx, Errores.tsx, Esperas.tsx
 ├── hooks/                   # useZonas, useMeta (meta.ts), useRuta (ruta.ts)
 ├── lib/                     # librerías ya configuradas: busqueda.ts (Zod + router), utils.ts (cn)
-├── utils/                   # funciones puras: color, direccion, formato, webgl
+├── utils/                   # funciones puras: color, direccion, formato, webgl, disposicion
 ├── stores/                  # app.ts (Zustand global)
 ├── api/                     # cliente openapi-fetch, consultas, schema.d.ts, openapi.json
 ├── data/                    # copia local (plan B): datos.ts + json
@@ -60,7 +59,7 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 
 ## 3. Reglas
 
-1. **Una feature no importa de otra.** Si dos features se necesitan, se juntan en `app/rutas/` o se pasan por props (`Portada` recibe el mapa como prop `mapa`, no importa `Mapa3D`).
+1. **Una feature no importa de otra.** Si dos features se necesitan, se juntan en `app/` o se pasan por props o por `stores/`. Ej.: `Portada` no importa `Mapa3D`; el mapa 3D lo monta `app/App.tsx` de fondo, una sola vez, para la portada y el explorador.
 2. **Estado que usan 2+ features → `stores/`** (global). Estado de una sola feature → `features/<x>/stores/`. Hoy `Mapa`, `Ficha` y `BarraTiempo` se hablan por `stores/app.ts` y por la URL (`lib/busqueda.ts`); no se importan entre sí.
 3. **Sin barrel files** (`index.ts` que re-exporta). Se importa el archivo directo: `@/features/mapa/components/Mapa3D`.
 4. **Todo import entre archivos usa `@/`** (alias de `src/`). Nada de `./x` ni `../x`.
@@ -101,7 +100,7 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 |---|---|
 | `App.tsx`, `router.tsx` | `app/App.tsx`, `app/router.tsx` |
 | `components/Explorador.tsx` | `app/rutas/Explorador.tsx` |
-| (Portada con `Mapa3D` adentro) | `app/rutas/Inicio.tsx` pasa el mapa a `Portada` |
+| `lazy(Mapa3D)` de fondo en `App.tsx` | sigue en `app/App.tsx` (único montaje; `Portada` no lo importa) |
 | `mapa/Mapa2D.tsx`, `Mapa3D.tsx` | `features/mapa/components/` |
 | `components/Leyenda.tsx` | `features/mapa/components/Leyenda.tsx` |
 | `mapa/escena.ts`, `fauna.ts` | `features/mapa/escena/` |
@@ -113,18 +112,19 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 | `components/Metodologia.tsx` | `features/metodologia/components/` |
 | `store.ts` | `stores/app.ts` |
 | `lib/useZonas.ts` (+test), `lib/meta.ts`, `lib/ruta.ts` | `hooks/` |
-| `lib/color.ts`, `direccion.ts`, `formato.ts`, `webgl.ts` | `utils/` |
+| `lib/color.ts`, `direccion.ts`, `formato.ts`, `webgl.ts`, `disposicion.ts` | `utils/` |
+| `lib/tarjeta.ts` (+test) | `features/mapa/utils/` |
 | `test/` | `testing/` |
 | Imports `./x` y `../x` | `@/x` |
 
-Nota: `app/rutas/Inicio.tsx` y `Portada({ mapa })` son de esta rama; al rebasar sobre `feat/mapa-hover-relieve` (un único mapa 3D de fondo en `App.tsx`) pueden desaparecer. Ver `docs/migracion-roturas.md`.
+Nota: hay un solo `lazy(Mapa3D)`, en `app/App.tsx`. Montar otro (p. ej. dentro de una ruta) crea una segunda escena WebGL y ni `tsc` ni lint lo detectan. Ver `docs/migracion-roturas.md`.
 
 **Se quedan igual:** `main.tsx`, `index.css`, `shadcn.css`, `api/`, `i18n/`, `data/datos.ts` y los json, `components/{ui,Cabecera,Errores,Esperas}`, `lib/busqueda.ts`, `lib/utils.ts` (shadcn lo exige en `@/lib/utils`), `e2e/`.
 
 ## 7. Fuera de alcance (a propósito)
 
-- Partir `i18n/textos.ts` (740 líneas) por feature.
-- Partir `features/mapa/escena/escena.ts` (1251 líneas).
+- Partir `i18n/textos.ts` (767 líneas) por feature.
+- Partir `features/mapa/escena/escena.ts` (1516 líneas).
 - Renombrar archivos (kebab-case, `useMeta.ts`, `useRuta.ts`).
 - Mover `api/` y `data/` dentro de features: los usan varias features.
 

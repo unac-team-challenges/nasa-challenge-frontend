@@ -461,7 +461,7 @@ export function Mapa2D({ interactivo = true }: Props) {
         </div>
       )}
 
-      {/* La misma ficha técnica del 3D (lib/tarjeta.ts), junto al puntero */}
+      {/* La misma ficha técnica del 3D (features/mapa/utils/tarjeta.ts), junto al puntero */}
       {tip &&
         (() => {
           const c = datosTarjeta(zonas[tip.id], variable, idioma, an?.porId[tip.id]?.[anio ?? 0])

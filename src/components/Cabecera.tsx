@@ -53,23 +53,14 @@ export function Cabecera() {
         className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
         aria-label={t.inicio}
       >
-        <span className="grid size-9 flex-none place-items-center sm:size-10 rounded-m bg-panel-2 ring-1 ring-line transition-transform duration-300 group-hover:-rotate-6 motion-reduce:transition-none">
-          <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
-            <circle cx="13" cy="13" r="10" fill="none" stroke="currentColor" strokeWidth="2.2" />
-            <line
-              x1="20.5"
-              y1="20.5"
-              x2="27"
-              y2="27"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <rect x="7.5" y="9" width="3" height="7" rx="1" fill="var(--up)" />
-            <rect x="11.5" y="13" width="3" height="5" rx="1" fill="var(--down)" />
-            <rect x="15.5" y="7" width="3" height="9" rx="1" fill="var(--up)" />
-          </svg>
-        </span>
+        {/* Logo del equipo sin fondo (scripts/logo.py); en oscuro, un contorno claro despega el aro azul */}
+        <img
+          src="/logo.webp"
+          alt=""
+          width={48}
+          height={48}
+          className="size-10 flex-none transition-transform duration-300 group-hover:-rotate-6 motion-reduce:transition-none sm:size-12 oscuro:drop-shadow-[0_0_1px_rgb(255_255_255/0.5)]"
+        />
         <span className="flex flex-col leading-none">
           <span className="text-lg tracking-display sm:text-xl">
             {antes && <span className={resto}>{antes}</span>}

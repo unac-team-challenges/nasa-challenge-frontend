@@ -278,7 +278,7 @@ export function Explorador() {
           className={
             informeMin
               ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg min-[901px]:h-full min-[901px]:w-14 min-[901px]:flex-none min-[901px]:flex-col min-[901px]:justify-start min-[901px]:px-0 min-[901px]:py-3.5'
-              : 'presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
+              : 'toque44 presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
           }
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="flex-none">

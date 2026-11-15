@@ -88,6 +88,20 @@ const es = {
     'Celdas de ~27 km, cada año con al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
+  // Relieve, bosque y ficha del modo Vegetación
+  vegAltura: 'Altura: verdor medio de cada departamento (más alto, más verde)',
+  vegPlantas:
+    'Las plantas son las de cada zona, según el verdor y la altitud: cactus y algarrobos en la costa, cultivos en los valles regados, molles, ichu y queñuas en los Andes, y selva con aguajes en la Amazonía.',
+  ndviMedio: 'NDVI medio',
+  ndviNivel: [
+    'Desierto o suelo desnudo',
+    'Vegetación escasa',
+    'Vegetación moderada',
+    'Vegetación densa',
+    'Bosque denso',
+  ],
+  vegTarjetaMeta: (a: number, b: number, n: number) =>
+    n ? `MODIS ${a}–${b} · ${n} celdas de ~27 km` : `MODIS ${a}–${b} · celda más cercana`,
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -538,6 +552,13 @@ const en: Textos = {
     'Cells of ~27 km, each year with at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
+  vegAltura: 'Height: mean greenness of each department (taller, greener)',
+  vegPlantas:
+    'Plants are those of each zone, by greenness and altitude: cacti and carob trees on the coast, crops in irrigated valleys, molle trees, ichu grass and queñuas in the Andes, and rainforest with aguaje palms in the Amazon.',
+  ndviMedio: 'mean NDVI',
+  ndviNivel: ['Desert or bare soil', 'Sparse vegetation', 'Moderate vegetation', 'Dense vegetation', 'Dense forest'],
+  vegTarjetaMeta: (a, b, n) =>
+    n ? `MODIS ${a}–${b} · ${n} cells of ~27 km` : `MODIS ${a}–${b} · nearest cell`,
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

@@ -266,9 +266,9 @@ export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | nul
 /** Malla de NASA POWER (T2M anual por celda), del contrato `/api/celdas`. */
 export type Malla = components['schemas']['Malla']
 
-/** Malla de temperatura desde la API, o null sin API, con error o vacía (se usa la copia local). */
+/** Malla por celda desde la API, o null sin API, con error o vacía (se usa la copia local). */
 export async function celdasDeApi(
-  variable: 'temperatura' | 'vegetacion' = 'temperatura',
+  variable: 'temperatura' | 'lluvia' | 'vegetacion' = 'temperatura',
 ): Promise<Malla | null> {
   if (!hayApi) return null
   try {

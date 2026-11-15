@@ -46,3 +46,24 @@ export function datosTarjeta(
           : '') + `q = ${fmtP(d.q_value, idioma)} · ${d.n_years} ${t.anios}`,
   }
 }
+
+/** Ficha del modo Vegetación: el NDVI medio del departamento y qué tan verde es. */
+export function datosTarjetaVeg(
+  id: string,
+  ndvi: number,
+  celdas: number,
+  anios: [number, number],
+  idioma: Idioma,
+) {
+  const t = TEXTOS[idioma]
+  const nivel = ndvi < 0.15 ? 0 : ndvi < 0.3 ? 1 : ndvi < 0.5 ? 2 : ndvi < 0.7 ? 3 : 4
+  return {
+    nombre: NOMBRE[id],
+    valor: idioma === 'es' ? ndvi.toFixed(2).replace('.', ',') : ndvi.toFixed(2),
+    unidad: t.ndviMedio,
+    estado: t.ndviNivel[nivel],
+    datos: { estado: 'real', clave: 'green' },
+    ic: null,
+    meta: t.vegTarjetaMeta(anios[0], anios[1], celdas),
+  }
+}

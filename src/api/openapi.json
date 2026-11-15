@@ -11,10 +11,8 @@
   "paths": {
     "/api/variables": {
       "get": {
-        "tags": [
-          "api"
-        ],
-        "summary": "Variables del producto con unidad, fuente y rango de años.",
+        "tags": ["api"],
+        "summary": "Variables del producto con unidad, fuente y rango de años (`data/variables.json`).",
         "operationId": "variables",
         "responses": {
           "200": {
@@ -35,10 +33,8 @@
     },
     "/api/zonas": {
       "get": {
-        "tags": [
-          "api"
-        ],
-        "summary": "Las 25 zonas (departamentos) sin series.",
+        "tags": ["api"],
+        "summary": "Las 25 zonas (departamentos) con su tendencia, sin series.",
         "operationId": "zonas",
         "parameters": [
           {
@@ -80,10 +76,8 @@
     },
     "/api/zonas/{id}": {
       "get": {
-        "tags": [
-          "api"
-        ],
-        "summary": "Serie anual de una zona (`id` = ubigeo como texto, \"01\"–\"25\").",
+        "tags": ["api"],
+        "summary": "Serie anual y tendencia de una zona (`id` = ubigeo como texto, \"01\"–\"25\").",
         "operationId": "zona",
         "parameters": [
           {
@@ -146,9 +140,7 @@
       "ErrorRespuesta": {
         "type": "object",
         "description": "Cuerpo de los errores 400 y 404.",
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "properties": {
           "error": {
             "type": "string"
@@ -157,10 +149,7 @@
       },
       "Punto": {
         "type": "object",
-        "required": [
-          "anio",
-          "valor"
-        ],
+        "required": ["anio", "valor"],
         "properties": {
           "anio": {
             "type": "integer",
@@ -173,36 +162,108 @@
           }
         }
       },
+      "Stats": {
+        "type": "object",
+        "description": "Tendencia lineal del periodo `year_start`–`year_end`, ya calculada por el pipeline.",
+        "required": [
+          "year_start",
+          "year_end",
+          "n_years",
+          "slope_per_decade",
+          "intercept",
+          "ci_low",
+          "ci_high",
+          "p_value",
+          "q_value",
+          "lag1",
+          "status"
+        ],
+        "properties": {
+          "aviso": {
+            "type": ["string", "null"],
+            "description": "Cuidado al interpretar la tendencia: siempre en lluvia (IMERG 2014) y si `lag1 > 0.5`."
+          },
+          "ci_high": {
+            "type": "number",
+            "format": "double"
+          },
+          "ci_low": {
+            "type": "number",
+            "format": "double",
+            "description": "Intervalo del 95 % de la pendiente, por década."
+          },
+          "intercept": {
+            "type": "number",
+            "format": "double",
+            "description": "En años calendario: `valor ≈ intercept + slope_per_decade / 10 × año`."
+          },
+          "lag1": {
+            "type": "number",
+            "format": "double",
+            "description": "Autocorrelación de orden 1."
+          },
+          "n_years": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "p_value": {
+            "type": "number",
+            "format": "double",
+            "description": "Antes de Benjamini-Hochberg."
+          },
+          "pct_change_per_decade": {
+            "type": ["number", "null"],
+            "format": "double",
+            "description": "Solo lluvia."
+          },
+          "q_value": {
+            "type": "number",
+            "format": "double",
+            "description": "Después de Benjamini-Hochberg."
+          },
+          "slope_per_decade": {
+            "type": "number",
+            "format": "double",
+            "description": "Unidad de la variable por década."
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "year_end": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "year_start": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "Status": {
+        "type": "string",
+        "description": "Semáforo de la tendencia.",
+        "enum": ["real", "posible_casualidad", "pocos_datos"]
+      },
       "Variable": {
         "type": "string",
-        "enum": [
-          "lluvia",
-          "temperatura"
-        ]
+        "enum": ["lluvia", "temperatura"]
       },
       "VariableInfo": {
         "type": "object",
-        "description": "`GET /api/variables`",
-        "required": [
-          "id",
-          "unidad",
-          "fuente",
-          "descripcion"
-        ],
+        "description": "`GET /api/variables`: una entrada de `data/variables.json`, tal cual.",
+        "required": ["id", "unidad", "fuente", "descripcion", "anio_inicio", "anio_fin"],
         "properties": {
           "anio_fin": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "int32",
             "minimum": 0
           },
           "anio_inicio": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "int32",
             "minimum": 0
           },
@@ -218,18 +279,20 @@
           "unidad": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "Zona": {
         "type": "object",
-        "description": "`GET /api/zonas`: una zona del mapa (sin serie).",
-        "required": [
-          "id",
-          "nombre",
-          "lat",
-          "lon"
-        ],
+        "description": "`GET /api/zonas`: una zona del mapa con su tendencia (sin serie).",
+        "required": ["id", "nombre", "lat", "lon", "celdas", "stats"],
         "properties": {
+          "celdas": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Celdas de la malla de la fuente que entran en el promedio.",
+            "minimum": 0
+          },
           "id": {
             "type": "string",
             "description": "Ubigeo como texto: \"01\"–\"25\"."
@@ -244,23 +307,38 @@
           },
           "nombre": {
             "type": "string"
+          },
+          "nota": {
+            "type": ["string", "null"],
+            "description": "Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha."
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ZonaDetalle": {
         "type": "object",
-        "description": "`GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Sebastian.",
+        "description": "`GET /api/zonas/{id}`: los campos de `Zona` (con su `stats`) más la serie anual del mismo periodo.\nCampos explícitos y no `flatten`: `Zona` lleva `additionalProperties: false` (por `deny_unknown_fields`)\ny un `allOf` contradiría el contrato. Un test comprueba que no se desincronicen.",
         "required": [
           "id",
           "nombre",
           "lat",
           "lon",
+          "celdas",
           "variable",
           "unidad",
           "fuente",
-          "serie"
+          "serie",
+          "stats"
         ],
         "properties": {
+          "celdas": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
           "fuente": {
             "type": "string"
           },
@@ -279,10 +357,7 @@
             "type": "string"
           },
           "nota": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha."
           },
           "serie": {
@@ -290,6 +365,9 @@
             "items": {
               "$ref": "#/components/schemas/Punto"
             }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
           },
           "unidad": {
             "type": "string"

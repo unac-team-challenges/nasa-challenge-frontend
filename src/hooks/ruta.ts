@@ -1,6 +1,6 @@
 import { useRouterState } from '@tanstack/react-router'
 
-/** Pantalla actual, según la ruta de TanStack Router (src/router.tsx). */
+/** Pantalla actual, según la ruta de TanStack Router (src/app/router.tsx). */
 export type Ruta = 'inicio' | 'explorar' | 'metodologia'
 
 export function useRuta(): Ruta {

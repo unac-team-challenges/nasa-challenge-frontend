@@ -1,5 +1,5 @@
 /**
- * Suelo del mapa 2D: el mismo mar, relieve, ríos y fronteras reales que el 3D (src/mapa/escena.ts),
+ * Suelo del mapa 2D: el mismo mar, relieve, ríos y fronteras reales que el 3D (src/features/mapa/escena/escena.ts),
  * pintados una sola vez en un lienzo con los colores del tema. Sin animación: es una imagen fija
  * que va debajo de los departamentos del SVG.
  * Texturas: public/mapa/mundo*.png (scripts/generar_mundo.py; SRTM/ETOPO1 y Natural Earth).

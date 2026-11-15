@@ -14,6 +14,7 @@ import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Popover } from 'radix-ui'
+import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
 import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 
@@ -37,6 +38,7 @@ const RETRASO_INFO_S = 1.3
 export function Explorador() {
   const { idioma, sinNino, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
+  const cajaMapa = useMargenMapa<HTMLDivElement>()
   const { variable, sel, anio, seleccionar, vegetacion } = useBusqueda()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
@@ -174,6 +176,7 @@ export function Explorador() {
     >
       {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
       <div
+        ref={cajaMapa}
         className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:left-0 min-[901px]:right-[var(--tapa)] min-[901px]:h-auto min-[901px]:transition-[right] min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
         style={{ transitionDelay: demoraPanel }}
       >
@@ -195,7 +198,10 @@ export function Explorador() {
           </div>
         )}
         <div className="entrada-suave">
-          <div className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
+          <div
+            data-cubre-mapa
+            className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32"
+          >
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
                 {vegetacion ? (

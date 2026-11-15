@@ -1319,11 +1319,8 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    // Temperatura con malla: la tapa muestra el calor por celda; el estado va en rayas y opacidad
-    const calor =
-      this.variable === 'temperatura' && this.calor && tieneAnio(this.calor, this.numeroAnio)
-        ? this.texCalor
-        : null
+    // Con malla (temperatura o lluvia): la tapa muestra el color por celda; el estado va en rayas y opacidad
+    const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue

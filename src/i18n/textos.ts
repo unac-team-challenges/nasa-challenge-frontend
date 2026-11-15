@@ -165,6 +165,21 @@ const es = {
   noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
   tipVal: (nombre: string, v: string, u: string, estado: string) =>
     `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,
+  // Esperas y errores
+  cargando: 'Cargando…',
+  errorH: 'Algo salió mal',
+  errorP: 'No pudimos mostrar esta pantalla. Puedes volver a intentarlo o ir al inicio.',
+  reintentar: 'Reintentar',
+  alInicio: 'Ir al inicio',
+  noEncontradaH: 'Esta página no existe',
+  noEncontradaP: 'El enlace está incompleto o ya no existe.',
+  serieErrorH: 'No pudimos cargar la serie de años',
+  serieErrorP: 'La API no respondió. Los datos de tendencia de arriba siguen siendo válidos.',
+  // Metodología
+  metodologia: 'Metodología y fuentes',
+  metodologiaCorto: 'Metodología',
+  metodologiaEnlace: 'Cómo lo calculamos y de dónde salen los datos',
+  irAlMapa: 'Explorar el mapa',
 }
 
 type Textos = typeof es
@@ -327,6 +342,21 @@ const en: Textos = {
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
   tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,
+  // Waiting and errors
+  cargando: 'Loading…',
+  errorH: 'Something went wrong',
+  errorP: "We couldn't show this screen. You can try again or go home.",
+  reintentar: 'Try again',
+  alInicio: 'Go home',
+  noEncontradaH: "This page doesn't exist",
+  noEncontradaP: 'The link is incomplete or no longer exists.',
+  serieErrorH: "We couldn't load the yearly series",
+  serieErrorP: "The API didn't answer. The trend figures above are still valid.",
+  // Methodology
+  metodologia: 'Methodology and sources',
+  metodologiaCorto: 'Methodology',
+  metodologiaEnlace: 'How we calculate it and where the data comes from',
+  irAlMapa: 'Explore the map',
 }
 
 export const TEXTOS: Record<Idioma, Textos> = { es, en }
@@ -436,5 +466,319 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
     oso: ['Spectacled bear · Cajamarca', "South America's only bear; its pale face markings differ in every individual."],
     cocodrilo: ['American crocodile · Tumbes', "Peru's only crocodile lives in Tumbes' mangroves and rivers."],
     caballo: ['Peruvian Paso horse · Lima', "Its smooth gait, the 'paso llano', is part of Peru's national heritage."],
+  },
+}
+
+// ---- Páginas: etiquetas para buscadores y redes (META) y la página de metodología ----
+
+type Pagina = 'inicio' | 'explorar' | 'metodologia'
+
+export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: string }>> = {
+  es: {
+    inicio: {
+      titulo: 'Detective del Perú · ¿Qué está cambiando en tu zona?',
+      descripcion:
+        'Mapa 3D del Perú con datos de la NASA: cuánto cambiaron la lluvia y la temperatura de cada departamento desde 2001, y si el cambio es real o casualidad.',
+    },
+    explorar: {
+      titulo: 'Explorador del clima del Perú · Detective del Perú',
+      descripcion:
+        'Elige un departamento y mira cuánto cambió su lluvia o su temperatura, año por año, con datos de la NASA.',
+    },
+    metodologia: {
+      titulo: 'Metodología, fuentes y créditos · Detective del Perú',
+      descripcion:
+        'Cómo calculamos las tendencias (Mann-Kendall y pendiente de Sen) y de dónde salen los datos: NASA GPM IMERG, MERRA-2 vía POWER y MODIS.',
+    },
+  },
+  en: {
+    inicio: {
+      titulo: 'Peru Trend Detective · What is changing in your area?',
+      descripcion:
+        '3D map of Peru with NASA data: how much rainfall and temperature changed in each department since 2001, and whether the change is real or chance.',
+    },
+    explorar: {
+      titulo: 'Peru climate explorer · Peru Trend Detective',
+      descripcion:
+        'Pick a department and see how much its rainfall or temperature changed, year by year, with NASA data.',
+    },
+    metodologia: {
+      titulo: 'Methodology, sources and credits · Peru Trend Detective',
+      descripcion:
+        'How we calculate the trends (Mann-Kendall and Sen slope) and where the data comes from: NASA GPM IMERG, MERRA-2 via POWER and MODIS.',
+    },
+  },
+}
+
+type Enlace = [texto: string, url: string]
+
+interface Metodologia {
+  titulo: string
+  intro: string
+  fuentesH: string
+  tablaCols: [string, string, string, string]
+  fuentes: { variable: string; fuente: string; resolucion: string; anios: string; enlace: Enlace }[]
+  fuentesNota: string
+  calculoH: string
+  pasos: [titulo: string, texto: string][]
+  semaforoH: string
+  estados: [nombre: string, texto: string][]
+  limitesH: string
+  limites: [titulo: string, texto: string][]
+  creditosH: string
+  creditosP: string
+  creditosDatos: Enlace[]
+  creditosCodigo: string
+  repos: Enlace[]
+  creditosNasa: string
+}
+
+const REPOS: Enlace[] = [
+  ['nasa-challenge-frontend', 'https://github.com/unac-team-challenges/nasa-challenge-frontend'],
+  ['nasa-challenge-backend', 'https://github.com/unac-team-challenges/nasa-challenge-backend'],
+]
+
+export const METODOLOGIA: Record<Idioma, Metodologia> = {
+  es: {
+    titulo: 'Metodología, fuentes y créditos',
+    intro:
+      'Detective del Perú muestra cuánto cambiaron la lluvia y la temperatura de cada departamento y si ese cambio es real o pudo ser casualidad. Aquí explicamos cómo se calcula, de dónde salen los datos y qué límites tienen. Muestra lo que ya cambió: no es un pronóstico ni una recomendación.',
+    fuentesH: 'De dónde salen los datos',
+    tablaCols: ['Variable', 'Fuente', 'Resolución', 'Años'],
+    fuentes: [
+      {
+        variable: 'Lluvia',
+        fuente: 'GPM IMERG v07 (NASA), promedio mensual',
+        resolucion: '≈ 10 km',
+        anios: '2001–2024',
+        enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
+      },
+      {
+        variable: 'Temperatura',
+        fuente: 'MERRA-2 (NASA) vía POWER: temperatura del aire a 2 m (T2M)',
+        resolucion: '≈ 50 × 60 km',
+        anios: '2001–2024',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Copia local (plan B)',
+        fuente:
+          'NASA POWER (MERRA-2): lluvia y temperatura. La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
+        resolucion: '≈ 50 × 60 km',
+        anios: '1981–2024',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Vegetación (Caso 2)',
+        fuente: 'MODIS MOD13A3 (NASA): índice de vegetación NDVI, pedido con AppEEARS',
+        resolucion: '1 km',
+        anios: '2001 y 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+    ],
+    fuentesNota:
+      'Cada número viene de una sola fuente y la ficha dice cuál: no mezclamos ni promediamos fuentes. No son estaciones de medición: cada valor es el promedio de una celda de satélite o de modelo.',
+    calculoH: 'Cómo se calcula la tendencia',
+    pasos: [
+      [
+        'Promedio por departamento',
+        'Se promedian todas las celdas cuyo centro cae dentro del departamento, no el punto de la capital. Un año cuenta solo si tiene los 12 meses con dato.',
+      ],
+      [
+        'Prueba de tendencia',
+        'Mann-Kendall con prewhitening (TFPW) sobre los promedios anuales: dice si la serie sube o baja de forma consistente, descontando que un año se parece al siguiente.',
+      ],
+      [
+        'Tamaño del cambio',
+        'Pendiente de Sen (la mediana de las pendientes entre todos los pares de años) con su rango probable al 95 %. Se expresa por década y, en lluvia, también en % por década.',
+      ],
+      [
+        'Corrección por mirar 25 zonas a la vez',
+        'Con 25 departamentos, alguno saldría «significativo» solo por azar. Benjamini-Hochberg corrige el valor p dentro de cada variable y da el valor q.',
+      ],
+      [
+        'Autocorrelación (lag1)',
+        'Mide cuánto se parece un año al siguiente. Si es alta, la tendencia se interpreta con más cuidado.',
+      ],
+    ],
+    semaforoH: 'Cómo leer el semáforo',
+    estados: [
+      [
+        'Cambio real',
+        'q menor que 0,05, un rango probable que no cruza el cero y autocorrelación de 0,5 o menos.',
+      ],
+      [
+        'Posible casualidad',
+        'Hay una tendencia, pero no pasa esas pruebas: con 24 años y años muy parecidos entre sí no se puede descartar la casualidad. No quiere decir que no haya cambio.',
+      ],
+      [
+        'Pocos datos',
+        'Menos de 20 años de datos o menos de 4 celdas en el departamento: no damos veredicto.',
+      ],
+    ],
+    limitesH: 'Lo que debes tener en cuenta',
+    limites: [
+      [
+        'La lluvia de IMERG',
+        'Los satélites de IMERG cambian en 2014 (de TRMM a GPM) y la tendencia puede salir sesgada a la baja. Mientras la lluvia venga solo de IMERG, su semáforo no llega a «cambio real»: queda en «posible casualidad» hasta tener una segunda fuente independiente.',
+      ],
+      [
+        'El Niño',
+        'Años como 2017 (Niño Costero) mueven mucho la lluvia de la costa norte. La ficha deja quitar los años de El Niño para ver cuánto pesan.',
+      ],
+      [
+        'El periodo importa',
+        'Cambiar el año de inicio puede cambiar el signo de la lluvia en Apurímac, Loreto y Piura. La ficha siempre dice desde qué año se calcula.',
+      ],
+      [
+        'La costa',
+        'IMERG tiende a sobreestimar la lluvia en el desierto costero. Por eso se usa el promedio del departamento y no un solo píxel.',
+      ],
+      [
+        'Departamentos pequeños',
+        'Con menos de 4 celdas (Callao, Tumbes y Lambayeque en la temperatura; Callao en la lluvia) no damos veredicto. Lima y Callao comparten celda en POWER y sus valores coinciden.',
+      ],
+      [
+        'Años completos',
+        'El último año es 2024: IMERG v07 termina en septiembre de 2025, así que 2025 nunca estará completo.',
+      ],
+      [
+        'Es un modelo, no una estación',
+        'Los valores son promedios de satélites y modelos en celdas de 10 a 60 km. Pueden fallar en la montaña o con lluvias muy locales.',
+      ],
+    ],
+    creditosH: 'Créditos',
+    creditosP:
+      'Hecho por el equipo NASA-CHALLENGE-UNAC para el NASA Space Apps Challenge 2026. Datos de la NASA:',
+    creditosDatos: [
+      ['GPM IMERG: NASA GES DISC', 'https://gpm.nasa.gov/data/imerg'],
+      ['MERRA-2: NASA GMAO, entregado por NASA POWER', 'https://power.larc.nasa.gov/'],
+      ['MODIS MOD13A3: NASA LP DAAC, vía AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+    ],
+    creditosCodigo:
+      'Hecho con React, Vite, three.js, TanStack, Recharts, Tailwind CSS y shadcn/ui. Tipografías: Newsreader y Public Sans. Código abierto:',
+    repos: REPOS,
+    creditosNasa: 'Este proyecto no es un producto oficial de la NASA ni cuenta con su respaldo.',
+  },
+  en: {
+    titulo: 'Methodology, sources and credits',
+    intro:
+      'Peru Trend Detective shows how much rainfall and temperature changed in each department and whether that change is real or could be chance. Here we explain how it is calculated, where the data comes from and what its limits are. It shows what has already changed: it is not a forecast or a recommendation.',
+    fuentesH: 'Where the data comes from',
+    tablaCols: ['Variable', 'Source', 'Resolution', 'Years'],
+    fuentes: [
+      {
+        variable: 'Rainfall',
+        fuente: 'GPM IMERG v07 (NASA), monthly mean',
+        resolucion: '≈ 10 km',
+        anios: '2001–2024',
+        enlace: ['GPM IMERG', 'https://gpm.nasa.gov/data/imerg'],
+      },
+      {
+        variable: 'Temperature',
+        fuente: 'MERRA-2 (NASA) via POWER: air temperature at 2 m (T2M)',
+        resolucion: '≈ 50 × 60 km',
+        anios: '2001–2024',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Local copy (plan B)',
+        fuente:
+          'NASA POWER (MERRA-2): rainfall and temperature. The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
+        resolucion: '≈ 50 × 60 km',
+        anios: '1981–2024',
+        enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Vegetation (Case 2)',
+        fuente: 'MODIS MOD13A3 (NASA): NDVI vegetation index, requested with AppEEARS',
+        resolucion: '1 km',
+        anios: '2001 & 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+    ],
+    fuentesNota:
+      'Each number comes from a single source and the report card says which: we never mix or average sources. These are not measuring stations: each value is the average of a satellite or model grid cell.',
+    calculoH: 'How the trend is calculated',
+    pasos: [
+      [
+        'Department average',
+        "All grid cells whose center falls inside the department are averaged, not the capital's point. A year counts only if all 12 months have data.",
+      ],
+      [
+        'Trend test',
+        'Mann-Kendall with pre-whitening (TFPW) on the annual means: it tells whether the series rises or falls consistently, accounting for one year resembling the next.',
+      ],
+      [
+        'Size of the change',
+        "Sen's slope (the median of the slopes between every pair of years) with its 95 % likely range. Given per decade and, for rainfall, also as % per decade.",
+      ],
+      [
+        'Correction for checking 25 areas at once',
+        'With 25 departments, some would look "significant" by luck alone. Benjamini-Hochberg corrects the p-value within each variable and gives the q-value.',
+      ],
+      [
+        'Autocorrelation (lag1)',
+        'Measures how much one year resembles the next. When it is high, the trend is read with more care.',
+      ],
+    ],
+    semaforoH: 'How to read the traffic light',
+    estados: [
+      [
+        'Real change',
+        'q below 0.05, a likely range that does not cross zero and autocorrelation of 0.5 or less.',
+      ],
+      [
+        'Possible chance',
+        "There is a trend, but it fails those tests: with 24 years that resemble each other, chance can't be ruled out. It does not mean there is no change.",
+      ],
+      [
+        'Too little data',
+        'Fewer than 20 years of data or fewer than 4 cells in the department: we give no verdict.',
+      ],
+    ],
+    limitesH: 'What to keep in mind',
+    limites: [
+      [
+        'IMERG rainfall',
+        'IMERG satellites change in 2014 (from TRMM to GPM) and the trend can be biased downward. While rainfall comes only from IMERG, its traffic light never reaches "real change": it stays at "possible chance" until a second independent source exists.',
+      ],
+      [
+        'El Niño',
+        'Years like 2017 (Coastal Niño) move northern-coast rainfall a lot. The report card lets you remove El Niño years to see how much they weigh.',
+      ],
+      [
+        'The period matters',
+        'Changing the start year can flip the sign of rainfall in Apurímac, Loreto and Piura. The report card always says from which year it is calculated.',
+      ],
+      [
+        'The coast',
+        'IMERG tends to overestimate rainfall in the coastal desert. That is why the department average is used instead of a single pixel.',
+      ],
+      [
+        'Small departments',
+        'With fewer than 4 cells (Callao, Tumbes and Lambayeque for temperature; Callao for rainfall) we give no verdict. Lima and Callao share a POWER cell and their values match.',
+      ],
+      [
+        'Complete years',
+        'The last year is 2024: IMERG v07 ends in September 2025, so 2025 will never be complete.',
+      ],
+      [
+        'A model, not a station',
+        'Values are averages of satellites and models over 10 to 60 km cells. They can fail in the mountains or with very local rain.',
+      ],
+    ],
+    creditosH: 'Credits',
+    creditosP:
+      'Made by the NASA-CHALLENGE-UNAC team for the NASA Space Apps Challenge 2026. NASA data:',
+    creditosDatos: [
+      ['GPM IMERG: NASA GES DISC', 'https://gpm.nasa.gov/data/imerg'],
+      ['MERRA-2: NASA GMAO, delivered by NASA POWER', 'https://power.larc.nasa.gov/'],
+      ['MODIS MOD13A3: NASA LP DAAC, via AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+    ],
+    creditosCodigo:
+      'Built with React, Vite, three.js, TanStack, Recharts, Tailwind CSS and shadcn/ui. Typefaces: Newsreader and Public Sans. Open source:',
+    repos: REPOS,
+    creditosNasa: 'This project is not an official NASA product and is not endorsed by NASA.',
   },
 }

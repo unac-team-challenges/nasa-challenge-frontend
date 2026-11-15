@@ -1,23 +1,28 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { anomaliasPeru } from '../data/datos'
 import { TEXTOS } from '../i18n/textos'
 import { colorAnomalia } from '../lib/color'
+import { useBusqueda } from '../lib/busqueda'
 import { fmtAnomalia } from '../lib/formato'
 import { useRango } from '../lib/useZonas'
 import { useApp } from '../store'
+import { Button } from './ui/button'
 
 /** Milisegundos por año al reproducir. Las columnas se interpolan entre años: el avance se ve suave. */
 const PASO_MS = 850
-
-const botonIcono =
-  'presionable inline-flex size-[34px] cursor-pointer items-center justify-center rounded-s border border-line-2 bg-panel hover:border-fg'
 
 /**
  * Máquina del tiempo (v4–v9 del prototipo): barra vertical pegada al borde derecho del mapa,
  * con el último año arriba, las franjas del Perú como riel, un deslizador y Play.
  */
 export function BarraTiempo() {
-  const { idioma, variable, periodo, anio, setAnio, reproduciendo, setReproduciendo } = useApp()
+  const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
+  const { variable, anio, setAnio } = useBusqueda()
+  // El Play lee el año y la función más recientes sin reiniciar su reloj
+  const vivo = useRef({ anio, setAnio })
+  useEffect(() => {
+    vivo.current = { anio, setAnio }
+  })
   useApp((s) => s.tema) // los colores de las franjas se leen del tema
   const t = TEXTOS[idioma]
   const rango = useRango()
@@ -33,13 +38,13 @@ export function BarraTiempo() {
   useEffect(() => {
     if (!reproduciendo) return
     const id = setInterval(() => {
-      const actual = useApp.getState().anio
+      const { anio: actual, setAnio } = vivo.current
       if (actual == null || actual >= b) {
         if (actual != null) useApp.getState().setReproduciendo(false)
-        else useApp.getState().setAnio(a)
+        else setAnio(a)
         return
       }
-      useApp.getState().setAnio(actual + 1)
+      setAnio(actual + 1)
     }, PASO_MS)
     return () => clearInterval(id)
   }, [reproduciendo, a, b])
@@ -60,19 +65,15 @@ export function BarraTiempo() {
       aria-label={t.timeAria}
       className="absolute top-3.5 right-4 bottom-[70px] z-[3] flex w-[68px] flex-col items-center gap-2 rounded-m border border-line bg-panel/94 px-1 py-2 min-[901px]:w-24 min-[901px]:px-2 min-[901px]:py-2.5"
     >
-      <button
-        type="button"
+      <Button
+        size="sm"
         aria-pressed={anio == null}
         onClick={() => setAnio(null)}
         title={t.timeBackTrend}
-        className={`presionable min-h-[34px] w-full cursor-pointer rounded-s border px-1 text-xs ${
-          anio == null
-            ? 'border-fg bg-fg font-semibold text-bg'
-            : 'border-line-2 bg-panel hover:border-fg'
-        }`}
+        className="min-h-[34px] w-full px-1 text-xs aria-pressed:border-fg aria-pressed:bg-fg aria-pressed:font-semibold aria-pressed:text-bg"
       >
         {t.timeTrend}
-      </button>
+      </Button>
 
       <span
         className={`text-center font-display leading-[1.1] font-bold tracking-display ${
@@ -127,9 +128,9 @@ export function BarraTiempo() {
       </div>
       <span className="text-xs text-muted">{a}</span>
 
-      <button
-        type="button"
-        className={botonIcono}
+      <Button
+        size="icon"
+        className="size-[34px]"
         onClick={alternarPlay}
         aria-label={reproduciendo ? t.timePause : t.timePlay(a, b)}
         title={reproduciendo ? t.timePause : t.timePlay(a, b)}
@@ -144,7 +145,7 @@ export function BarraTiempo() {
             <path d="M7 5l12 7-12 7z" fill="currentColor" />
           </svg>
         )}
-      </button>
+      </Button>
     </div>
   )
 }

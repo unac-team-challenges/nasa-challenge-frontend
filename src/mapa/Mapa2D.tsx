@@ -5,6 +5,7 @@ import { TEXTOS } from '../i18n/textos'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
 import { useRango, useZonas } from '../lib/useZonas'
+import { useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
 
 const LON0 = -75.0
@@ -59,7 +60,8 @@ interface Props {
  * Mismo semáforo por forma que el 3D: color pleno, rayado o contorno punteado.
  */
 export function Mapa2D({ interactivo = true }: Props) {
-  const { idioma, variable, sel, seleccionar, anio, periodo } = useApp()
+  const { idioma, periodo } = useApp()
+  const { variable, sel, seleccionar, anio } = useBusqueda()
   useApp((s) => s.tema) // los colores del año se leen del tema
   const rango = useRango()
   const an = anio == null ? null : anomaliasAnio(variable, periodo, rango)

@@ -11,6 +11,7 @@ import {
   type Zona,
 } from '../data/datos'
 import { useApp, type Fuente } from '../store'
+import { useBusqueda } from './busqueda'
 import type { Ruta } from './ruta'
 
 /** Las dos variables de la API, pedidas una sola vez al abrir la web. */
@@ -52,7 +53,7 @@ export function useDecidirFuente(ruta: Ruta) {
  * y la máquina del tiempo usan la copia local hasta que el contrato las incluya.
  */
 export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fuente: string } {
-  const elegida = useApp((s) => s.variable)
+  const elegida = useBusqueda().variable
   const variable = v ?? elegida
   const periodo = useApp((s) => s.periodo)
   const sinNino = useApp((s) => s.sinNino)
@@ -72,7 +73,7 @@ export function useRango(v?: Variable): Rango {
 
 /** Estadística por zona de la variable elegida: API si está completa; si no, copia local. */
 export function useZonas(): Record<string, Zona> {
-  const variable = useApp((s) => s.variable)
+  const { variable } = useBusqueda()
   const periodo = useApp((s) => s.periodo)
   const sinNino = useApp((s) => s.sinNino)
   const { api } = useVista()
@@ -87,11 +88,14 @@ export function useZonas(): Record<string, Zona> {
 export function useDetalle(id: string | null): {
   serie: { y: number; v: number }[] | null
   nota: string | null
+  /** Con la API: cargando mientras llega, error si no llegó (la copia local siempre está lista) */
+  estado: 'cargando' | 'error' | 'ok'
+  reintentar: () => void
 } {
-  const variable = useApp((s) => s.variable)
+  const { variable } = useBusqueda()
   const sinNino = useApp((s) => s.sinNino)
   const { api, rango } = useVista()
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: ['detalle', variable, id],
     queryFn: () => detalleDeApi(id!, variable),
     enabled: !!api && !!id,
@@ -101,6 +105,10 @@ export function useDetalle(id: string | null): {
     () => (id ? serie(id, variable, rango, sinNino) : null),
     [id, variable, rango, sinNino],
   )
-  if (api) return { serie: data?.serie ?? null, nota: data?.nota ?? null }
-  return { serie: local, nota: null }
+  if (api) {
+    // detalleDeApi devuelve null si la API falló o vino vacía
+    const estado = data === undefined ? 'cargando' : data === null ? 'error' : 'ok'
+    return { serie: data?.serie ?? null, nota: data?.nota ?? null, estado, reintentar: refetch }
+  }
+  return { serie: local, nota: null, estado: 'ok', reintentar: refetch }
 }

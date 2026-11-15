@@ -25,7 +25,8 @@ export default function App() {
     document.documentElement.lang = idioma
   }, [idioma])
   useEffect(() => {
-    scrollTo(0, 0)
+    // Con #ancla (menú de metodología) el router baja a la sección: no volver arriba
+    if (!location.hash) scrollTo(0, 0)
   }, [ruta])
   // En el explorador, la vista 2D desmonta el 3D (libera la tarjeta gráfica)
   const en2d = conWebgl && ruta === 'explorar' && modoMapa === '2d'

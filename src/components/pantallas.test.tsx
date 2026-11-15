@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NOMBRE } from '@/data/datos'
+import { SECCIONES_METODOLOGIA } from '@/i18n/textos'
 import { renderRuta } from '@/testing/render'
 import { useApp } from '@/stores/app'
 import { ErrorSerie } from '@/components/Errores'
@@ -50,6 +51,28 @@ describe('otras rutas', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /Metodología/ })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'De dónde salen los datos' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Créditos' })).toBeVisible()
+  })
+
+  it('cada sección del menú de metodología tiene su ancla en la página', async () => {
+    renderRuta('/metodologia')
+    await screen.findByRole('heading', { level: 1, name: /Metodología/ })
+    for (const sec of SECCIONES_METODOLOGIA)
+      expect(document.getElementById(`m-${sec}`)).not.toBeNull()
+  })
+
+  it('el selector de idioma resalta el idioma actual', async () => {
+    renderRuta('/metodologia')
+    const grupo = await screen.findByRole('group', { name: 'Cambiar idioma' })
+    expect(within(grupo).getByRole('button', { name: 'Español' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.click(within(grupo).getByRole('button', { name: 'English' }))
+    expect(useApp.getState().idioma).toBe('en')
+    expect(within(grupo).getByRole('button', { name: 'English' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 
   it('una ruta que no existe muestra el aviso con salida al inicio', async () => {

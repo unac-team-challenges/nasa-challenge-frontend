@@ -27,7 +27,8 @@ test('metodología desde la cabecera y ruta inexistente', async ({ page }) => {
   const errores: string[] = []
   page.on('pageerror', (e) => errores.push(e.message))
   await page.goto('/')
-  await page.getByRole('link', { name: 'Metodología' }).first().click()
+  await page.getByRole('button', { name: 'Metodología' }).click()
+  await page.getByRole('menuitem', { name: /Ver la metodología completa/ }).click()
   await expect(page).toHaveURL(/\/metodologia$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Metodología')
   await expect(page).toHaveTitle(/Metodología/)

@@ -49,7 +49,7 @@ test('Caso 2: la ficha de La Libertad e Ica compara 2001 y 2024; Amazonas no', a
     await zona.focus()
     await page.keyboard.press('Enter')
     await expect(informe).toContainText(departamento)
-    await expect(informe.getByRole('heading', { name: 'La costa que reverdece' })).toBeVisible()
+    await expect(informe.getByRole('heading', { name: 'No todo cambio es el clima' })).toBeVisible()
     await expect(informe.getByRole('img', { name: /2001/ })).toBeVisible()
     await expect(informe.getByRole('img', { name: /2024/ })).toBeVisible()
   }
@@ -58,5 +58,5 @@ test('Caso 2: la ficha de La Libertad e Ica compara 2001 y 2024; Amazonas no', a
   await amazonas.focus()
   await page.keyboard.press('Enter')
   await expect(informe).toContainText('Amazonas')
-  await expect(informe.getByRole('heading', { name: 'La costa que reverdece' })).toHaveCount(0)
+  await expect(informe.getByRole('heading', { name: 'No todo cambio es el clima' })).toHaveCount(0)
 })

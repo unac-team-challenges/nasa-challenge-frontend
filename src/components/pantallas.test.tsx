@@ -30,6 +30,7 @@ describe('explorador con la URL', () => {
       '¿Los años secos vienen más seguido?',
       '¿Qué trae El Niño aquí?',
       'Un año normal aquí',
+      'Posibles causas y consecuencias',
       'Dónde seguir',
     ])
       expect(await within(informe).findByRole('heading', { name: h })).toBeVisible()

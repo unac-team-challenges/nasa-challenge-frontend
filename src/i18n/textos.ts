@@ -172,8 +172,6 @@ const es = {
   csvBtn: 'Descargar la serie (CSV)',
   dosEje: 'mm por década',
   dosTip: (v: string, a: string, b: string) => `${v} por década (entre ${a} y ${b})`,
-  cmpCampo: (valle: string, a: number, b: number) =>
-    `En ${valle} hay ${b - a} km² más de campo verde que en 2001: pasó de ${a} a ${b} km².`,
   cmpUmbral: 'Área verde: píxeles con NDVI anual mayor que 0,3. Tendencia del NDVI con TFPW y Sen.',
   // Ficha del agricultor: años malos, El Niño, año normal, compartir y dónde seguir
   malosH: {
@@ -278,6 +276,26 @@ const es = {
   reproApi: 'La API devuelve estos mismos números:',
   reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
   reproRepos: 'Código del cálculo (backend) y de esta página (frontend):',
+  // Posibles causas y consecuencias (fuentes en features/ficha/data/causas.ts)
+  causasH: 'Posibles causas y consecuencias',
+  causasCausa: '¿Por qué puede estar pasando?',
+  causasConsec: '¿Qué puede traer?',
+  causasNota:
+    'Nuestros datos muestran qué cambió, no por qué. Las causas y consecuencias vienen de los estudios citados.',
+  causasFuente: 'Fuente',
+  causasRefs: 'Referencias',
+  causasNada:
+    'No encontramos estudios que expliquen este caso con seguridad, así que no lo afirmamos.',
+  verdeH: 'No todo cambio es el clima',
+  verdeSub: 'La costa que reverdece',
+  verdeCampo: (valle: string, a: number, b: number) =>
+    `En ${valle} hay ${b - a} km² más de campo verde que en 2001. No es por la lluvia: es por el riego.`,
+  verdeEst: (valle: string, a: number, b: number, pct: number) =>
+    `En ${valle}, el área con NDVI anual mayor que 0,3 pasó de ${a} km² en 2001 a ${b} km² en 2024 (+${pct} %). El aumento se explica por el riego, un cambio de uso del suelo, y no por la tendencia de la lluvia: atribuirlo al clima sería confundir las causas.`,
+  verdeCausa: {
+    '13': 'El agua viene del río Santa, que el Proyecto Especial Chavimochic lleva por canal hasta estos valles.',
+    '11': 'El riego sale sobre todo de pozos, y su expansión ha generado escasez de agua subterránea en Ica y Villacurí.',
+  } as Record<string, string>,
   dosH: '¿Coinciden dos fuentes de NASA?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'modelo, la del mapa' },
@@ -336,9 +354,6 @@ const es = {
   legTimeNote: (y: number) => `Año ${y}: cada departamento frente a su propio promedio`,
   tipTime: (nombre: string, v: string, y: number) => `${nombre} en ${y}: ${v} frente a su promedio`,
   // Caso 2: antes y después (NDVI real de MODIS)
-  cmpH: 'La costa que reverdece',
-  cmpTexto: (valle: string, a: number, b: number, pct: number) =>
-    `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (+${pct} %). Es tierra irrigada ganada al desierto.`,
   cmpLbl: 'Comparar la vegetación de 2001 y 2024',
   cmpAlt: (valle: string, anio: number) =>
     `Vegetación (NDVI) de ${valle} en ${anio}, imagen satelital MODIS`,
@@ -524,8 +539,6 @@ const en: Textos = {
   csvBtn: 'Download the series (CSV)',
   dosEje: 'mm per decade',
   dosTip: (v, a, b) => `${v} per decade (between ${a} and ${b})`,
-  cmpCampo: (valle, a, b) =>
-    `${valle} has ${b - a} km² more green farmland than in 2001: from ${a} to ${b} km².`,
   cmpUmbral: 'Green area: pixels with annual NDVI above 0.3. NDVI trend with TFPW and Sen.',
   malosH: {
     lluvia: 'Are dry years coming more often?',
@@ -627,6 +640,24 @@ const en: Textos = {
   reproApi: 'The API returns these same numbers:',
   reproSinApi: 'This session uses the local copy; with the project API, the query is:',
   reproRepos: 'Code of the calculation (backend) and of this page (frontend):',
+  causasH: 'Possible causes and consequences',
+  causasCausa: 'Why might this be happening?',
+  causasConsec: 'What can it bring?',
+  causasNota:
+    'Our data show what changed, not why. The causes and consequences come from the cited studies.',
+  causasFuente: 'Source',
+  causasRefs: 'References',
+  causasNada: 'We found no studies that reliably explain this case, so we do not claim one.',
+  verdeH: 'Not every change is the climate',
+  verdeSub: 'The coast that turns green',
+  verdeCampo: (valle, a, b) =>
+    `${valle} has ${b - a} km² more green farmland than in 2001. It is not the rain: it is irrigation.`,
+  verdeEst: (valle, a, b, pct) =>
+    `In ${valle}, the area with annual NDVI above 0.3 went from ${a} km² in 2001 to ${b} km² in 2024 (+${pct} %). The increase is explained by irrigation, a land-use change, not by the rainfall trend: attributing it to climate would confuse the causes.`,
+  verdeCausa: {
+    '13': 'The water comes from the Santa River, which the Chavimochic Special Project carries by canal to these valleys.',
+    '11': 'Irrigation comes mostly from wells, and its expansion has caused groundwater scarcity in Ica and Villacurí.',
+  },
   dosH: 'Do two NASA sources agree?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'model, the one on the map' },
@@ -683,9 +714,6 @@ const en: Textos = {
   scaleTime: (v) => `Tallest column: ${v} vs its average`,
   legTimeNote: (y) => `Year ${y}: each department vs its own average`,
   tipTime: (nombre, v, y) => `${nombre} in ${y}: ${v} vs its average`,
-  cmpH: 'The coast turning green',
-  cmpTexto: (valle, a, b, pct) =>
-    `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (+${pct} %). It is irrigated land won from the desert.`,
   cmpLbl: 'Compare vegetation in 2001 and 2024',
   cmpAlt: (valle, anio) => `Vegetation (NDVI) of ${valle} in ${anio}, MODIS satellite image`,
   cmpDesierto: 'Desert',
@@ -734,6 +762,120 @@ export const FRASES = {
     estudianteCas: (p: string, q: string, m: number) =>
       `p = ${p} and q = ${q} after correcting across ${m} areas. It does not meet all the conditions of a real change.`,
     few: (z: string) => `${z} has very few cells with data. We draw no conclusion.`,
+  },
+}
+
+/** Posibles causas y consecuencias, por id de entrada (features/ficha/data/causas.ts). */
+export const CAUSAS_TEXTOS: Record<
+  Idioma,
+  Record<string, { campo: string; estudiante: string }>
+> = {
+  es: {
+    ninoNorte: {
+      campo:
+        'Los años de El Niño traen lluvias muy fuertes a la costa norte: por eso aquí la lluvia cambia tanto de un año a otro.',
+      estudiante:
+        'Lavado y Espinoza (2014), con 155 estaciones (1965–2007), muestran que los El Niño extraordinarios de 1983 y 1998 dominan la variabilidad de la lluvia (primer modo, 37 % de la varianza), con lluvias intensas en la vertiente norte del Pacífico. Sulca et al. (2018) precisan que es El Niño del Pacífico oriental (como el costero de 2017) el que moja la costa norte, al correr hacia el sur la zona de lluvias del Pacífico. Una tendencia aquí depende mucho de qué años de El Niño caen en el periodo.',
+    },
+    ninoSur: {
+      campo: 'En los años de El Niño fuerte suele llover menos en la sierra sur y el altiplano.',
+      estudiante:
+        'El mismo estudio asocia los El Niño fuertes con menos lluvia en los Andes del sur y la cuenca del Titicaca; Sulca et al. (2018) encuentran condiciones más secas en el altiplano con El Niño del Pacífico oriental y en los Andes tropicales con el del Pacífico central. Compara la tendencia con y sin los años de El Niño en la tabla de robustez.',
+    },
+    bosque: {
+      campo:
+        'Donde se pierde bosque llueve menos: se ha medido con satélites en la Amazonía y otras selvas.',
+      estudiante:
+        'Smith et al. (2023) comparan, con satélites (2003–2017), zonas deforestadas con zonas vecinas de bosque en la Amazonía, el Congo y el sudeste asiático: la lluvia baja tras la deforestación, y baja más cuanto mayor es el área perdida. Para esta zona es una hipótesis; nuestros datos no la prueban.',
+    },
+    calentamientoAndes: {
+      campo:
+        'En los Andes la temperatura viene subiendo desde hace décadas, y es una de las causas del retroceso de los glaciares.',
+      estudiante:
+        'Vuille et al. (2018) relacionan el retroceso glaciar de los Andes tropicales con el aumento observado de la temperatura del aire en altura.',
+    },
+    calentamientoRegion: {
+      campo:
+        'Es parte del calentamiento del planeta: en Sudamérica la temperatura promedio ya subió.',
+      estudiante:
+        'El IPCC (2022, cap. 12) evalúa que la temperatura media ha aumentado en las subregiones de Centro y Sudamérica. Nuestra pendiente es local: atribuirla al calentamiento global exige un estudio de atribución.',
+    },
+    inundaciones: {
+      campo:
+        'Cuando llueve mucho en la costa norte vienen inundaciones y huaicos: en 2017, El Niño costero causó una emergencia en Piura y el norte.',
+      estudiante:
+        'La OPS (2017) documenta la emergencia por las lluvias e inundaciones de El Niño costero de 2017 en el norte del país, incluida Piura.',
+    },
+    glaciares: {
+      campo:
+        'Con más calor los glaciares se derriten: el Perú ya perdió el 56 % de su superficie de glaciares en casi 60 años. Al principio eso da más agua a los ríos, pero con los años habrá menos en época seca.',
+      estudiante:
+        'El inventario nacional de 2023 (INAIGEM), con imágenes de 2020, registra la pérdida del 56 % de la superficie glaciar en 58 años; esos glaciares abastecen de agua al 62 % de la población. Vuille et al. (2018) explican que el deshielo aumenta por un tiempo el caudal de estiaje, pero que la reducción proyectada de los glaciares lo bajará a largo plazo.',
+    },
+    cultivosCalor: {
+      campo: 'Más calor puede afectar las cosechas y la producción de alimentos.',
+      estudiante:
+        'El IPCC (2022, cap. 12) identifica riesgos para la producción agrícola y la seguridad alimentaria en la región por el aumento de la temperatura y los cambios en la lluvia.',
+    },
+    menosAgua: {
+      campo: 'Si llueve menos, hay menos agua para el riego, los pastos y el consumo.',
+      estudiante:
+        'El IPCC (2022, cap. 12) señala la disponibilidad de agua como uno de los riesgos clave para la región ante la disminución de la lluvia.',
+    },
+  },
+  en: {
+    ninoNorte: {
+      campo:
+        'El Niño years bring very heavy rain to the northern coast: that is why rainfall here changes so much from year to year.',
+      estudiante:
+        'Lavado and Espinoza (2014), using 155 stations (1965–2007), show that the extraordinary El Niño events of 1983 and 1998 dominate rainfall variability (first mode, 37 % of variance), with intense rain on the northern Pacific slope. Sulca et al. (2018) specify that it is the eastern Pacific El Niño (like the 2017 coastal event) that wets the northern coast, by shifting the Pacific rain belt south. A trend here depends heavily on which El Niño years fall in the period.',
+    },
+    ninoSur: {
+      campo:
+        'In strong El Niño years it usually rains less in the southern highlands and the Altiplano.',
+      estudiante:
+        'The same study links strong El Niño events with less rain in the southern Andes and the Titicaca basin; Sulca et al. (2018) find drier conditions over the Altiplano with eastern Pacific El Niño and over the tropical Andes with central Pacific El Niño. Compare the trend with and without El Niño years in the robustness table.',
+    },
+    bosque: {
+      campo:
+        'Where forest is lost it rains less: it has been measured by satellite in the Amazon and other rainforests.',
+      estudiante:
+        'Smith et al. (2023) compare, by satellite (2003–2017), deforested areas with nearby forest in the Amazon, the Congo and Southeast Asia: rainfall drops after deforestation, and drops more the larger the area lost. For this area it is a hypothesis; our data do not prove it.',
+    },
+    calentamientoAndes: {
+      campo:
+        'In the Andes the temperature has been rising for decades, and it is one of the causes of glacier retreat.',
+      estudiante:
+        'Vuille et al. (2018) link glacier retreat in the tropical Andes with the observed rise in high-elevation air temperature.',
+    },
+    calentamientoRegion: {
+      campo:
+        'It is part of the planet warming: in South America the average temperature has already risen.',
+      estudiante:
+        'The IPCC (2022, ch. 12) assesses that mean temperature has increased across the subregions of Central and South America. Our slope is local: attributing it to global warming requires an attribution study.',
+    },
+    inundaciones: {
+      campo:
+        'When it rains a lot on the northern coast, floods and mudslides follow: in 2017 the coastal El Niño caused an emergency in Piura and the north.',
+      estudiante:
+        'PAHO (2017) documents the emergency caused by the rains and floods of the 2017 coastal El Niño in northern Peru, including Piura.',
+    },
+    glaciares: {
+      campo:
+        'With more heat glaciers melt: Peru has already lost 56 % of its glacier surface in almost 60 years. At first that gives rivers more water, but over the years there will be less in the dry season.',
+      estudiante:
+        'The 2023 national inventory (INAIGEM), based on 2020 imagery, records the loss of 56 % of the glacier surface in 58 years; these glaciers supply water to 62 % of the population. Vuille et al. (2018) explain that melt temporarily increases dry-season flow, but projected glacier shrinkage will reduce it in the long term.',
+    },
+    cultivosCalor: {
+      campo: 'More heat can affect harvests and food production.',
+      estudiante:
+        'The IPCC (2022, ch. 12) identifies risks to agricultural production and food security in the region from rising temperature and changes in rainfall.',
+    },
+    menosAgua: {
+      campo: 'If it rains less, there is less water for irrigation, pastures and drinking.',
+      estudiante:
+        'The IPCC (2022, ch. 12) points to water availability as one of the key risks for the region as rainfall decreases.',
+    },
   },
 }
 

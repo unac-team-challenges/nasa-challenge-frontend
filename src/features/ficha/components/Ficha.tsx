@@ -9,6 +9,7 @@ import { CampoAnioNormal } from '@/features/ficha/components/CampoAnioNormal'
 import { CampoAniosMalos } from '@/features/ficha/components/CampoAniosMalos'
 import { CampoNino } from '@/features/ficha/components/CampoNino'
 import { CampoSeguir } from '@/features/ficha/components/CampoSeguir'
+import { CausasConsecuencias } from '@/features/ficha/components/CausasConsecuencias'
 import { ComoLoSabemos } from '@/features/ficha/components/ComoLoSabemos'
 import { Confianza } from '@/features/ficha/components/Confianza'
 import { DosFuentes } from '@/features/ficha/components/DosFuentes'
@@ -105,6 +106,7 @@ export function Ficha() {
           <EstRanking />
         </>
       )}
+      {!pocos && <CausasConsecuencias zona={d} perfil={perfil} />}
       {/* Solo el estudiante: al agricultor no le sirve comparar fuentes */}
       {dos && !campo && <DosFuentes power={d} imerg={dos} idioma={idioma} />}
       <AntesDespues departamento={sel} perfil={perfil} />

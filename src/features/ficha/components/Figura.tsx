@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from 'react'
 import { TEXTOS } from '@/i18n/textos'
-import { useShallow } from 'zustand/react/shallow'
+import { useBusqueda, useSinNino } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { ErrorSerie } from '@/components/Errores'
 import { GraficoSkeleton } from '@/components/Esperas'
@@ -24,9 +24,9 @@ interface Props {
  * serie, aviso con «Reintentar» si la serie no llegó.
  */
 export function Figura({ titulo, estado, reintentar, pie, conNino, extra, children }: Props) {
-  const { idioma, sinNino, setSinNino } = useApp(
-    useShallow((s) => ({ idioma: s.idioma, sinNino: s.sinNino, setSinNino: s.setSinNino })),
-  )
+  const idioma = useApp((s) => s.idioma)
+  const sinNino = useSinNino()
+  const { setSinNino } = useBusqueda()
   const t = TEXTOS[idioma]
   return (
     <section className="flex flex-col gap-2.5" aria-label={titulo}>

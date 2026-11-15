@@ -1,8 +1,16 @@
-import { useNavigate, useParams, useRouterState, useSearch } from '@tanstack/react-router'
+import {
+  useNavigate,
+  useParams,
+  useRouter,
+  useRouterState,
+  useSearch,
+} from '@tanstack/react-router'
 import { z } from 'zod'
-import { VARIABLES, type Variable } from '@/data/datos'
+import { VARIABLES, type Periodo, type Variable } from '@/data/datos'
 import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
+
+const PERIODOS_URL: Periodo[] = ['largo', 'reciente']
 
 /**
  * Lo que va en la URL (y se comparte): /zona/20?variable=temperatura&perfil=agricultor&anio=2017
@@ -20,6 +28,13 @@ const esquema = z.object({
     .catch(undefined),
   /** Idioma: sin él, español. Un enlace compartido en inglés se abre en inglés. */
   lang: z.enum(['es', 'en']).optional().catch(undefined),
+  /** Periodo de la tendencia: sin él, `reciente` (2001–2024). `largo` es 1981–2024. */
+  periodo: z
+    .enum(PERIODOS_URL as [Periodo, ...Periodo[]])
+    .optional()
+    .catch(undefined),
+  /** `1` = tendencia sin los años de El Niño (solo lluvia); sin él, con todos los años. */
+  sinnino: z.literal('1').optional().catch(undefined),
   /** Capa del mapa: «vegetacion» muestra los 5 recuadros con vegetación medida en vez de la variable */
   capa: z.enum(['vegetacion']).optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
@@ -60,6 +75,16 @@ export function useAnio(): number | null {
   })
 }
 
+/** Periodo de la tendencia (de la URL; `reciente` por defecto). */
+export function usePeriodo(): Periodo {
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).periodo ?? 'reciente' })
+}
+
+/** ¿La tendencia va sin los años de El Niño? (de la URL) */
+export function useSinNino(): boolean {
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).sinnino === '1' })
+}
+
 /**
  * Variable, perfil y zona de la URL, con sus funciones para cambiarlos (sin apilar historial).
  * Cada valor se lee con un selector: el componente se redibuja solo si cambia ese valor, no al
@@ -76,24 +101,32 @@ export function useBusqueda() {
     select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
   })
   const vegetacion = enMapa && capa === 'vegetacion'
-  const poner = (cambio: Partial<Busqueda>) =>
-    navigate({
-      to: '.',
+  const router = useRouter() // sin suscripción: la ruta se lee solo al hacer clic
+  const poner = (cambio: Partial<Busqueda>) => {
+    // En la metodología la variable y el perfil no tienen dónde verse: se va al mapa con ellos
+    const alMapa = !('lang' in cambio) && router.state.location.pathname.startsWith('/metodologia')
+    return navigate({
+      to: alMapa ? '/explorar' : '.',
       search: (p: Busqueda) => ({ ...p, ...cambio }),
-      replace: true,
-      resetScroll: false,
+      replace: !alMapa, // ir al mapa sí entra al historial: «atrás» vuelve a la metodología
+      resetScroll: alMapa,
     })
+  }
   return {
     variable: variable ?? 'lluvia',
     perfil: perfil ?? 'agricultor',
     sel: id ?? null,
     /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
     vegetacion,
-    setVariable: (variable: Variable) => {
-      useApp.getState().setSinNino(false)
-      // Al salir del modo Vegetación también se suelta un ?anio que no se veía
-      return poner({ variable, capa: undefined, ...(capa ? { anio: undefined } : {}) })
-    },
+    // Cambiar de variable quita «sin El Niño» (solo existe para la lluvia) y sale del modo Vegetación
+    // (también se suelta un ?anio que en ese modo no se veía)
+    setVariable: (variable: Variable) =>
+      poner({
+        variable,
+        sinnino: undefined,
+        capa: undefined,
+        ...(capa ? { anio: undefined } : {}),
+      }),
     /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
     setVegetacion: () => {
       useApp.getState().setReproduciendo(false)
@@ -104,6 +137,12 @@ export function useBusqueda() {
         replace: true,
       })
     },
+    /** Cambiar el periodo detiene la reproducción de la barra de tiempo. */
+    setPeriodo: (periodo: Periodo) => {
+      useApp.getState().setReproduciendo(false)
+      return poner({ periodo: periodo === 'reciente' ? undefined : periodo })
+    },
+    setSinNino: (sin: boolean) => poner({ sinnino: sin ? '1' : undefined }),
     setPerfil: (perfil: Perfil) => poner({ perfil }),
     /** El idioma queda también en la URL (solo `en`; el español es el valor por defecto) */
     setIdioma: (idioma: Idioma) => {

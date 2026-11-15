@@ -12,6 +12,7 @@ type Veredicto = 'mas' | 'menos' | 'igual'
 const es = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
+  inicioCorto: 'Inicio',
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
@@ -58,7 +59,7 @@ const es = {
   } as PorVariable<[string, string][]>,
   noChange: 'sin cambio',
   texReal: 'Pleno: cambio real',
-  texCas: 'Rayado: posible casualidad',
+  texCas: 'Punteado: posible casualidad',
   texFew: 'Contorno: pocos datos',
   calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
   calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
@@ -314,9 +315,7 @@ const es = {
   citarH: 'Cómo citar',
   citarCopiar: 'Copiar',
   citarCopiado: 'Copiado',
-  citarEnlace: 'Enlace a esta zona, variable y año',
-  citarEnlaceNota:
-    'No guarda el periodo ni «sin El Niño»: se eligen de nuevo al abrirlo (los años de los datos van en la cita).',
+  citarEnlace: 'Enlace a esta vista exacta',
   reproH: 'Reprodúcelo',
   reproApi: 'La API devuelve estos mismos números:',
   reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
@@ -384,6 +383,8 @@ const es = {
     `q es el valor p corregido por revisar ${m} zonas a la vez. «Cambio real» pide q menor que 0,05, un rango probable que no cruce el cero y autocorrelación de 0,5 o menos.`,
   disclaimer: 'Muestra lo que ya cambió. No es un pronóstico ni una recomendación.',
   tapH: 'Toca un departamento',
+  zonaLbl: 'Departamento',
+  zonaElegir: 'O elige uno de la lista',
   tapP: {
     lluvia: 'Verás cuánto cambió su lluvia y si el cambio es real o casualidad.',
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
@@ -435,6 +436,9 @@ const es = {
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapaControles: 'Controles del mapa',
+  compartir: 'Compartir esta vista',
+  enlaceCopiado: 'Enlace copiado',
+  compartirManual: 'Copia el enlace para compartir esta vista:',
   mapa2dAria: 'Mapa del Perú en 2D',
   noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
   tipVal: (nombre: string, v: string, u: string, estado: string) =>
@@ -463,6 +467,7 @@ type Textos = typeof es
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
+  inicioCorto: 'Home',
   lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',
   cambiarTema: 'Change theme',
@@ -505,7 +510,7 @@ const en: Textos = {
   },
   noChange: 'no change',
   texReal: 'Solid: real change',
-  texCas: 'Striped: possibly chance',
+  texCas: 'Dotted: possibly chance',
   texFew: 'Outline: not enough data',
   calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
@@ -745,9 +750,7 @@ const en: Textos = {
   citarH: 'How to cite',
   citarCopiar: 'Copy',
   citarCopiado: 'Copied',
-  citarEnlace: 'Link to this area, variable and year',
-  citarEnlaceNota:
-    'It does not save the period or “without El Niño”: choose them again when opening it (the data years are in the citation).',
+  citarEnlace: 'Link to this exact view',
   reproH: 'Reproduce it',
   reproApi: 'The API returns these same numbers:',
   reproSinApi: 'This session uses the local copy; with the project API, the query is:',
@@ -811,6 +814,8 @@ const en: Textos = {
     `q is the p-value corrected for checking ${m} areas at once. A real change needs q below 0.05, a likely range that does not cross zero and autocorrelation of 0.5 or less.`,
   disclaimer: 'Shows what has already changed. It is not a forecast or a recommendation.',
   tapH: 'Tap a department',
+  zonaLbl: 'Department',
+  zonaElegir: 'Or pick one from the list',
   tapP: {
     lluvia: "You'll see how much its rainfall changed and whether the change is real or chance.",
     temperatura:
@@ -856,6 +861,9 @@ const en: Textos = {
   selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
   mapaControles: 'Map controls',
+  compartir: 'Share this view',
+  enlaceCopiado: 'Link copied',
+  compartirManual: 'Copy the link to share this view:',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
   tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,

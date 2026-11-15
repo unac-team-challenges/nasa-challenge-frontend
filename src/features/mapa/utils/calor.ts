@@ -203,18 +203,18 @@ export function dibujarCalor(cv: HTMLCanvasElement, c: Calor, anio: number | nul
   ctx.putImageData(img, 0, 0)
 }
 
-/** Píxeles por celda de las variantes 3D: las rayas necesitan más resolución que el dato. */
+/** Píxeles por celda de las variantes 3D: el punteado necesita más resolución que el dato. */
 const ESCALA_3D = 24
 
 /**
  * Variante opaca del calor para el 3D (sin transparencia, así las columnas no se ven cortadas):
- * 'real' = el calor tal cual; 'rayado' = rayas del panel encima (posible casualidad);
+ * 'real' = el calor tal cual; 'punteado' = velo leve y puntos del panel (posible casualidad);
  * 'apagado' = velo del panel (pocos datos). Mismo criterio que el 2D.
  */
 export function varianteCalor(
   dest: HTMLCanvasElement,
   base: HTMLCanvasElement,
-  tipo: 'real' | 'rayado' | 'apagado',
+  tipo: 'real' | 'punteado' | 'apagado',
   panel: string,
 ) {
   const w = base.width * ESCALA_3D
@@ -231,16 +231,19 @@ export function varianteCalor(
   if (tipo === 'apagado') {
     x.globalAlpha = 0.55
     x.fillRect(0, 0, w, h)
-  } else if (tipo === 'rayado') {
-    const paso = ESCALA_3D * 0.6
-    x.globalAlpha = 0.5
-    x.lineWidth = paso * 0.45
+  } else if (tipo === 'punteado') {
+    x.globalAlpha = 0.25 // el calor se lee algo lavado
+    x.fillRect(0, 0, w, h)
+    const paso = ESCALA_3D * 0.4
+    const r = paso * 0.12
+    x.globalAlpha = 0.4 // puntos finos y suaves: textura, no lunares
     x.beginPath()
-    for (let i = -h; i < w; i += paso) {
-      x.moveTo(i, h)
-      x.lineTo(i + h, 0)
-    }
-    x.stroke()
+    for (let f = 0, y = paso / 2; y < h; f++, y += paso)
+      for (let px = ((f % 2) * paso) / 2 + paso / 4; px < w; px += paso) {
+        x.moveTo(px + r, y)
+        x.arc(px, y, r, 0, Math.PI * 2)
+      }
+    x.fill()
   }
   x.globalAlpha = 1
 }

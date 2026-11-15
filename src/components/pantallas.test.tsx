@@ -11,7 +11,7 @@ import { render } from '@testing-library/react'
 
 beforeEach(() => {
   // El informe abierto, en español y sin tema forzado, como al entrar con una zona en la URL
-  useApp.setState({ idioma: 'es', informeMin: false, sinNino: false })
+  useApp.setState({ idioma: 'es', informeMin: false })
 })
 
 describe('explorador con la URL', () => {
@@ -92,6 +92,40 @@ describe('explorador con la URL', () => {
       'aria-pressed',
       'true',
     )
+  })
+
+  it('desde /metodologia, la variable y el perfil llevan al mapa', async () => {
+    const router = renderRuta('/metodologia')
+    const grupo = await screen.findByRole('group', { name: 'Variable' })
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Temperatura' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ variable: 'temperatura' })
+
+    router.history.push('/metodologia')
+    await screen.findByRole('heading', { level: 1, name: /Metodología/ })
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Perfil' })).getByRole('button', {
+        name: /Estudiante/,
+      }),
+    )
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(router.state.location.search).toMatchObject({ perfil: 'estudiante' })
+  })
+
+  it('«sin El Niño» vive en la URL: se abre marcado, se escribe al marcar y se quita al cambiar de variable', async () => {
+    const router = renderRuta('/zona/20?perfil=estudiante&sinnino=1')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    const casilla = await within(informe).findByRole('checkbox', {
+      name: 'Quitar los años de El Niño',
+    })
+    expect(casilla).toBeChecked()
+    await userEvent.click(casilla)
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty('sinnino'))
+    await userEvent.click(casilla)
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ sinnino: '1' }))
+    const grupo = screen.getByRole('group', { name: 'Variable' })
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Temperatura' }))
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty('sinnino'))
   })
 
   it('tocar un departamento en el mapa 2D lleva a su /zona/:id', async () => {

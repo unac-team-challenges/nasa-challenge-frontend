@@ -14,5 +14,8 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, 'e2e/**'],
     environment: 'jsdom',
     setupFiles: ['./src/testing/setup.ts'],
+    // findBy espera hasta 5 s (testing/setup.ts); el test necesita margen por encima de eso para
+    // la primera carga de la ficha (Recharts y sus bloques) cuando toda la suite corre en paralelo
+    testTimeout: 15000,
   },
 })

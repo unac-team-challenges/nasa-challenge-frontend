@@ -7,7 +7,7 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { escenaActiva } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { AyudaModo } from '@/features/tiempo/components/AyudaModo'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
@@ -38,7 +38,8 @@ export function Explorador() {
   const { idioma, sinNino, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
   const cajaMapa = useMargenMapa<HTMLDivElement>()
-  const { variable, sel, anio, seleccionar } = useBusqueda()
+  const { variable, sel, seleccionar } = useBusqueda()
+  const anio = useAnio()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()

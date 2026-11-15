@@ -40,7 +40,7 @@ export function Mapa3D({ modo }: Props) {
     const e = new EscenaPeru(contenedor.current, capa.current, {
       oceano: TEXTOS[useApp.getState().idioma].ocean,
       modo: modoInicial.current,
-      alElegir: (id) => busquedaRef.current.seleccionar(id),
+      alElegir: (id) => busquedaRef.current.seleccionar(id, true),
       alGirar: (g) => useApp.getState().setGirando(g),
     })
     escena.current = e

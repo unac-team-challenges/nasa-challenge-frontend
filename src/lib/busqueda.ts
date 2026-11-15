@@ -47,7 +47,12 @@ export function useBusqueda() {
   const { id } = useParams({ strict: false }) as { id?: string }
   const navigate = useNavigate()
   const poner = (cambio: Partial<Busqueda>) =>
-    navigate({ to: '.', search: (p: Busqueda) => ({ ...p, ...cambio }), replace: true })
+    navigate({
+      to: '.',
+      search: (p: Busqueda) => ({ ...p, ...cambio }),
+      replace: true,
+      resetScroll: false,
+    })
   return {
     variable: s.variable ?? 'lluvia',
     perfil: s.perfil ?? 'agricultor',
@@ -58,8 +63,9 @@ export function useBusqueda() {
       return poner({ variable })
     },
     setPerfil: (perfil: Perfil) => poner({ perfil }),
-    /** Elegir una zona abre el informe */
-    seleccionar: (zona: string | null) => {
+    /** Elegir una zona abre el informe. `desdeMapa`: la presentación solo sale si se tocó el mapa. */
+    seleccionar: (zona: string | null, desdeMapa = false) => {
+      useApp.setState({ zonaDesdeMapa: desdeMapa })
       if (zona) useApp.getState().setInformeMin(false)
       return zona
         ? navigate({
@@ -67,8 +73,14 @@ export function useBusqueda() {
             params: { id: zona },
             search: (p: Busqueda) => p,
             replace: true,
+            resetScroll: false,
           })
-        : navigate({ to: '/explorar', search: (p: Busqueda) => p, replace: true })
+        : navigate({
+            to: '/explorar',
+            search: (p: Busqueda) => p,
+            replace: true,
+            resetScroll: false,
+          })
     },
     setAnio: (anio: number | null) => {
       if (anio == null) useApp.getState().setReproduciendo(false)

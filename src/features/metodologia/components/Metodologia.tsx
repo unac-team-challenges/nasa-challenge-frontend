@@ -6,6 +6,10 @@ import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
 const enlace = 'text-accent-text underline-offset-2 hover:underline'
+/** En celular cada celda lleva su rótulo (la columna de la tabla) encima del dato. */
+const celda =
+  'max-sm:p-0 max-sm:before:mb-0.5 max-sm:before:block max-sm:before:text-xs max-sm:before:text-muted max-sm:before:content-[attr(data-etiqueta)]'
+
 const h2 =
   'm-0 scroll-mt-36 min-[901px]:scroll-mt-24 font-display text-2xl font-bold tracking-display'
 
@@ -50,28 +54,50 @@ export function Metodologia() {
         <h2 id="m-fuentes" className={h2}>
           {m.fuentesH}
         </h2>
-        <div className="overflow-x-auto rounded-m border border-line">
-          <table className="w-full min-w-136 border-collapse text-left text-sm">
-            <thead className="bg-panel-2">
-              <tr>
+        {/* Escritorio: tabla. Celular (< 640 px): cada fuente es una tarjeta con sus datos rotulados,
+            porque cuatro columnas no caben en 390 px y la tabla se cortaba por la derecha. Los roles
+            explícitos conservan la semántica de tabla al cambiar el `display`. */}
+        <div className="rounded-m border border-line sm:overflow-x-auto">
+          <table
+            role="table"
+            className="w-full border-collapse text-left text-sm max-sm:block sm:min-w-136"
+          >
+            <thead role="rowgroup" className="bg-panel-2 max-sm:sr-only">
+              <tr role="row">
                 {m.tablaCols.map((c) => (
-                  <th key={c} scope="col" className="px-3 py-2 font-semibold">
+                  <th key={c} role="columnheader" scope="col" className="px-3 py-2 font-semibold">
                     {c}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup" className="max-sm:block">
               {m.fuentes.map((f) => (
-                <tr key={f.variable} className="border-t border-line align-top">
-                  <th scope="row" className="px-3 py-2 font-semibold">
+                <tr
+                  key={f.variable}
+                  role="row"
+                  className="border-t border-line align-top first:border-t-0 max-sm:grid max-sm:gap-1.5 max-sm:px-3 max-sm:py-3 sm:first:border-t"
+                >
+                  <th role="rowheader" scope="row" className="px-3 py-2 font-semibold max-sm:p-0">
                     {f.variable}
                   </th>
-                  <td className="px-3 py-2">
+                  <td role="cell" className={`${celda} px-3 py-2`} data-etiqueta={m.tablaCols[1]}>
                     {f.fuente} · <Ext a={f.enlace} />
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{f.resolucion}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{anios(f)}</td>
+                  <td
+                    role="cell"
+                    className={`${celda} px-3 py-2 sm:whitespace-nowrap`}
+                    data-etiqueta={m.tablaCols[2]}
+                  >
+                    {f.resolucion}
+                  </td>
+                  <td
+                    role="cell"
+                    className={`${celda} px-3 py-2 sm:whitespace-nowrap`}
+                    data-etiqueta={m.tablaCols[3]}
+                  >
+                    {anios(f)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -38,8 +38,9 @@ test('la ficha flotante sale con el ratón, no con el dedo; tocar abre el inform
   await evento('pointermove', 'mouse')
   await expect(page.locator('.ficha3d.on')).toHaveCount(1)
 
-  // Tocar abre el informe
-  await page.touchscreen.tap(punto.clientX, punto.clientY)
+  // Tocar abre el informe. El clic va a la zona misma: su centro en pantalla puede caer en el
+  // borde de toque de una vecina pequeña (Apurímac), que está dibujado encima.
+  await cusco.dispatchEvent('click')
   await expect(page).toHaveURL(/\/zona\/08/)
   await expect(page.locator('#informe')).toContainText('Cusco')
 })

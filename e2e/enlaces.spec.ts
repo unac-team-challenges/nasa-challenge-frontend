@@ -16,25 +16,12 @@ test('un enlace con ?lang=en se abre en inglés y el cambio de idioma queda en l
   page,
 }) => {
   await page.goto('/explorar?sinwebgl&lang=en')
-  const idioma = page.getByRole('group', { name: 'Change language' })
-  await expect(idioma.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
-  await idioma.getByRole('button', { name: 'ES' }).click()
+  await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
+  await page.getByRole('button', { name: 'Change language' }).click()
+  await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
   await expect(page).not.toHaveURL(/lang=/)
-  await expect(
-    page.getByRole('group', { name: 'Cambiar idioma' }).getByRole('button', { name: 'ES' }),
-  ).toHaveAttribute('aria-pressed', 'true')
-})
-
-test('en pantallas muy angostas el idioma es un solo botón que muestra el actual', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 700 })
-  await page.goto('/explorar?sinwebgl')
-  await expect(page.getByRole('group', { name: 'Cambiar idioma' })).toBeHidden()
-  await page.getByRole('button', { name: 'Cambiar idioma (ES)' }).click()
+  await page.getByRole('button', { name: 'Cambiar idioma' }).click()
   await expect(page).toHaveURL(/lang=en/)
-  await expect(page.getByRole('button', { name: 'Change language (EN)' })).toHaveText('EN')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320)
 })
 
 test('elegir una zona actualiza la URL y se puede recargar', async ({ page }) => {

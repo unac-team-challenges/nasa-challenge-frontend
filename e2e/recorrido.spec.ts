@@ -55,14 +55,9 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.locator('#informe')).toBeVisible()
 
   // Idioma y tema
-  const idioma = page.getByRole('group', { name: 'Cambiar idioma' })
-  await expect(idioma.getByRole('button', { name: 'ES' })).toHaveAttribute('aria-pressed', 'true')
-  await idioma.getByRole('button', { name: 'EN' }).click()
+  await page.getByRole('button', { name: 'Cambiar idioma' }).click()
   await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
   await expect(page).toHaveURL(/lang=en/)
-  await expect(
-    page.getByRole('group', { name: 'Change language' }).getByRole('button', { name: 'EN' }),
-  ).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: /Change theme/ }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', /dark|light/)
 

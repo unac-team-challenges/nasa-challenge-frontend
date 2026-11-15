@@ -401,8 +401,6 @@ const es = {
     `q es el valor p corregido por revisar ${m} zonas a la vez. «Cambio real» pide q menor que 0,05, un rango probable que no cruce el cero y autocorrelación de 0,5 o menos.`,
   disclaimer: 'Muestra lo que ya cambió. No es un pronóstico ni una recomendación.',
   tapH: 'Toca un departamento',
-  zonaLbl: 'Departamento',
-  zonaElegir: 'O elige uno de la lista',
   tapP: {
     lluvia: 'Verás cuánto cambió su lluvia y si el cambio es real o casualidad.',
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
@@ -846,8 +844,6 @@ const en: Textos = {
     `q is the p-value corrected for checking ${m} areas at once. A real change needs q below 0.05, a likely range that does not cross zero and autocorrelation of 0.5 or less.`,
   disclaimer: 'Shows what has already changed. It is not a forecast or a recommendation.',
   tapH: 'Tap a department',
-  zonaLbl: 'Department',
-  zonaElegir: 'Or pick one from the list',
   tapP: {
     lluvia: "You'll see how much its rainfall changed and whether the change is real or chance.",
     temperatura:

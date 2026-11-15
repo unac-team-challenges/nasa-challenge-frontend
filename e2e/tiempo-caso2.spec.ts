@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendencia', async ({
   page,

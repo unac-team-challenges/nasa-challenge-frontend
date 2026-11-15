@@ -1,10 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { fmtValor } from '@/utils/formato'
 import { useRango, useZonas } from '@/hooks/useZonas'
-import { escenaActiva } from '@/features/mapa/escena/escena'
+import { escenaActiva } from '@/features/mapa/escena/activa'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useAnio, useBusqueda, useSinNino } from '@/lib/busqueda'
@@ -18,17 +18,13 @@ import { BotonCompartir } from '@/components/BotonCompartir'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
 import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
+import { FRANJA, useInforme } from '@/app/rutas/useInforme'
+import { RETRASO_INFO_S, usePresentacionZona } from '@/app/rutas/usePresentacionZona'
 
 const boton = 'bg-panel/92'
 
-const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 /** Ancho del informe abierto en escritorio y de su franja minimizada. */
 const ANCHO_INFORME = 'clamp(340px, 38vw, 560px)'
-const FRANJA = 56
-/** Presentación del departamento elegido: entra, se queda y sale (ms, igual que en index.css). */
-const PRESENTACION_MS = 1900
-/** La información aparece cuando la presentación ya se está yendo. */
-const RETRASO_INFO_S = 1.3
 
 /**
  * Explorador: el mapa es el fondo de toda la pantalla y el informe se desliza encima, a la
@@ -49,52 +45,8 @@ export function Explorador() {
   const rango = useRango()
   const d = sel ? zonas[sel] : null
   const etiquetaInforme = informeMin ? t.showReport : t.hideReport
-  const informe = useRef<HTMLElement>(null)
-  const [anchoInforme, setAnchoInforme] = useState(0)
-
-  // Presentación breve del departamento elegido; luego aparece su información. Se decide al
-  // renderizar (patrón «ajustar estado cuando cambia una prop»), no en un efecto.
-  const [intro, setIntro] = useState<{ id: string; n: number } | null>(null)
-  const [abrirTarde, setAbrirTarde] = useState(false)
-  const [previa, setPrevia] = useState({ sel, informeMin })
-  if (sel !== previa.sel || informeMin !== previa.informeMin) {
-    setPrevia({ sel, informeMin })
-    if (sel !== previa.sel) {
-      const animar = !!sel && zonaDesdeMapa && !reducido()
-      setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
-      // si el informe estaba cerrado, se abre cuando la presentación termina
-      setAbrirTarde(animar && previa.informeMin)
-    }
-  }
-  useEffect(() => {
-    if (!intro) return
-    const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
-    return () => clearTimeout(fin)
-  }, [intro])
-
-  // Si el informe nuevo es más corto, el navegador baja la página sin avisar: se lleva la vista
-  // al principio del informe (nunca al mapa). Si cabe, la posición no se toca.
-  const ultimoY = useRef(0)
-  useEffect(() => {
-    const guardar = () => (ultimoY.current = window.scrollY)
-    window.addEventListener('scroll', guardar, { passive: true })
-    return () => window.removeEventListener('scroll', guardar)
-  }, [])
-  useLayoutEffect(() => {
-    if (window.scrollY < ultimoY.current - 1) informe.current?.scrollIntoView({ block: 'start' })
-  }, [sel])
-
-  // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
-  useEffect(() => {
-    const el = informe.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setAnchoInforme(el.offsetWidth))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  useEffect(() => {
-    escenaActiva.current?.setPanel(informeMin ? FRANJA : anchoInforme)
-  }, [informeMin, anchoInforme, modoMapa])
+  const informe = useInforme(sel, informeMin, modoMapa)
+  const { intro, abrirTarde } = usePresentacionZona(sel, informeMin, zonaDesdeMapa)
 
   const volverAlInicio = () => {
     seleccionar(null)

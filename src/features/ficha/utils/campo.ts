@@ -11,6 +11,7 @@ export function cifraCampo(d: Zona, variable: Variable, idioma: Idioma) {
     return d.pct_change_per_decade != null
       ? `${Math.round(Math.abs(d.pct_change_per_decade))} %`
       : `${Math.round(Math.abs(d.slope_per_decade))} mm`
+  if (variable === 'vegetacion') return `${num(d.slope_per_decade, 3, idioma)} NDVI`
   return `${num(d.slope_per_decade, 2, idioma)} °C`
 }
 

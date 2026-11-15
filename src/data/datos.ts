@@ -4,18 +4,22 @@
  * Cuando la API del backend sirva las tendencias, este módulo se cambia por la consulta.
  */
 import geo from '@/data/departamentos.json'
-import power from '@/data/power.json'
+import vegetacion from '@/data/vegetacion.json'
 
-export type Variable = 'lluvia' | 'temperatura'
+export type Variable = 'lluvia' | 'temperatura' | 'vegetacion'
 export type Periodo = 'largo' | 'reciente'
 export type Estado = 'real' | 'posible_casualidad' | 'pocos_datos'
 export type Region = 'costa' | 'sierra' | 'selva'
 /** Años que cubre una tendencia (de la API o de la copia local). */
 export type Rango = { year_start: number; year_end: number }
 
-export const VARIABLES: Variable[] = ['lluvia', 'temperatura']
+export const VARIABLES: Variable[] = ['lluvia', 'temperatura', 'vegetacion']
 /** Fuente de la copia local (src/data/power.json). */
 export const FUENTE_LOCAL = 'NASA POWER (MERRA-2)'
+/** Fuente de la copia local de vegetación (src/data/vegetacion.json). */
+export const FUENTE_VEGETACION = 'MODIS MOD13A3 v061 (NDVI) vía AppEEARS'
+/** Fuente de la copia local de una variable. */
+export const fuenteLocal = (v: Variable) => (v === 'vegetacion' ? FUENTE_VEGETACION : FUENTE_LOCAL)
 
 export interface Departamento {
   id: string
@@ -68,17 +72,53 @@ interface BloqueVariable {
   sin_nino: Record<Periodo, Record<string, ZonaCruda>>
   series: Record<string, [number, number][]>
 }
-const DATOS = power as unknown as {
+interface DatosPower {
   generado: string
   anios_nino: number[]
   periodos: Record<Periodo, Rango>
-  variables: Record<Variable, BloqueVariable>
+  variables: Record<'lluvia' | 'temperatura', BloqueVariable>
+}
+type Datos = Omit<DatosPower, 'variables'> & { variables: Record<Variable, BloqueVariable> }
+/** NDVI de MODIS (2001–2024): no existe antes de 2001 ni depende de El Niño, así que sus dos periodos y
+ *  sus dos variantes son la misma serie. */
+const VEG = vegetacion as unknown as Pick<BloqueVariable, 'unidad' | 'parametro' | 'series'> & {
+  periodos: { reciente: Record<string, ZonaCruda> }
+}
+let DATOS: Datos | null = null
+const datos = () => {
+  if (!DATOS) throw new Error('cargarPower() no terminó: la copia local aún no está en memoria')
+  return DATOS
+}
+
+/**
+ * La copia local (power.json, 90 KB) va en su propio chunk: así no viaja dentro del código de la web
+ * y el navegador la guarda aparte (cambia mucho menos que el código). La web espera esta carga antes
+ * de dibujar (main.tsx; en las pruebas, testing/setup.ts) y las funciones de abajo siguen siendo
+ * síncronas. PERIODOS, ANIOS_NINO y GENERADO son enlaces vivos: valen cuando la carga termina.
+ */
+export async function cargarPower() {
+  if (DATOS) return
+  const power = (await import('@/data/power.json')).default as unknown as DatosPower
+  DATOS = {
+    ...power,
+    variables: {
+      ...power.variables,
+      vegetacion: {
+        ...VEG,
+        periodos: { reciente: VEG.periodos.reciente, largo: VEG.periodos.reciente },
+        sin_nino: { reciente: VEG.periodos.reciente, largo: VEG.periodos.reciente },
+      },
+    } as Record<Variable, BloqueVariable>,
+  }
+  PERIODOS = DATOS.periodos
+  ANIOS_NINO = DATOS.anios_nino
+  GENERADO = DATOS.generado
 }
 
 export const DEPARTAMENTOS = geo as Departamento[]
-export const PERIODOS = DATOS.periodos
-export const ANIOS_NINO = DATOS.anios_nino
-export const GENERADO = DATOS.generado
+export let PERIODOS = {} as Record<Periodo, Rango>
+export let ANIOS_NINO: number[] = []
+export let GENERADO = ''
 
 export const NOMBRE: Record<string, string> = {
   '01': 'Amazonas',
@@ -158,7 +198,7 @@ function normalizar(z: ZonaCruda): Zona {
 
 /** Estadística por zona de una variable y periodo (con o sin los años de El Niño). */
 export function zonasDe(variable: Variable, periodo: Periodo, sinNino = false) {
-  const b = DATOS.variables[variable]
+  const b = datos().variables[variable]
   const fuente = sinNino ? b.sin_nino[periodo] : b.periodos[periodo]
   return Object.fromEntries(Object.entries(fuente).map(([id, z]) => [id, normalizar(z)])) as Record<
     string,
@@ -179,7 +219,7 @@ export function ninoEn({ year_start, year_end }: Rango) {
 /** Serie anual real de una zona dentro de un rango de años. */
 export function serie(id: string, variable: Variable, rango: Rango, sinNino = false) {
   const { year_start, year_end } = rango
-  return (DATOS.variables[variable].series[id] ?? [])
+  return (datos().variables[variable].series[id] ?? [])
     .filter(([y]) => y >= year_start && y <= year_end && !(sinNino && ANIOS_NINO.includes(y)))
     .map(([y, v]) => ({ y, v }))
 }
@@ -241,5 +281,5 @@ export function anomaliasAnio(variable: Variable, periodo: Periodo, rango: Rango
 
 /** Parámetro de NASA POWER de cada variable (PRECTOTCORR, T2M), para la ficha técnica. */
 export function parametroDe(variable: Variable) {
-  return DATOS.variables[variable].parametro
+  return datos().variables[variable].parametro
 }

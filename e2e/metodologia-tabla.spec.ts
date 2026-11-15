@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 for (const ancho of [390, 320]) {
   test(`en ${ancho} px la tabla de fuentes no se corta ni obliga a deslizar de lado`, async ({

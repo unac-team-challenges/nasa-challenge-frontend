@@ -180,6 +180,20 @@ const es = {
   cmpCap: 'NDVI anual de MODIS MOD13A3 (NASA), píxeles de 1 km. Desliza para comparar 2001 y 2024.',
   cmpUnidad:
     'Cifras de un recuadro de 0,25° × 0,25° (~27 × 27 km) sobre el valle; no son el promedio del departamento.',
+  /** Etiqueta del aviso de una zona (p. ej. Olmos o La Pampa) */
+  cuidado: 'Léelo con cuidado',
+  // Árboles de la selva (MODIS MOD44B), donde el NDVI se satura
+  selvaH: 'Árboles de la selva',
+  selvaTexto: (zona: string, a: number, b: number, ka: number, kb: number) =>
+    `En ${zona}, los árboles cubrían el ${a} % del suelo en 2001 y el ${b} % en 2024: el bosque pasó de ${ka} km² a ${kb} km².`,
+  selvaSinCambio: (zona: string, b: number) =>
+    `En ${zona}, los árboles cubren cerca del ${b} % del suelo y de 2001 a 2024 no hay un cambio distinguible de 0. Es el contraste con la selva que se pierde.`,
+  selvaTendencia: (v: string) => `Tendencia: ${v} puntos de árboles por década`,
+  selvaNoDistinguible: 'No distinguible de 0',
+  selvaCap:
+    'Cobertura de árboles de MODIS MOD44B (NASA), píxeles de 250 m. Bosque: píxeles con 30 % o más de árboles.',
+  selvaUnidad:
+    'Cifras de un recuadro de unos 25 km de lado en la selva; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
@@ -375,6 +389,17 @@ const en: Textos = {
   cmpCap: 'Annual NDVI from MODIS MOD13A3 (NASA), 1 km pixels. Drag to compare 2001 and 2024.',
   cmpUnidad:
     'Figures for a 0.25° × 0.25° box (~27 × 27 km) over the valley; not the department average.',
+  cuidado: 'Read with care',
+  selvaH: 'Rainforest trees',
+  selvaTexto: (zona, a, b, ka, kb) =>
+    `In ${zona}, trees covered ${a} % of the ground in 2001 and ${b} % in 2024: forest went from ${ka} km² to ${kb} km².`,
+  selvaSinCambio: (zona, b) =>
+    `In ${zona}, trees cover about ${b} % of the ground and from 2001 to 2024 there is no change distinguishable from 0. It is the contrast with the rainforest being lost.`,
+  selvaTendencia: (v) => `Trend: ${v} points of tree cover per decade`,
+  selvaNoDistinguible: 'Not distinguishable from 0',
+  selvaCap:
+    'Tree cover from MODIS MOD44B (NASA), 250 m pixels. Forest: pixels with 30 % or more trees.',
+  selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
@@ -699,6 +724,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         anios: '2001 y 2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
+      {
+        variable: 'Árboles de la selva',
+        fuente: 'MODIS MOD44B (NASA): % del suelo cubierto por árboles, pedido con AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
     ],
     fuentesNota:
       'Cada número viene de una sola fuente y la ficha dice cuál: no mezclamos ni promediamos fuentes. No son estaciones de medición: cada valor es el promedio de una celda de satélite o de modelo.',
@@ -826,6 +858,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente: 'MODIS MOD13A3 (NASA): NDVI vegetation index, requested with AppEEARS',
         resolucion: '1 km',
         anios: '2001 & 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+      {
+        variable: 'Rainforest trees',
+        fuente: 'MODIS MOD44B (NASA): % of the ground covered by trees, requested with AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
     ],

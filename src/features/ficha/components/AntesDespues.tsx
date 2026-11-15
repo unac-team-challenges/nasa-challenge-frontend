@@ -1,4 +1,6 @@
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
+import { Aviso } from '@/features/ficha/components/Aviso'
+import { Selva } from '@/features/ficha/components/Selva'
 import { VALLES } from '@/features/ficha/data/caso2'
 import { useVegetacion } from '@/hooks/useVegetacion'
 import { TEXTOS } from '@/i18n/textos'
@@ -10,15 +12,21 @@ const etiqueta =
 /**
  * Caso 2 (antes y después): NDVI real de MODIS de un valle irrigado, 2001 frente a 2024,
  * con un deslizador. Aparece en la ficha de los departamentos que tienen un valle analizado.
+ * En la selva, donde el NDVI se satura, muestra en su lugar los árboles (MOD44B, <Selva>).
  */
 export function AntesDespues({ departamento }: { departamento: string }) {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
   const local = VALLES[departamento]
   const api = useVegetacion()?.[departamento]
-  if (!local) return null
-  // Las cifras vienen de la API si contesta; si no, de la copia de caso2.ts (mismos valores del Lab 3)
-  const v = { ...local, ...api }
+  if (!local) return <Selva departamento={departamento} />
+  // Las cifras vienen de la API si contesta; si no, de la copia de caso2.ts (mismos valores)
+  const v = {
+    ...local,
+    ...(api && { areaAntes: api.areaAntes, areaDespues: api.areaDespues, sen: api.sen }),
+  }
+  // En español manda el aviso de la API; en inglés (o sin API), la copia traducida
+  const aviso = idioma === 'es' && api ? api.aviso : local.aviso?.[idioma]
   const pct = Math.round(((v.areaDespues - v.areaAntes) / v.areaAntes) * 100)
   const src = (anio: number) => `${import.meta.env.BASE_URL}caso2/${v.imagen}_${anio}.png`
 
@@ -26,6 +34,7 @@ export function AntesDespues({ departamento }: { departamento: string }) {
     <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
       <h3 className="m-0 text-sm font-semibold">{t.cmpH}</h3>
       <p className="m-0">{t.cmpTexto(v.nombre, v.areaAntes, v.areaDespues, pct)}</p>
+      <Aviso texto={aviso} idioma={idioma} />
       <div className="relative overflow-hidden rounded-m border border-line bg-panel-2">
         <ReactCompareSlider
           aria-label={t.cmpLbl}

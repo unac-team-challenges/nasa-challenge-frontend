@@ -23,13 +23,7 @@ import {
   type Calor,
 } from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
-import {
-  Bosque,
-  crearLocalizador,
-  REGIONES,
-  resumenPorDepto,
-  type Region,
-} from '@/features/mapa/escena/bosque'
+import { Bosque, crearLocalizador, REGIONES, resumenPorDepto } from '@/features/mapa/escena/bosque'
 import {
   COLOR_TENDENCIA,
   LUGARES_VEGETACION,
@@ -211,17 +205,8 @@ const claveCalor = (c: Calor): ClaveCalor =>
   c.paradas === PARADAS_VEG ? 'vegetacion' : c.paradas === PARADAS_LLUVIA ? 'lluvia' : 'temperatura'
 /** Duración del fundido de color entre modos (s). */
 const FUNDIDO = 0.75
-/** Nombres de las 3 regiones (modo Vegetación), sobre un punto típico de cada una. */
-const ETIQUETAS_REGION: { r: Region; es: string; en: string; lon: number; lat: number }[] = [
-  { r: 'costa', es: 'Costa', en: 'Coast', lon: -79.1, lat: -7.9 },
-  { r: 'sierra', es: 'Sierra', en: 'Andes', lon: -75.4, lat: -11.9 },
-  { r: 'selva', es: 'Selva', en: 'Rainforest', lon: -74.6, lat: -5.6 },
-]
-const COLOR_REGION: Record<Region, string> = {
-  costa: '--veg-0',
-  sierra: '--veg-2',
-  selva: '--veg-4',
-}
+/** Modo Vegetación: cuántos departamentos extremos llevan etiqueta (los más y los menos verdes). */
+const EXTREMOS_VEG = 3
 
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -706,7 +691,8 @@ export class EscenaPeru {
   /** NDVI, altitud y regiones de cada departamento (modo Vegetación: ficha y altura de la columna). */
   private ndvi: ReturnType<typeof resumenPorDepto> | null = null
   /** Nombres de las 3 regiones (modo Vegetación), sobre la columna del departamento donde caen. */
-  private etiquetasRegion: { el: HTMLDivElement; x: number; z: number; departamento: string }[] = []
+  /** Modo Vegetación: etiquetas de los departamentos más y menos verdes (id '' = sin dato aún). */
+  private etiquetasVeg: { id: string; el: HTMLDivElement }[] = []
   /** Altura de la cara superior de cada departamento (la leen las plantas en la GPU). */
   private topes = new Float32Array(DEPARTAMENTOS.length)
   /** Altitud del suelo (canal R de mundo2.png: 0..255 = 0..6000 m), para saber qué planta crece. */
@@ -1025,19 +1011,8 @@ export class EscenaPeru {
         departamento: l.departamento,
       })
     }
-    for (const e of ETIQUETAS_REGION) {
-      const v = proyectar([e.lon, e.lat])
-      const el = nuevaEtiqueta('lbl3d region')
-      el.textContent = e.es
-      el.style.setProperty('--region', `var(${COLOR_REGION[e.r]})`)
-      el.hidden = true
-      this.etiquetasRegion.push({
-        el,
-        x: v.x + this.mapa.position.x,
-        z: -v.y + this.mapa.position.z,
-        departamento: DEPARTAMENTOS[this.localizar(e.lon, e.lat)]?.id ?? '',
-      })
-    }
+    for (let i = 0; i < EXTREMOS_VEG * 2; i++)
+      this.etiquetasVeg.push({ id: '', el: nuevaEtiqueta('lbl3d') })
     for (const p of PAISES) {
       const v = proyectar([p.lon, p.lat])
       const el = nuevaEtiqueta('lbl3d country')
@@ -1428,6 +1403,14 @@ export class EscenaPeru {
     const c = this.calores.get('vegetacion')
     if (!c || !this.elevacion) return
     this.ndvi = resumenPorDepto(c, this.localizar, this.altitud)
+    // Como en lluvia y temperatura: solo se nombran los extremos (los más y los menos verdes)
+    const { media, celdas } = this.ndvi
+    const orden = DEPARTAMENTOS.map((_, k) => k)
+      .filter((k) => celdas[k] > 0 && Number.isFinite(media[k]))
+      .sort((a, b) => media[b] - media[a])
+    const extremos = [...orden.slice(0, EXTREMOS_VEG), ...orden.slice(-EXTREMOS_VEG)]
+    this.etiquetasVeg.forEach((e, i) => (e.id = DEPARTAMENTOS[extremos[i]]?.id ?? ''))
+    this.textosVeg()
     this.bosque.plantar(
       c,
       this.altitud,
@@ -1642,9 +1625,7 @@ export class EscenaPeru {
     if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
-    ETIQUETAS_REGION.forEach((e, i) => {
-      this.etiquetasRegion[i].el.textContent = idioma === 'en' ? e.en : e.es
-    })
+    this.textosVeg()
     this.sucio = true
   }
 
@@ -1970,11 +1951,31 @@ export class EscenaPeru {
     el.replaceChildren(NOMBRE[id], small)
   }
 
+  /** Nombre y NDVI medio de cada departamento extremo del modo Vegetación. */
+  private textosVeg() {
+    if (!this.ndvi) return
+    for (const e of this.etiquetasVeg) {
+      if (!e.id) continue
+      const k = DEPARTAMENTOS.findIndex((d) => d.id === e.id)
+      const small = document.createElement('small')
+      small.textContent =
+        'NDVI ' +
+        this.ndvi.media[k].toLocaleString(this.idioma, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      e.el.replaceChildren(NOMBRE[e.id], small)
+      e.el.classList.toggle('sel', e.id === this.sel)
+    }
+    this.sucio = true
+  }
+
   private textosEtiquetas() {
     for (const L of this.etiquetas) {
       this.texto(L.el, L.id)
       L.el.classList.toggle('sel', L.id === this.sel)
     }
+    for (const e of this.etiquetasVeg) e.el.classList.toggle('sel', e.id === this.sel)
     // En el modo Vegetación no va la etiqueta con el valor del departamento elegido
     const aparte = !this.veg && !!this.sel && !conEtiquetaFija(this.sel)
     this.etiquetaSel.hidden = !aparte
@@ -2274,13 +2275,19 @@ export class EscenaPeru {
       const m = malla(mv.departamento)
       if (conVeg && m) this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z)
     }
-    // Nombres de las 3 regiones, sobre la columna donde caen
-    for (const e of this.etiquetasRegion) {
-      const m = malla(e.departamento)
-      const ver = conVeg && !!m
+    // Departamentos extremos (en celular, 2 de cada punta), sobre su columna como en lluvia y temperatura
+    this.etiquetasVeg.forEach((e, i) => {
+      const m = e.id ? malla(e.id) : undefined
+      const ver = conVeg && !!m && (!celular() || i % EXTREMOS_VEG < 2)
       if (e.el.hidden === ver) e.el.hidden = !ver
-      if (ver && m) this.ubicarEtiqueta(e.el, e.x, m.position.z + m.scale.z + 0.9, e.z)
-    }
+      if (ver && m)
+        this.ubicarEtiqueta(
+          e.el,
+          m.userData.centro.x,
+          m.position.z + m.scale.z + 0.4,
+          m.userData.centro.z,
+        )
+    })
     for (const p of this.etiquetasPais) {
       // En celular no se muestran los nombres de países (v12)
       if (p.el.hidden !== celular()) p.el.hidden = celular()

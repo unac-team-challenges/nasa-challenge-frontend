@@ -503,25 +503,6 @@ h3 {
 
 /* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
    departamentos para no competir con el dato del mapa */
-/* Nombres de las 3 regiones (modo Vegetación): grandes, espaciados y sin caja, sobre el relieve */
-.lbl3d.region {
-  background: none;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0 0 1px;
-  font-family: var(--font-display, inherit);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--fg);
-  text-shadow:
-    0 0 6px var(--bg),
-    0 0 2px var(--bg);
-  border-bottom: 3px solid var(--region, var(--map-green));
-}
-
 .lbl3d.veg {
   display: inline-flex;
   align-items: center;

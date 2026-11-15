@@ -201,6 +201,7 @@ const es = {
   metodologia: 'Metodología y fuentes',
   metodologiaCorto: 'Metodología',
   metodologiaTodo: 'Ver la metodología completa',
+  paginaActual: '(página actual)',
   metodologiaEnlace: 'Cómo lo calculamos y de dónde salen los datos',
   irAlMapa: 'Explorar el mapa',
 }
@@ -396,6 +397,7 @@ const en: Textos = {
   metodologia: 'Methodology and sources',
   metodologiaCorto: 'Methodology',
   metodologiaTodo: 'Read the full methodology',
+  paginaActual: '(current page)',
   metodologiaEnlace: 'How we calculate it and where the data comes from',
   irAlMapa: 'Explore the map',
 }

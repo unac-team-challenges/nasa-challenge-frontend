@@ -57,6 +57,7 @@ export function MenuMetodologia() {
         >
           <BookOpen className="size-4.5" aria-hidden="true" />
           <span className="max-sm:sr-only">{t.metodologiaCorto}</span>
+          {activa && <span className="sr-only">{t.paginaActual}</span>}
           <ChevronDown
             className="size-3.5 text-muted transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none max-sm:hidden"
             aria-hidden="true"

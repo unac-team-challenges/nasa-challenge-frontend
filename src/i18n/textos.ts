@@ -51,6 +51,8 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
+  legVeg:
+    'Punto verde: vegetación medida con satélite (Chavimochic, Ica, Olmos, La Pampa e Iquitos). Toca su departamento para verla.',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -261,6 +263,8 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
+  legVeg:
+    'Green dot: vegetation measured by satellite (Chavimochic, Ica, Olmos, La Pampa and Iquitos). Tap its department to see it.',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

@@ -15,6 +15,7 @@ import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
 import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
+import { LUGARES_VEGETACION } from '@/features/mapa/utils/vegetacion'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -415,6 +416,14 @@ export class EscenaPeru {
   private etiquetaSel: HTMLDivElement
   private etiquetaOceano: HTMLDivElement
   private etiquetasPais: { el: HTMLDivElement; x: number; z: number; es: string; en: string }[] = []
+  /** Lugares con vegetación medida (solo en el explorador), sobre la cara de su departamento. */
+  private marcasVeg: {
+    el: HTMLDivElement
+    x: number
+    z: number
+    departamento: string
+    corre: [number, number]
+  }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
   private particulas: Particulas
   private muestras: [number, number][][] = []
@@ -640,6 +649,18 @@ export class EscenaPeru {
     this.etiquetaSel.hidden = true
     this.etiquetaOceano = nuevaEtiqueta('lbl3d ocean')
     this.etiquetaOceano.textContent = op.oceano
+    for (const l of LUGARES_VEGETACION) {
+      const v = proyectar([l.lon, l.lat])
+      const el = nuevaEtiqueta('lbl3d veg')
+      el.textContent = l.nombre
+      this.marcasVeg.push({
+        el,
+        x: v.x + this.mapa.position.x,
+        z: -v.y + this.mapa.position.z,
+        departamento: l.departamento,
+        corre: l.corre ?? [0, 0],
+      })
+    }
     for (const p of PAISES) {
       const v = proyectar([p.lon, p.lat])
       const el = nuevaEtiqueta('lbl3d country')
@@ -878,7 +899,9 @@ export class EscenaPeru {
     const fg = this.color('--fg')
     const U = this.mar.material.uniforms
     U.uHondo.value.set(hexMix(mar, claro ? fg : '#000000', claro ? 0.18 : 0.4))
-    U.uSomero.value.set(hexMix(mar, claro ? '#ffffff' : this.color('--accent-soft'), claro ? 0.35 : 0.2))
+    U.uSomero.value.set(
+      hexMix(mar, claro ? '#ffffff' : this.color('--accent-soft'), claro ? 0.35 : 0.2),
+    )
     U.uEspuma.value.set(hexMix(mar, claro ? '#ffffff' : fg, claro ? 0.8 : 0.35))
     U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
     U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
@@ -998,7 +1021,8 @@ export class EscenaPeru {
     this.animalHover = a
     if (!a) {
       this.tip.hidden = true
-      this.renderer.domElement.style.cursor = this.hover && this.modo === 'explorar' ? 'pointer' : ''
+      this.renderer.domElement.style.cursor =
+        this.hover && this.modo === 'explorar' ? 'pointer' : ''
       return
     }
     const b = this.contenedor.getBoundingClientRect()
@@ -1316,7 +1340,8 @@ export class EscenaPeru {
     this.aplicarCorrimiento()
     // tamaño de los puntos en píxeles del búfer, como hace PointsMaterial
     if (this.particulas)
-      this.particulas.puntos.material.uniforms.uEscala.value = (h * this.renderer.getPixelRatio()) / 2
+      this.particulas.puntos.material.uniforms.uEscala.value =
+        (h * this.renderer.getPixelRatio()) / 2
     this.sucio = true
   }
 
@@ -1440,14 +1465,14 @@ export class EscenaPeru {
     this.ubicarEtiquetas()
   }
 
-  private ubicarEtiqueta(el: HTMLElement, x: number, y: number, z: number, dy = 0) {
+  private ubicarEtiqueta(el: HTMLElement, x: number, y: number, z: number, dy = 0, dx = 0) {
     this.v3.set(x, y, z).project(this.camara)
     const v = this.v3
     const fuera = v.z > 1 || v.x < -1.2 || v.x > 1.2 || v.y < -1.2 || v.y > 1.2
     // Solo se escribe en el DOM si cambió (antes: en cada cuadro, con recálculo de estilos)
     const tf = fuera
       ? 'fuera'
-      : `translate(${(((v.x + 1) / 2) * this.ancho).toFixed(0)}px, ${(((1 - v.y) / 2) * this.alto + dy).toFixed(0)}px) translate(-50%, -135%)`
+      : `translate(${(((v.x + 1) / 2) * this.ancho + dx).toFixed(0)}px, ${(((1 - v.y) / 2) * this.alto + dy).toFixed(0)}px) translate(-50%, -135%)`
     if (this.posEtiqueta.get(el) === tf) return
     this.posEtiqueta.set(el, tf)
     el.style.visibility = fuera ? 'hidden' : 'visible'
@@ -1497,6 +1522,16 @@ export class EscenaPeru {
           m.position.z + m.scale.z + 0.4,
           m.userData.centro.z,
         )
+    }
+    // Vegetación: solo en el explorador y no en celular (taparía el mapa); suben con su departamento
+    const conVeg = this.modo === 'explorar' && !celular()
+    for (const mv of this.marcasVeg) {
+      if (mv.el.hidden === conVeg) mv.el.hidden = !conVeg
+      const m = malla(mv.departamento)
+      if (conVeg && m) {
+        const [dx, dy] = mv.corre
+        this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z, dy, dx)
+      }
     }
     for (const p of this.etiquetasPais) {
       // En celular no se muestran los nombres de países (v12)

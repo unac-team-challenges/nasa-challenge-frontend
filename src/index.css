@@ -430,6 +430,25 @@ h3 {
   }
 }
 
+/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
+   departamentos para no competir con el dato del mapa */
+.lbl3d.veg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px 1px 5px;
+}
+.lbl3d.veg::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--map-green);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--map-green) 35%, transparent);
+}
+
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;

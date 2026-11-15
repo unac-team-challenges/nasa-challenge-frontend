@@ -9,6 +9,7 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
+import { LUGARES_VEGETACION } from '@/features/mapa/utils/vegetacion'
 
 const LON0 = -75.0
 const LAT0 = -9.2
@@ -438,6 +439,22 @@ export function Mapa2D({ interactivo = true }: Props) {
               </span>
             )
           })()}
+          {/* Lugares con vegetación medida: debajo de las etiquetas de departamento */}
+          {interactivo &&
+            !celular &&
+            LUGARES_VEGETACION.map((l) => {
+              const [x, y] = aPantalla(proyectar([l.lon, l.lat]))
+              const [dx, dy] = l.corre ?? [0, 0]
+              return (
+                <span
+                  key={l.id}
+                  className="lbl3d lbl2d veg"
+                  style={{ transform: `translate(${x + dx}px, ${y + dy}px) translate(-50%, -50%)` }}
+                >
+                  {l.nombre}
+                </span>
+              )
+            })}
           {interactivo &&
             conEtiqueta
               // En celular solo la zona elegida, para no tapar el mapa

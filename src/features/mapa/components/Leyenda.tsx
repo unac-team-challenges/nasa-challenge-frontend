@@ -129,6 +129,15 @@ export function Leyenda() {
                 ),
               )}
         </p>
+        {/* Los lugares con vegetación medida (marcados en el mapa, no son una variable) */}
+        <p className="m-0 flex items-start gap-1.5 text-xs text-fg">
+          <span
+            className="mt-[3px] size-[7px] shrink-0 rounded-full"
+            style={{ background: 'var(--map-green)' }}
+            aria-hidden="true"
+          />
+          {t.legVeg}
+        </p>
         <p className="m-0 text-xs text-muted">
           {/* La máquina del tiempo usa la copia local */}
           {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}

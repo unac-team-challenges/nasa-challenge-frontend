@@ -6,6 +6,7 @@ import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { useMeta } from '@/hooks/meta'
 import { useRuta } from '@/hooks/ruta'
 import { useDecidirFuente } from '@/hooks/useZonas'
+import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
 // three.js se descarga aparte (React.lazy)
@@ -35,8 +36,19 @@ export default function App() {
   return (
     // En escritorio el explorador ocupa justo la pantalla (el informe se desplaza por dentro)
     <div className={`flex min-h-full flex-col ${ruta === 'explorar' ? 'min-[901px]:h-full' : ''}`}>
+      {/* Primer elemento al tabular: salta la cabecera. Sin #ancla, para no ensuciar la URL compartida */}
+      <a
+        href="#contenido"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('contenido')?.focus()
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-m focus:bg-panel focus:px-3 focus:py-2 focus:text-sm focus:ring-2 focus:ring-[var(--accent)]"
+      >
+        {TEXTOS[idioma].saltarAlContenido}
+      </a>
       <Cabecera />
-      <main className="relative flex flex-1 flex-col">
+      <main id="contenido" tabIndex={-1} className="relative flex flex-1 flex-col outline-none">
         {/* Un solo mapa para la portada y el explorador: al cambiar de pantalla no se recarga */}
         {ruta !== 'metodologia' && (
           <div

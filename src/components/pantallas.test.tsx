@@ -192,3 +192,16 @@ describe('esperas y errores', () => {
     expect(reintentar).toHaveBeenCalledOnce()
   })
 })
+
+describe('saltar al contenido', () => {
+  it('es lo primero al tabular y lleva el foco al contenido sin cambiar la URL', async () => {
+    const router = renderRuta('/explorar')
+    const enlace = await screen.findByRole('link', { name: 'Saltar al contenido' })
+    const url = router.state.location.href
+    await userEvent.tab()
+    expect(enlace).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByRole('main')).toHaveFocus()
+    expect(router.state.location.href).toBe(url)
+  })
+})

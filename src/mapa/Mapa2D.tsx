@@ -5,6 +5,7 @@ import { colorAnomalia } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
 import { useRango, useZonas } from '../lib/useZonas'
+import { useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
 import { CAJA_SUELO, pintarSuelo2D } from './suelo2d'
 
@@ -132,7 +133,8 @@ interface Props {
  * color pleno, rayado o contorno punteado.
  */
 export function Mapa2D({ interactivo = true }: Props) {
-  const { idioma, variable, sel, seleccionar, anio, periodo } = useApp()
+  const { idioma, periodo } = useApp()
+  const { variable, sel, seleccionar, anio } = useBusqueda()
   const tema = useApp((s) => s.tema) // el suelo y los colores del año se leen del tema
   const rango = useRango()
   const an = anio == null ? null : anomaliasAnio(variable, periodo, rango)

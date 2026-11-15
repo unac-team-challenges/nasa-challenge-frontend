@@ -7,7 +7,7 @@ test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendenc
   page.on('pageerror', (e) => errores.push(e.message))
   page.on('console', (m) => m.type() === 'error' && errores.push(m.text()))
 
-  await page.goto('/#explorar')
+  await page.goto('/explorar')
   const variable = page.getByRole('group', { name: 'Variable' })
   await variable.getByRole('button', { name: 'Temperatura' }).click()
   await expect(variable.getByRole('button', { name: 'Temperatura' })).toHaveAttribute(
@@ -40,7 +40,7 @@ test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendenc
 })
 
 test('Caso 2: la ficha de La Libertad e Ica compara 2001 y 2024; Amazonas no', async ({ page }) => {
-  await page.goto('/?sinwebgl#explorar') // el mapa 2D se puede elegir con teclado
+  await page.goto('/explorar?sinwebgl') // el mapa 2D se puede elegir con teclado
   const mapa = page.getByRole('group', { name: 'Mapa del Perú en 2D' })
   const informe = page.locator('#informe')
 

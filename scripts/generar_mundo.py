@@ -10,7 +10,7 @@ Fuentes (públicas, sin cuenta):
 - Ríos y lagos: Natural Earth 1:50m v5.1.2 (ne_50m_rivers_lake_centerlines, ne_50m_lakes).
 
 Salida:
-- mundo.webp (RGB, 1024×1024, equirectangular en la caja WORLD_BOX)
+- mundo.webp (RGB, WebP sin pérdida, 1024×1024, equirectangular en la caja WORLD_BOX)
     R = en tierra: sombreado del relieve (0 oscuro, 1 claro); en el mar: profundidad (0 somero, 1 fosa)
     G = máscara de tierra levemente difuminada (la costa está donde G cruza 0,5)
     B = máscara de tierra muy difuminada (aguas someras y sombra)
@@ -174,14 +174,14 @@ def main():
     G = ndimage.gaussian_filter(tierra, 1.2)
     B = ndimage.gaussian_filter(tierra, 7.0)
     img = (np.dstack([R, G, B]) * 255 + 0.5).clip(0, 255).astype(np.uint8)
-    Image.fromarray(img, "RGB").save(AQUI / "mundo.webp", lossless=True, quality=100, method=6)
+    Image.fromarray(img, "RGB").save(AQUI / "mundo.webp", lossless=True, method=6, quality=100)  # sin pérdida: los canales son datos
     fr = fronteras()
     es = ndimage.gaussian_filter(e, 0.8)
     elev = np.where(tierra > 0, np.clip(es, 0, 6000) / 6000, np.clip(-es, 0, 8500) / 8500)
     ag = agua() * tierra
     fb = rasterizar([(l, 1.0) for l in fr], [], 1.6 * SS) * tierra
     img2 = (np.dstack([np.clip(elev, 0, 1), ag, fb]) * 255 + 0.5).clip(0, 255).astype(np.uint8)
-    Image.fromarray(img2, "RGB").save(AQUI / "mundo2.webp", lossless=True, quality=100, method=6)
+    Image.fromarray(img2, "RGB").save(AQUI / "mundo2.webp", lossless=True, method=6, quality=100)  # sin pérdida: los canales son datos
     # Controles: Lima es tierra, el mar frente a Lima es mar y la fosa Perú-Chile es honda
     def celda(lon, lat):
         return int((LAT1 - lat) / (LAT1 - LAT0) * (H - 1)), int((lon - LON0) / (LON1 - LON0) * (W - 1))

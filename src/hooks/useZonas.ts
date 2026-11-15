@@ -100,6 +100,8 @@ export function useDetalle(id: string | null): {
     queryFn: () => detalleDeApi(id!, variable),
     enabled: !!api && !!id,
     staleTime: Infinity,
+    // al cambiar de variable en la misma zona se ve el gráfico anterior, no el esqueleto
+    placeholderData: (previo, consulta) => (consulta?.queryKey[2] === id ? previo : undefined),
   })
   const local = useMemo(
     () => (id ? serie(id, variable, rango, sinNino) : null),

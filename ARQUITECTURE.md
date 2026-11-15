@@ -86,12 +86,12 @@ Cada feature lleva **solo** las subcarpetas que necesita (`components/`, `hooks/
 
 ## 5. Cómo se hace cumplir
 
-`eslint.config.js` usa la regla **nativa** `no-restricted-imports` (sin plugin nuevo):
+`eslint.config.js` usa `eslint-plugin-import-x` (`import-x/no-restricted-paths`, con `eslint-import-resolver-typescript` para que entienda `@/`) para la dirección de dependencias, y las reglas nativas `no-restricted-imports` + `no-restricted-syntax` para prohibir imports relativos, estáticos y dinámicos:
 
-- Prohíbe imports relativos (`./`, `../`).
+- Prohíbe imports relativos (`./x`, `../x`, `.`, `..`), también en `import()` dinámico.
 - Compartido no puede importar `@/features/**` ni `@/app/**`.
 - Cada feature no puede importar `@/app/**` ni las otras features (la lista se arma leyendo `src/features/`, así una feature nueva queda protegida sola).
-- `testing/` está exento (monta el router real).
+- `testing/` y `main.tsx` están exentos de la dirección de dependencias (montan el router real).
 
 `pnpm lint` falla si alguien rompe una regla. Imports dinámicos (`lazy(() => import(...))`) también se revisan; el plan lo verifica con una violación de prueba.
 

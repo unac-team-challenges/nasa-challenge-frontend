@@ -15,6 +15,8 @@ const features = readdirSync('./src/features', { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => d.name)
 
+const MSG_RELATIVOS = 'Usa el alias @/ en vez de imports relativos.'
+
 export default defineConfig([
   globalIgnores(['dist', 'playwright-report', 'test-results']),
   {
@@ -33,7 +35,15 @@ export default defineConfig([
   {
     files: ['src/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [{ group: ['./*', '../*'], message: 'Usá el alias @/ en vez de imports relativos.' }] }],
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['.', '..', './*', '../*'], message: MSG_RELATIVOS }] },
+      ],
+      // la regla nativa no revisa import() dinámico
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'ImportExpression[source.value=/^\\.{1,2}(\\/|$)/]', message: MSG_RELATIVOS },
+      ],
     },
   },
   // Dirección de dependencias (src/testing y src/main.tsx quedan fuera: no tienen zona como target)
@@ -41,7 +51,9 @@ export default defineConfig([
     files: ['src/**/*.{ts,tsx}'],
     plugins: { 'import-x': importX },
     settings: {
-      'import-x/resolver-next': [createTypeScriptImportResolver({ project: './tsconfig.app.json' })],
+      'import-x/resolver-next': [
+        createTypeScriptImportResolver({ project: './tsconfig.app.json' }),
+      ],
     },
     rules: {
       'import-x/no-restricted-paths': [
@@ -56,7 +68,11 @@ export default defineConfig([
             // las features no conocen app
             { target: './src/features', from: './src/app' },
             // una feature no importa de otra
-            ...features.map((f) => ({ target: `./src/features/${f}`, from: './src/features', except: [`./${f}`] })),
+            ...features.map((f) => ({
+              target: `./src/features/${f}`,
+              from: './src/features',
+              except: [`./${f}`],
+            })),
           ],
         },
       ],

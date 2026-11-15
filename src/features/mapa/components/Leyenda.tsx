@@ -7,10 +7,11 @@ import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
-import { PARADAS_CALOR, tieneAnio } from '@/features/mapa/utils/calor'
+import { tieneAnio } from '@/features/mapa/utils/calor'
 
-/** Frío → calor, los mismos tokens que pinta el mapa de calor (PARADAS_CALOR). */
-const RAMPA = `linear-gradient(to right, ${PARADAS_CALOR.map((v) => `var(${v})`).join(', ')})`
+/** Degradado con los mismos tokens que pinta el mapa de color de la variable (`calor.paradas`). */
+const rampa = (paradas: string[]) =>
+  `linear-gradient(to right, ${paradas.map((v) => `var(${v})`).join(', ')})`
 
 const CLAVE = 'leyenda-abierta'
 
@@ -55,7 +56,7 @@ export function Leyenda() {
   const calor = useCalor()
   const conCalor = !!calor && tieneAnio(calor, anio)
   // Con el mapa de calor, el color es la temperatura: las muestras de estado la llevan debajo
-  const lleno = conCalor ? RAMPA : sube
+  const lleno = calor && conCalor ? rampa(calor.paradas) : sube
   const maxima = Math.max(
     ...Object.values(zonas)
       .filter((d) => d.status !== 'pocos_datos')
@@ -205,7 +206,7 @@ export function Leyenda() {
                     className={muestra}
                     style={{
                       background: conCalor
-                        ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${RAMPA}`
+                        ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${calor ? rampa(calor.paradas) : sube}`
                         : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
                       border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
                       opacity: 0.85,
@@ -224,19 +225,23 @@ export function Leyenda() {
             <div className="mt-1.5 grid gap-0.5 text-xs">
               <span className="text-fg">
                 {anio == null
-                  ? t.calorMedia(calor.anio0, calor.anio0 + calor.anios - 1)
-                  : t.calorAnio(anio)}
+                  ? t.calorMedia(t.calorCosa[variable], calor.anio0, calor.anio0 + calor.anios - 1)
+                  : t.calorAnio(t.calorCosa[variable], anio)}
               </span>
               <span
                 className="h-2.5 rounded-[3px] border border-line"
-                style={{ background: RAMPA }}
+                style={{ background: rampa(calor.paradas) }}
                 aria-hidden
               />
               <span className="flex justify-between text-muted">
-                <span>{Math.round(calor.min)} °C</span>
-                <span>{Math.round(calor.max)} °C</span>
+                <span>
+                  {Math.round(calor.min)} {calor.unidad}
+                </span>
+                <span>
+                  {Math.round(calor.max)} {calor.unidad}
+                </span>
               </span>
-              <span className="text-muted">{t.calorNota}</span>
+              <span className="text-muted">{t.calorNota[variable]}</span>
             </div>
           )}
           <p className="m-0 mt-1 text-xs text-fg">

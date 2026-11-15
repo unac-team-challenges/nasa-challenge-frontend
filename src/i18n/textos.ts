@@ -58,10 +58,15 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
-  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
-  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
-  calorNota:
-    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+  calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
+  calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
+  calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
+  calorNota: {
+    lluvia:
+      'Celdas NASA POWER de ~50 km (MERRA-2). Más oscuro = llueve más: la costa es ocre y la selva, violeta. En los Andes el valor sale suavizado.',
+    temperatura:
+      'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+  } as PorVariable<string>,
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -286,10 +291,15 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
-  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
-  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
-  calorNota:
-    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
+  calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
+  calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
+  calorNota: {
+    lluvia:
+      'NASA POWER cells of ~50 km (MERRA-2). Darker = more rain: the coast is ochre and the jungle, violet. In the Andes values are smoothed.',
+    temperatura:
+      'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  },
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

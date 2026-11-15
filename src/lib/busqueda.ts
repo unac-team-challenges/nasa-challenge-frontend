@@ -1,4 +1,4 @@
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useRouterState, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VARIABLES, type Variable } from '@/data/datos'
 import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
@@ -20,6 +20,8 @@ const esquema = z.object({
     .catch(undefined),
   /** Idioma: sin él, español. Un enlace compartido en inglés se abre en inglés. */
   lang: z.enum(['es', 'en']).optional().catch(undefined),
+  /** Capa del mapa: «vegetacion» muestra los 5 recuadros con vegetación medida en vez de la variable */
+  capa: z.enum(['vegetacion']).optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
   anio: z.coerce.number().int().min(1981).max(2100).optional().catch(undefined),
 })
@@ -48,7 +50,14 @@ export const validarBusqueda = (s: Record<string, unknown>): Busqueda => esquema
  * arrastrar la barra cambia muchas veces por segundo, y solo deben redibujarse quienes lo usan.
  */
 export function useAnio(): number | null {
-  return useSearch({ strict: false, select: (s) => (s as Busqueda).anio ?? null })
+  // En el modo Vegetación no hay máquina del tiempo: un ?anio suelto no se aplica
+  return useSearch({
+    strict: false,
+    select: (s) => {
+      const b = s as Busqueda
+      return b.capa === 'vegetacion' ? null : (b.anio ?? null)
+    },
+  })
 }
 
 /**
@@ -59,8 +68,14 @@ export function useAnio(): number | null {
 export function useBusqueda() {
   const variable = useSearch({ strict: false, select: (s) => (s as Busqueda).variable })
   const perfil = useSearch({ strict: false, select: (s) => (s as Busqueda).perfil })
+  const capa = useSearch({ strict: false, select: (s) => (s as Busqueda).capa })
   const id = useParams({ strict: false, select: (p) => (p as { id?: string }).id })
   const navigate = useNavigate()
+  // El modo Vegetación es del explorador: en la portada o en la metodología, ?capa no cambia nada
+  const enMapa = useRouterState({
+    select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
+  })
+  const vegetacion = enMapa && capa === 'vegetacion'
   const poner = (cambio: Partial<Busqueda>) =>
     navigate({
       to: '.',
@@ -72,9 +87,22 @@ export function useBusqueda() {
     variable: variable ?? 'lluvia',
     perfil: perfil ?? 'agricultor',
     sel: id ?? null,
+    /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
+    vegetacion,
     setVariable: (variable: Variable) => {
       useApp.getState().setSinNino(false)
-      return poner({ variable })
+      // Al salir del modo Vegetación también se suelta un ?anio que no se veía
+      return poner({ variable, capa: undefined, ...(capa ? { anio: undefined } : {}) })
+    },
+    /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
+    setVegetacion: () => {
+      useApp.getState().setReproduciendo(false)
+      return navigate({
+        to: id ? '/zona/$id' : '/explorar',
+        params: id ? { id } : {},
+        search: (p: Busqueda) => ({ ...p, capa: 'vegetacion' as const, anio: undefined }),
+        replace: true,
+      })
     },
     setPerfil: (perfil: Perfil) => poner({ perfil }),
     /** El idioma queda también en la URL (solo `en`; el español es el valor por defecto) */

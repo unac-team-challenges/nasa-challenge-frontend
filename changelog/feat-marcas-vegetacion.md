@@ -1,0 +1,48 @@
+# feat/marcas-vegetacion
+
+Sobre `developer` (ya con #42 y el rediseño del equipo: cabecera, leyenda minimizable, línea de tiempo horizontal, gestos del 2D y mapa de calor). Decisión de Favio (15 nov): la vegetación entra al mapa como un **modo «Vegetación»** (opción A). Reemplaza la primera versión de este PR, que solo marcaba los lugares con puntos.
+
+## Por qué así
+Solo hay datos de vegetación de **5 recuadros** (3 valles y 2 zonas de selva), no de los 25 departamentos. Por eso no es una variable más: el modo atenúa los departamentos y muestra los 5 recuadros reales con el color de su tendencia.
+
+## Qué cambia
+- **Botón «Vegetación»** (con ícono de hoja) en el mismo grupo que Lluvia y Temperatura (`Cabecera.tsx`).
+  - Va en la URL como `?capa=vegetacion` (`lib/busqueda.ts`) y no cambia el tipo `Variable`: lluvia y temperatura siguen igual.
+  - Con `?capa=vegetacion` el `?anio` no se aplica (no hay máquina del tiempo); al salir con Lluvia o Temperatura se suelta.
+  - Solo vale en el explorador (`/explorar`, `/zona/:id`): en la portada, `?capa=vegetacion` no cambia el mapa ni marca el botón.
+  - Al entrar se apaga la máquina del tiempo; desde la portada lleva al explorador. Lluvia o Temperatura sacan del modo.
+- **Mapa 3D** (`escena.ts`, `setVegetacion`):
+  - departamentos planos y atenuados;
+  - los 5 recuadros a tamaño real (unos 25 km), con borde;
+  - sin etiquetas de lluvia, sin partículas y sin la tarjeta del puntero;
+  - los recuadros se colocan antes de dibujar el cuadro (`ubicarCajasVeg`), para no ir un cuadro atrasados;
+  - el nombre de cada lugar va sobre su recuadro, con el punto del color de su tendencia.
+- **Mapa 2D** (`Mapa2D.tsx`): lo mismo. La etiqueta accesible de cada departamento dice si tiene vegetación medida (`t.vegConLugar`).
+- **Colores** (`COLOR_TENDENCIA`):
+  - verde: más vegetación (Chavimochic, Ica y Olmos);
+  - ocre: menos árboles (La Pampa);
+  - color del texto: sin cambio claro (Iquitos).
+- **Leyenda:** la misma leyenda minimizable del equipo; en el modo cambia el contenido (los 3 colores y «cada cuadro es el área medida, no el departamento»).
+- **Sin mapa de calor ni ayuda de modo** en este modo (`useCalor` devuelve null; `AyudaModo` se oculta).
+- **Título del mapa** «Vegetación medida con satélite · MODIS, 2001–2024 · 5 lugares». Sin barra de tiempo.
+- **Informe** (`app/rutas/PanelVegetacion.tsx`), en vez de la ficha de lluvia:
+  - con un lugar elegido: su antes y después (Caso 2 o árboles de la selva, con su aviso) y la lista de los otros 4;
+  - sin lugar: qué se midió y los 5 lugares para elegir;
+  - en un departamento sin vegetación medida: lo dice y ofrece los 5 lugares.
+  - `Ficha.tsx` no cambia.
+- `vegetacion.ts`: cada lugar con su recuadro real (`caja`) y su `tendencia`; el centro se calcula del recuadro.
+
+## Pruebas
+- `app/vegetacion.test.ts`: cada recuadro tiene su ficha, y el color de cada recuadro dice lo mismo que su ficha (Caso 2: el NDVI sube; selva: el rango probable).
+- `mapa/utils/vegetacion.test.ts`: el centro y las 4 esquinas de cada recuadro caen dentro de su departamento, salvo la esquina suroeste de Chavimochic (valle de la costa, cae al mar: el backend mide 847 de 900 píxeles ahí). La excepción está escrita en el test.
+- `app/rutas/PanelVegetacion.test.tsx` (6):
+  - el botón entra al modo, lo escribe en la URL y quita la máquina del tiempo;
+  - la lista de los 5 lugares;
+  - elegir La Pampa abre los árboles de la selva, y Lluvia saca del modo;
+  - Lima, sin vegetación medida;
+  - en la portada, `?capa=vegetacion` no marca el botón;
+  - un `?anio` suelto no se aplica en el modo y se suelta al volver a Lluvia.
+- En el navegador:
+  - 3D y 2D, tema oscuro y claro, español e inglés;
+  - al volver a Lluvia reaparecen las etiquetas con valores y la barra de tiempo;
+  - consola sin errores.

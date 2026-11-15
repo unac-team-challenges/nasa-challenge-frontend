@@ -69,6 +69,21 @@ const es = {
     temperatura:
       'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   } as PorVariable<string>,
+  // Modo «Vegetación» del mapa: los 5 recuadros medidos (no hay datos de los 25 departamentos)
+  vegetacionBtn: 'Vegetación',
+  vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
+  mapHVeg: 'Vegetación medida con satélite',
+  mapSubVeg: 'MODIS, 2001–2024 · 5 lugares',
+  vegSube: 'Más vegetación',
+  vegBaja: 'Menos árboles',
+  vegIgual: 'Sin cambio claro',
+  legVegNota:
+    'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
+  vegIntroH: 'Vegetación: 5 lugares medidos',
+  vegIntro:
+    'No hay datos de vegetación de los 25 departamentos: medimos 5 lugares con los satélites MODIS. En la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
+  vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
+  vegOtros: 'Otros lugares con vegetación medida',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -498,6 +513,20 @@ const en: Textos = {
     temperatura:
       'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
   },
+  vegetacionBtn: 'Vegetation',
+  vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
+  mapHVeg: 'Vegetation measured by satellite',
+  mapSubVeg: 'MODIS, 2001–2024 · 5 places',
+  vegSube: 'More vegetation',
+  vegBaja: 'Fewer trees',
+  vegIgual: 'No clear change',
+  legVegNota:
+    'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
+  vegIntroH: 'Vegetation: 5 measured places',
+  vegIntro:
+    'There is no vegetation data for all 25 departments: we measured 5 places with the MODIS satellites. On the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
+  vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
+  vegOtros: 'Other places with measured vegetation',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

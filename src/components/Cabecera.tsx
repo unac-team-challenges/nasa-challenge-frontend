@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import {
   CloudRain,
   GraduationCap,
+  Leaf,
   Moon,
   Sprout,
   Sun,
@@ -48,7 +49,8 @@ export function Cabecera() {
   const idioma = useApp((s) => s.idioma)
   const alternarTema = useApp((s) => s.alternarTema)
   // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
-  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
+  const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
+    useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
@@ -87,7 +89,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
+      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
         <div className={riel} role="group" aria-label={t.variableLbl}>
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
@@ -97,7 +99,7 @@ export function Cabecera() {
                 variant="toggle"
                 size="sm"
                 className={opcion}
-                aria-pressed={variable === v}
+                aria-pressed={!vegetacion && variable === v}
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
@@ -105,6 +107,19 @@ export function Cabecera() {
               </Button>
             )
           })}
+          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos */}
+          <Button
+            variant="toggle"
+            size="sm"
+            className={opcion}
+            aria-pressed={vegetacion}
+            title={t.vegetacionBtn}
+            onClick={() => setVegetacion()}
+          >
+            <Leaf className="size-4" aria-hidden="true" />
+            {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
+            <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
+          </Button>
         </div>
         <div className={riel} role="group" aria-label={t.perfilLbl}>
           {ORDEN_PERFILES.map((p) => {

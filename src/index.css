@@ -384,6 +384,18 @@ h3 {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+/* Área de toque de 44 px (guía de Apple) sin agrandar el control: en celular, un borde invisible lo
+   hace tocable en 44 px. Solo crece en el eje donde el control mide menos; un control de 44 px o más
+   no cambia. El elemento debe estar posicionado (relative o absolute). */
+@media (max-width: 900px) {
+  .toque44::after {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
+}
+
 /* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
 @keyframes entrada {
   from {
@@ -481,6 +493,26 @@ h3 {
   .saliendo {
     transition: none;
   }
+}
+
+/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
+   departamentos para no competir con el dato del mapa */
+.lbl3d.veg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px 1px 5px;
+}
+.lbl3d.veg::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* --veg: color de la tendencia del lugar (lo pone el mapa) */
+  background: var(--veg, var(--map-green));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--veg, var(--map-green)) 35%, transparent);
 }
 
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */

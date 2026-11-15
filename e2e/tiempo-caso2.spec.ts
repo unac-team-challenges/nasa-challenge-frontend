@@ -58,12 +58,18 @@ test('Caso 2: la ficha de La Libertad, Ica y Lambayeque compara 2001 y 2024; Ama
   const mapa = page.getByRole('group', { name: 'Mapa del Perú en 2D' })
   const informe = page.locator('#informe')
 
-  for (const departamento of ['La Libertad', 'Ica', 'Lambayeque']) {
+  // La Libertad e Ica: el verde es riego documentado («No todo cambio es el clima»). Olmos
+  // (Lambayeque) mezcla riego y bosque seco y pesa El Niño: solo las cifras, sin atribuir la causa.
+  for (const [departamento, titulo] of [
+    ['La Libertad', 'No todo cambio es el clima'],
+    ['Ica', 'No todo cambio es el clima'],
+    ['Lambayeque', 'La costa que reverdece'],
+  ]) {
     const zona = mapa.getByRole('button', { name: new RegExp(`^${departamento}`) })
     await zona.focus()
     await page.keyboard.press('Enter')
     await expect(informe).toContainText(departamento)
-    await expect(informe.getByRole('heading', { name: 'La costa que reverdece' })).toBeVisible()
+    await expect(informe.getByRole('heading', { name: titulo })).toBeVisible()
     await expect(informe.getByRole('img', { name: /2001/ })).toBeVisible()
     await expect(informe.getByRole('img', { name: /2024/ })).toBeVisible()
   }
@@ -72,6 +78,7 @@ test('Caso 2: la ficha de La Libertad, Ica y Lambayeque compara 2001 y 2024; Ama
   await amazonas.focus()
   await page.keyboard.press('Enter')
   await expect(informe).toContainText('Amazonas')
+  await expect(informe.getByRole('heading', { name: 'No todo cambio es el clima' })).toHaveCount(0)
   await expect(informe.getByRole('heading', { name: 'La costa que reverdece' })).toHaveCount(0)
   await expect(informe.getByRole('heading', { name: 'Árboles de la selva' })).toHaveCount(0)
 })

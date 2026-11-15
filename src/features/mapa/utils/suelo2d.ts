@@ -2,11 +2,11 @@
  * Suelo del mapa 2D: el mismo mar, relieve, ríos y fronteras reales que el 3D (src/features/mapa/escena/escena.ts),
  * pintados una sola vez en un lienzo con los colores del tema. Sin animación: es una imagen fija
  * que va debajo de los departamentos del SVG.
- * Texturas: public/mapa/mundo*.png (scripts/generar_mundo.py; SRTM/ETOPO1 y Natural Earth).
+ * Texturas: public/mapa/mundo*.webp (scripts/generar_mundo.py; SRTM/ETOPO1 y Natural Earth).
  */
 import { cssVar, esTemaClaro, hexMix } from '@/utils/color'
 
-/** Caja de public/mapa/mundo*.png (la misma que MUNDO en escena.ts). */
+/** Caja de public/mapa/mundo*.webp (la misma que MUNDO en escena.ts). */
 const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 }
 const TEX = 1024
 
@@ -64,8 +64,8 @@ function leerPesos() {
   pesos ??= (async () => {
     const base = import.meta.env.BASE_URL
     const [m1, m2] = await Promise.all([
-      cargar(`${base}mapa/mundo.png`),
-      cargar(`${base}mapa/mundo2.png`),
+      cargar(`${base}mapa/mundo.webp`),
+      cargar(`${base}mapa/mundo2.webp`),
     ])
     const C = CAJA_SUELO
     const sx = ((C.lon0 - MUNDO.lon0) / (MUNDO.lon1 - MUNDO.lon0)) * TEX

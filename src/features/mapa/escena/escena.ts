@@ -214,7 +214,7 @@ const proyectar = ([lon, lat]: number[]) =>
  * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
-const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.webp
 /** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
 const RELIEVE = 1.8
 /** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
@@ -846,8 +846,8 @@ export class EscenaPeru {
     const cargador = new THREE.TextureLoader()
     const base = import.meta.env.BASE_URL
     for (const [archivo, clave] of [
-      ['mapa/mundo.png', 'uMundo'],
-      ['mapa/mundo2.png', 'uMundo2'],
+      ['mapa/mundo.webp', 'uMundo'],
+      ['mapa/mundo2.webp', 'uMundo2'],
     ] as const)
       cargador.load(base + archivo, (tx) => {
         if (this.destruida) return tx.dispose() // el mapa se cerró mientras cargaba

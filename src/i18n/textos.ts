@@ -70,11 +70,11 @@ const es = {
     temperatura:
       'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   } as PorVariable<string>,
-  // Modo «Vegetación» del mapa: los 5 recuadros medidos (no hay datos de los 25 departamentos)
+  // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
   vegetacionBtn: 'Vegetación',
   vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
   mapHVeg: 'Vegetación medida con satélite',
-  mapSubVeg: 'MODIS, 2001–2024 · 5 lugares',
+  mapSubVeg: 'MODIS, 2001–2024 · todo el Perú y 5 lugares',
   vegSube: 'Más vegetación',
   vegBaja: 'Menos árboles',
   vegIgual: 'Sin cambio claro',
@@ -82,7 +82,10 @@ const es = {
     'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
   vegIntroH: 'Vegetación: 5 lugares medidos',
   vegIntro:
-    'No hay datos de vegetación de los 25 departamentos: medimos 5 lugares con los satélites MODIS. En la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
+    'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
+  legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
+  legVegMallaNota:
+    'Celdas de ~27 km, cada año con al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
@@ -521,7 +524,7 @@ const en: Textos = {
   vegetacionBtn: 'Vegetation',
   vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
   mapHVeg: 'Vegetation measured by satellite',
-  mapSubVeg: 'MODIS, 2001–2024 · 5 places',
+  mapSubVeg: 'MODIS, 2001–2024 · all of Peru and 5 places',
   vegSube: 'More vegetation',
   vegBaja: 'Fewer trees',
   vegIgual: 'No clear change',
@@ -529,7 +532,10 @@ const en: Textos = {
     'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
   vegIntroH: 'Vegetation: 5 measured places',
   vegIntro:
-    'There is no vegetation data for all 25 departments: we measured 5 places with the MODIS satellites. On the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
+    'The background colour is the greenness (NDVI) of all of Peru, measured by the MODIS satellites. The 5 squares are places studied up close: on the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
+  legVegMalla: (a, b) => `Background: mean greenness (NDVI) ${a}–${b}`,
+  legVegMallaNota:
+    'Cells of ~27 km, each year with at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,

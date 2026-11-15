@@ -12,8 +12,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * T2M anual de cada celda de NASA POWER (~0,5° × 0,625°) dentro de Perú, para el mapa de calor.
-         *     Solo existe para `temperatura`.
+         * Valor anual de cada celda dentro de Perú, para el mapa de color: temperatura (`t2m`, °C) y lluvia
+         *     (`valor`, mm/año) de NASA POWER (~0,5° × 0,625°), y vegetación (`valor`, NDVI de MODIS, 0,25°).
+         *     `lluvia_imerg` no tiene malla.
          */
         get: operations["celdas"];
         put?: never;
@@ -151,6 +152,7 @@ export interface components {
              */
             ndvi_anual: number;
         };
+        /** @description Una celda trae `t2m` (temperatura) o `valor` (lluvia y vegetación), nunca los dos. */
         Celda: {
             /**
              * Format: double
@@ -159,14 +161,22 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
-            /** @description Media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el año no está completo. */
-            t2m: (number | null)[];
+            /**
+             * @description Solo temperatura: media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el
+             *     año no está completo.
+             */
+            t2m?: (number | null)[] | null;
+            /**
+             * @description Lluvia (mm/año) y vegetación (NDVI): un valor por año de `anio_inicio` a `anio_fin`; null si
+             *     falta el año.
+             */
+            valor?: (number | null)[] | null;
         };
         /** @description Cuerpo de los errores 400 y 404. */
         ErrorRespuesta: {
             error: string;
         };
-        /** @description `data/celdas/temperatura.json`, tal cual lo deja `pipeline/power.py`. */
+        /** @description `data/celdas/{variable}.json`, tal cual lo dejan `pipeline/power.py` y `pipeline/vegetacion_malla.py`. */
         Malla: {
             /** Format: int32 */
             anio_fin: number;
@@ -187,7 +197,12 @@ export interface components {
             dlon: number;
             /** @example MERRA-2 vía NASA POWER (T2M) */
             fuente: string;
-            /** @example °C */
+            /** @description Cómo leer la malla (solo vegetación: el NDVI se satura en la selva). */
+            nota?: string | null;
+            /**
+             * @description `°C` (temperatura), `mm/año` (lluvia) o `NDVI` (vegetación).
+             * @example °C
+             */
             unidad: string;
         };
         Punto: {
@@ -251,7 +266,7 @@ export interface components {
          */
         Status: "real" | "posible_casualidad" | "pocos_datos";
         /** @enum {string} */
-        Variable: "lluvia" | "temperatura" | "lluvia_imerg";
+        Variable: "lluvia" | "temperatura" | "lluvia_imerg" | "vegetacion";
         /** @description `GET /api/variables`: una entrada de `data/variables.json`, tal cual. */
         VariableInfo: {
             /** Format: int32 */
@@ -387,7 +402,7 @@ export interface operations {
     celdas: {
         parameters: {
             query: {
-                /** @description Obligatoria; solo temperatura */
+                /** @description Obligatoria: lluvia, temperatura o vegetacion */
                 variable: components["schemas"]["Variable"];
             };
             header?: never;

@@ -1642,8 +1642,12 @@ export class EscenaPeru {
       let transparente = false
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
-      if (this.veg) {
-        // Modo Vegetación: el departamento queda de fondo, sin dato
+      if (this.veg && calor) {
+        // Modo Vegetación: el NDVI por celda, pleno (la tendencia va solo en los 5 recuadros)
+        mat.color.set(0xffffff)
+        mapa = calor.real
+      } else if (this.veg) {
+        // Sin malla todavía: el departamento queda de fondo, sin dato
         mat.color.set(this.color('--muted'))
         transparente = true
         opacidad = 0.22

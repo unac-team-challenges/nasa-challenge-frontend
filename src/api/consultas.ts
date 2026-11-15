@@ -267,10 +267,12 @@ export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | nul
 export type Malla = components['schemas']['Malla']
 
 /** Malla de temperatura desde la API, o null sin API, con error o vacía (se usa la copia local). */
-export async function celdasDeApi(): Promise<Malla | null> {
+export async function celdasDeApi(
+  variable: 'temperatura' | 'vegetacion' = 'temperatura',
+): Promise<Malla | null> {
   if (!hayApi) return null
   try {
-    const r = await api.GET('/api/celdas', { params: { query: { variable: 'temperatura' } } })
+    const r = await api.GET('/api/celdas', { params: { query: { variable } } })
     return r.data?.celdas.length ? r.data : null
   } catch {
     return null

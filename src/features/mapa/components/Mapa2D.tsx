@@ -566,8 +566,10 @@ export function Mapa2D({ interactivo = true }: Props) {
             else if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
             else if (d.status === 'posible_casualidad') relleno = `url(#punteado-${clave})`
             if (vegetacion) {
-              // Modo Vegetación: los departamentos quedan de fondo, sin dato
-              relleno = 'color-mix(in srgb, var(--muted) 22%, transparent)'
+              // Modo Vegetación: debajo se ve el NDVI por celda; sin malla, el departamento queda de fondo
+              relleno = urlCalor
+                ? 'transparent'
+                : 'color-mix(in srgb, var(--muted) 22%, transparent)'
             } else if (d.status === 'pocos_datos') {
               relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'
               trazo = 'var(--muted)'

@@ -5,17 +5,21 @@
  */
 import geo from '@/data/departamentos.json'
 import power from '@/data/power.json'
+import vegetacionLocal from '@/data/vegetacion.json'
 
-export type Variable = 'lluvia' | 'temperatura'
+export type Variable = 'lluvia' | 'temperatura' | 'vegetacion'
 export type Periodo = 'largo' | 'reciente'
 export type Estado = 'real' | 'posible_casualidad' | 'pocos_datos'
 export type Region = 'costa' | 'sierra' | 'selva'
 /** Años que cubre una tendencia (de la API o de la copia local). */
 export type Rango = { year_start: number; year_end: number }
 
-export const VARIABLES: Variable[] = ['lluvia', 'temperatura']
+export const VARIABLES: Variable[] = ['lluvia', 'temperatura', 'vegetacion']
 /** Fuente de la copia local (src/data/power.json). */
 export const FUENTE_LOCAL = 'NASA POWER (MERRA-2)'
+/** Fuente de la copia local de vegetación (src/data/vegetacion.json). */
+export const FUENTE_LOCAL_VEG = 'MODIS MOD13A3 (NASA)'
+export const fuenteLocal = (v: Variable) => (v === 'vegetacion' ? FUENTE_LOCAL_VEG : FUENTE_LOCAL)
 
 export interface Departamento {
   id: string
@@ -65,15 +69,30 @@ interface BloqueVariable {
   sin_nino: Record<Periodo, Record<string, ZonaCruda>>
   series: Record<string, [number, number][]>
 }
-const DATOS = power as unknown as {
+const POWER = power as unknown as {
   generado: string
   anios_nino: number[]
   periodos: Record<Periodo, Rango>
-  variables: Record<Variable, BloqueVariable>
+  variables: Record<'lluvia' | 'temperatura', BloqueVariable>
+}
+/**
+ * La vegetación (NDVI de MODIS) no viene de POWER: su copia local (src/data/vegetacion.json, los
+ * mismos números que /api/zonas?variable=vegetacion) sale de scripts/copiar_vegetacion.py. MODIS
+ * empieza en 2001: el periodo largo usa los mismos años que el reciente.
+ */
+const DATOS = {
+  ...POWER,
+  variables: { ...POWER.variables, vegetacion: vegetacionLocal as unknown as BloqueVariable },
 }
 
 export const DEPARTAMENTOS = geo as Departamento[]
 export const PERIODOS = DATOS.periodos
+/** Años de la copia local: la vegetación tiene los suyos (los de su malla de MODIS), no los de POWER. */
+export function rangoLocal(v: Variable, p: Periodo): Rango {
+  if (v !== 'vegetacion') return PERIODOS[p]
+  const z = Object.values(DATOS.variables.vegetacion.periodos[p])[0]
+  return { year_start: z.year_start!, year_end: z.year_end! }
+}
 export const ANIOS_NINO = DATOS.anios_nino
 export const GENERADO = DATOS.generado
 
@@ -180,7 +199,8 @@ export function serie(id: string, variable: Variable, rango: Rango, sinNino = fa
     .map(([y, v]) => ({ y, v }))
 }
 
-/** Anomalía de cada año frente al promedio de la zona en el rango (lluvia: fracción; temperatura: °C). */
+/** Anomalía de cada año frente al promedio de la zona en el rango (lluvia: fracción; temperatura: °C;
+ * vegetación: diferencia de NDVI). */
 function anomaliasPorZona(variable: Variable, periodo: Periodo, rango: Rango) {
   const zonas = zonasDe(variable, periodo)
   const porId: Record<string, Record<number, number>> = {}

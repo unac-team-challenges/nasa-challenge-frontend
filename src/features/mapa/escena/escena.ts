@@ -890,7 +890,7 @@ export class EscenaPeru {
   }
 
   /**
-   * Malla de temperatura por celda. La textura se ubica con las coordenadas proyectadas: las tapas
+   * Malla por celda (temperatura o vegetación). La textura se ubica con las coordenadas proyectadas: las tapas
    * de ExtrudeGeometry usan (x, y) de `proyectar` como UV, así que basta escalar y desplazar.
    */
   setCalor(calor: Calor | null) {
@@ -1091,6 +1091,8 @@ export class EscenaPeru {
     const P = this.particulas
     if (!P) return
     const calor = this.variable === 'temperatura'
+    // La vegetación no tiene partículas: ni lluvia ni calor que suba
+    const sinParticulas = this.variable === 'vegetacion'
     const U = P.puntos.material.uniforms
     // Más claras que las columnas para que se lean encima de ellas
     const claro = esTemaClaro()
@@ -1121,7 +1123,7 @@ export class EscenaPeru {
       total += w
       acumulado.push(total)
     }
-    const porPeso = calor ? 70 : this.anio ? 260 : 520
+    const porPeso = sinParticulas ? 0 : calor ? 70 : this.anio ? 260 : 520
     const cuenta = Math.min(N_PARTICULAS, Math.round(total * porPeso))
     // Se reparten una vez por cambio de datos; luego solo se mueven en la GPU
     const pos = P.geo.attributes.position.array as Float32Array
@@ -1242,11 +1244,9 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    // Temperatura con malla: la tapa muestra el calor por celda; el estado va en rayas y opacidad
-    const calor =
-      this.variable === 'temperatura' && this.calor && tieneAnio(this.calor, this.numeroAnio)
-        ? this.texCalor
-        : null
+    // Variable con malla (temperatura o vegetación): la tapa muestra el valor por celda; el estado va
+    // en rayas y opacidad. useCalor solo da malla a esas dos variables.
+    const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -1279,11 +1279,7 @@ export class EscenaPeru {
       // Recompilar el shader solo si cambia lo que lo define (textura, transparencia o modo calor)
       const conCalor = !!calor
       const defs = (mat.defines ??= {})
-      if (
-        !!mat.map !== !!mapa ||
-        mat.transparent !== transparente ||
-        'CALOR' in defs !== conCalor
-      )
+      if (!!mat.map !== !!mapa || mat.transparent !== transparente || 'CALOR' in defs !== conCalor)
         mat.needsUpdate = true
       if (conCalor) defs.CALOR = ''
       else delete defs.CALOR
@@ -1347,6 +1343,8 @@ export class EscenaPeru {
 
   private formatearAnomalia(a: number) {
     const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(a).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(a) * 100) + ' %'
@@ -1354,6 +1352,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(v).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'

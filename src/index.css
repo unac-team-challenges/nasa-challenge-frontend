@@ -36,6 +36,12 @@
   --calor-3: #f57c2b;
   --calor-4: #d9382a;
   --calor-5: #96172a;
+  /* Mapa de verdor (vegetación, NDVI): ocre del desierto → paja → verde claro → verde → selva */
+  --veg-0: #c8a978;
+  --veg-1: #e3d58c;
+  --veg-2: #a8cf73;
+  --veg-3: #4f9a4c;
+  --veg-4: #1f5e34;
   --accent: #a8285a;
   --accent-text: #a8285a;
   --accent-fg: #ffffff;

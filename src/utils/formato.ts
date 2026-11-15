@@ -9,6 +9,7 @@ export function num(v: number, decimales: number, idioma: Idioma) {
 /** Cambio por década con signo: "−44 mm" (lluvia) o "+0,21 °C" (temperatura). */
 export function fmtValor(v: number, variable: Variable, idioma: Idioma) {
   const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+  if (variable === 'vegetacion') return signo + num(Math.abs(v), 3, idioma) + ' NDVI'
   return variable === 'temperatura'
     ? signo + num(v, 2, idioma) + ' °C'
     : signo + Math.round(Math.abs(v)) + ' mm'
@@ -31,6 +32,7 @@ export const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 /** Anomalía de un año: "+35 %" (lluvia) o "+0,4 °C" (temperatura). */
 export function fmtAnomalia(a: number, variable: Variable, idioma: Idioma) {
   const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+  if (variable === 'vegetacion') return signo + num(Math.abs(a), 3, idioma) + ' NDVI'
   return variable === 'temperatura'
     ? signo + num(a, 1, idioma) + ' °C'
     : signo + Math.round(Math.abs(a) * 100) + ' %'

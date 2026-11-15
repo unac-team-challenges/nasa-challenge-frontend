@@ -9,8 +9,8 @@ import {
 } from '@/api/consultas'
 import imergLocal from '@/data/imerg.json'
 import {
-  FUENTE_LOCAL,
-  PERIODOS,
+  fuenteLocal,
+  rangoLocal,
   serie,
   zonasDe,
   type Rango,
@@ -70,7 +70,7 @@ export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fu
     decidida === 'api' && periodo === 'reciente' && !sinNino ? (data?.[variable] ?? null) : null
   return api
     ? { api, rango: api.rango, fuente: api.fuente }
-    : { api: null, rango: PERIODOS[periodo], fuente: FUENTE_LOCAL }
+    : { api: null, rango: rangoLocal(variable, periodo), fuente: fuenteLocal(variable) }
 }
 
 /** Años de la tendencia que se ve. */

@@ -27,6 +27,9 @@ const GraficoSerie = lazy(() =>
 
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
 
+/** pocos_datos por pocas celdas (menos de 4); si no, el motivo es la serie corta (menos de 20 años) */
+const pocasCeldas = (d: Zona) => d.celdas < 4
+
 function frase(
   d: Zona,
   perfil: Perfil,
@@ -39,7 +42,7 @@ function frase(
   const z = NOMBRE[d.id]
   const mas = d.slope_per_decade >= 0
   const { year_start: a } = rango
-  if (d.status === 'pocos_datos') return P.few(z)
+  if (d.status === 'pocos_datos') return pocasCeldas(d) ? P.few(z) : P.fewAnios(z, d.n_years)
   const real = d.status === 'real'
   switch (perfil) {
     case 'agricultor':
@@ -138,7 +141,10 @@ export function Ficha() {
           {NOMBRE[sel]}
         </h2>
         <span className="text-[13px] text-muted">{t.src(variable, d.celdas, fuente, !api)}</span>
-        {nota && <span className="text-[13px] text-muted">{t.notaFija ?? nota}</span>}
+        {/* Con celdas suficientes, la nota habla de la serie corta y ya lo dice el texto de pocos datos */}
+        {nota && pocasCeldas(d) && (
+          <span className="text-[13px] text-muted">{t.notaFija ?? nota}</span>
+        )}
       </div>
 
       <div
@@ -162,7 +168,9 @@ export function Ficha() {
       </div>
 
       {st === 'pocos_datos' ? (
-        <p className="m-0">{t.fewCeldas(d.celdas, fuente, !api)}</p>
+        <p className="m-0">
+          {pocasCeldas(d) ? t.fewCeldas(d.celdas, fuente, !api) : t.fewAnios(d.n_years)}
+        </p>
       ) : (
         <>
           <div className="flex flex-col gap-0.5">
@@ -278,12 +286,18 @@ export function Ficha() {
                 api.fuente
               ) : (
                 <a
-                  href="https://power.larc.nasa.gov/"
+                  href={
+                    variable === 'vegetacion'
+                      ? 'https://lpdaac.usgs.gov/products/mod13a3v061/'
+                      : 'https://power.larc.nasa.gov/'
+                  }
                   target="_blank"
                   rel="noopener"
                   className="text-accent-text"
                 >
-                  NASA POWER ({variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})
+                  {variable === 'vegetacion'
+                    ? 'MODIS MOD13A3 v061 (NDVI)'
+                    : `NASA POWER (${variable === 'lluvia' ? 'PRECTOTCORR' : 'T2M'})`}
                 </a>
               )}
             </dd>

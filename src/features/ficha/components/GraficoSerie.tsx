@@ -47,7 +47,7 @@ export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, a
     .concat([recta(d.ci_low, y0), recta(d.ci_high, y0), recta(d.ci_low, y1), recta(d.ci_high, y1)])
   let lo = Math.min(...vals)
   let hi = Math.max(...vals)
-  if (variable === 'lluvia') lo = Math.max(0, lo)
+  if (variable !== 'temperatura') lo = Math.max(0, lo)
   const paso = pasoRedondo(hi - lo || 1, 4)
   lo = Math.floor(lo / paso) * paso
   hi = Math.ceil(hi / paso) * paso
@@ -100,7 +100,11 @@ export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, a
             fontSize={11}
             style={{ fill: 'var(--muted)' }}
           >
-            {variable === 'temperatura' ? num(v, paso < 1 ? 1 : 0, idioma) : Math.round(v)}
+            {variable === 'vegetacion'
+              ? num(v, paso < 0.01 ? 3 : paso < 0.1 ? 2 : 1, idioma)
+              : variable === 'temperatura'
+                ? num(v, paso < 1 ? 1 : 0, idioma)
+                : Math.round(v)}
           </text>
         </g>
       ))}

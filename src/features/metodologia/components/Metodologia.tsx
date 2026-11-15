@@ -24,6 +24,7 @@ export function Metodologia() {
   const rangos = {
     lluvia: useRango('lluvia'),
     temperatura: useRango('temperatura'),
+    vegetacion: useRango('vegetacion'),
     local: PERIODOS.largo,
   }
   const anios = (f: { anios?: string; rango?: keyof typeof rangos }) =>

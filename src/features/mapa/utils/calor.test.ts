@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   lutRampa,
+  PARADAS_CALOR,
+  PARADAS_VEG,
   percentil,
   prepararCalor,
   rellenarBordes,
@@ -75,5 +77,23 @@ describe('calor', () => {
     expect(new Set(c.pix).size).toBe(c.pix.length) // una celda por píxel
     expect(c.min).toBeGreaterThan(-5)
     expect(c.max).toBeLessThan(30)
+  })
+})
+
+describe('malla de vegetación', () => {
+  it('lee `valor` (lluvia y vegetación) igual que `t2m` y guarda su rampa', () => {
+    const veg = {
+      ...chica,
+      unidad: 'NDVI',
+      celdas: chica.celdas.map(({ lat, lon, t2m }) => ({
+        lat,
+        lon,
+        valor: t2m.map((v) => (v == null ? null : v / 100)),
+      })),
+    }
+    const c = prepararCalor(veg, PARADAS_VEG)
+    expect(Array.from(c.media).map((v) => +v.toFixed(2))).toEqual([0.21, 0.1, 0.06])
+    expect(c.paradas).toBe(PARADAS_VEG)
+    expect(prepararCalor(chica).paradas).toBe(PARADAS_CALOR)
   })
 })

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
   CloudRain,
+  Leaf,
   Moon,
   Sun,
   Thermometer,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+  vegetacion: Leaf,
 }
 
 const IDIOMAS = [

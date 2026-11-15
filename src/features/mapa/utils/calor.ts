@@ -1,7 +1,8 @@
 /**
- * Mapa de calor de temperatura: la T2M de cada celda de NASA POWER (~0,5° × 0,625°) como una
- * imagen de 1 píxel por celda. El 3D la usa de textura y el 2D de <image>; los dos la estiran con
- * interpolación bilineal y la recortan con los polígonos de los departamentos.
+ * Mapa de color por celda: la T2M de NASA POWER (~0,5° × 0,625°) o el NDVI de MODIS (0,25°) como
+ * una imagen de 1 píxel por celda. El 3D la usa de textura y el 2D de <image>; los dos la estiran
+ * con interpolación bilineal y la recortan con los polígonos de los departamentos. Cada malla trae
+ * su rampa de color (`paradas`): frío → calor en temperatura, seco → verde en vegetación.
  */
 import type { Malla } from '@/api/consultas'
 import { cssVar, hexMix } from '@/utils/color'
@@ -27,6 +28,8 @@ export interface Calor {
    * La misma para la media y para cada año, así los años se comparan entre sí. */
   min: number
   max: number
+  /** Tokens CSS de la rampa, del valor más bajo al más alto (los mismos que la leyenda). */
+  paradas: string[]
 }
 
 /** Percentil p (0–1) de los valores finitos. */
@@ -35,7 +38,7 @@ export function percentil(xs: ArrayLike<number>, p: number): number {
   return v.length ? v[Math.min(v.length - 1, Math.floor(p * v.length))] : NaN
 }
 
-export function prepararCalor(m: Malla): Calor {
+export function prepararCalor(m: Malla, paradas: string[] = PARADAS_CALOR): Calor {
   const { dlat, dlon, celdas } = m
   const anios = m.anio_fin - m.anio_inicio + 1
   let lonMin = Infinity
@@ -58,7 +61,8 @@ export function prepararCalor(m: Malla): Calor {
     pix[i] = Math.round((latMax - c.lat) / dlat) * w + Math.round((c.lon - lonMin) / dlon)
     let suma = 0
     let k = 0
-    c.t2m.forEach((t, j) => {
+    // Temperatura trae `t2m`; lluvia y vegetación, `valor`
+    ;(c.t2m ?? c.valor ?? []).forEach((t, j) => {
       if (t == null || j >= anios) return
       serie[i * anios + j] = t
       suma += t
@@ -80,6 +84,7 @@ export function prepararCalor(m: Malla): Calor {
     media,
     min: percentil(serie, 0.02),
     max: percentil(serie, 0.98),
+    paradas,
   }
 }
 
@@ -159,13 +164,19 @@ export const PARADAS_CALOR = [
 ]
 
 /**
- * Pinta la malla en `cv` (1 px por celda): la media del periodo o la T2M de un año, siempre con la
- * misma rampa y escala (azul → amarillo → rojo). Los colores se leen del tema actual.
+ * Seco → verde, repartidas por igual entre min y max: ocre del desierto → amarillo verdoso →
+ * verde claro → verde oscuro (selva). Tokens --veg-*, los mismos de la leyenda.
+ */
+export const PARADAS_VEG = ['--veg-0', '--veg-1', '--veg-2', '--veg-3', '--veg-4']
+
+/**
+ * Pinta la malla en `cv` (1 px por celda): la media del periodo o el valor de un año, siempre con
+ * la misma rampa y escala de esa malla. Los colores se leen del tema actual.
  */
 export function dibujarCalor(cv: HTMLCanvasElement, c: Calor, anio: number | null) {
   const valores = anio == null ? c.media : valoresAnio(c, anio)
   const { min: lo, max: hi } = c
-  const lut = lutRampa(PARADAS_CALOR.map(cssVar))
+  const lut = lutRampa(c.paradas.map(cssVar))
   const campo = new Float32Array(c.w * c.h).fill(NaN)
   c.pix.forEach((p, i) => (campo[p] = valores[i]))
   rellenarBordes(campo, c.w, c.h)

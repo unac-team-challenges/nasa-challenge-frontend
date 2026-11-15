@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { TEXTOS } from '@/i18n/textos'
-import { anomaliasAnio, FUENTE_LOCAL } from '@/data/datos'
+import { anomaliasAnio, fuenteLocal } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
 import { useBusqueda } from '@/lib/busqueda'
-import { fmtAnomalia, fmtValor } from '@/utils/formato'
+import { fmtAnomalia, fmtValor, num } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
-import { PARADAS_CALOR, tieneAnio } from '@/features/mapa/utils/calor'
+import { tieneAnio } from '@/features/mapa/utils/calor'
 
-/** Frío → calor, los mismos tokens que pinta el mapa de calor (PARADAS_CALOR). */
-const RAMPA = `linear-gradient(to right, ${PARADAS_CALOR.map((v) => `var(${v})`).join(', ')})`
+/** La rampa de la malla (frío → calor o seco → verde): los mismos tokens que pinta el mapa. */
+const rampa = (paradas: string[]) =>
+  `linear-gradient(to right, ${paradas.map((v) => `var(${v})`).join(', ')})`
 
 const CLAVE = 'leyenda-abierta'
 
@@ -48,15 +49,21 @@ export function Leyenda() {
     setAbierta(abre)
     guardarEleccion(abre)
   }
-  // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
+  // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul); en vegetación, verde y ocre
   const sube = `var(--map-${claveMapa(1, variable)})`
   const baja = `var(--map-${claveMapa(-1, variable)})`
   const cols = anio == null ? t.legCols[variable] : t.legColsT
   const calor = useCalor()
   const conCalor = !!calor && tieneAnio(calor, anio)
-  // Con el mapa de calor, el color es la temperatura: las muestras de estado la llevan debajo
+  const RAMPA = calor ? rampa(calor.paradas) : ''
+  // Con malla, el color es el valor de cada celda: las muestras de estado lo llevan debajo
   const lleno = conCalor ? RAMPA : sube
+  const veg = variable === 'vegetacion'
+  const extremo = (x: number) => (veg ? num(x, 2, idioma) + ' NDVI' : `${Math.round(x)} °C`)
+  const textoCalor = t.calor[veg ? 'vegetacion' : 'temperatura']
+  // 0 si ninguna zona tiene tendencia (todas pocos_datos): sin el 0 saldría −Infinity
   const maxima = Math.max(
+    0,
     ...Object.values(zonas)
       .filter((d) => d.status !== 'pocos_datos')
       .map((d) => Math.abs(d.slope_per_decade)),
@@ -224,8 +231,8 @@ export function Leyenda() {
             <div className="mt-1.5 grid gap-0.5 text-xs">
               <span className="text-fg">
                 {anio == null
-                  ? t.calorMedia(calor.anio0, calor.anio0 + calor.anios - 1)
-                  : t.calorAnio(anio)}
+                  ? textoCalor.media(calor.anio0, calor.anio0 + calor.anios - 1)
+                  : textoCalor.anio(anio)}
               </span>
               <span
                 className="h-2.5 rounded-[3px] border border-line"
@@ -233,10 +240,10 @@ export function Leyenda() {
                 aria-hidden
               />
               <span className="flex justify-between text-muted">
-                <span>{Math.round(calor.min)} °C</span>
-                <span>{Math.round(calor.max)} °C</span>
+                <span>{extremo(calor.min)}</span>
+                <span>{extremo(calor.max)}</span>
               </span>
-              <span className="text-muted">{t.calorNota}</span>
+              <span className="text-muted">{textoCalor.nota}</span>
             </div>
           )}
           <p className="m-0 mt-1 text-xs text-fg">
@@ -252,7 +259,7 @@ export function Leyenda() {
           </p>
           <p className="m-0 text-xs text-muted">
             {/* La máquina del tiempo usa la copia local */}
-            {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+            {t.varDef[variable](anio == null ? fuente : fuenteLocal(variable))}
           </p>
         </details>
         {abierta && (

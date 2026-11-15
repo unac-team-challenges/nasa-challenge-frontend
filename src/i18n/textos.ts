@@ -16,7 +16,11 @@ const es = {
   variableLbl: 'Variable',
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
-  variables: { lluvia: 'Lluvia', temperatura: 'Temperatura' } as PorVariable<string>,
+  variables: {
+    lluvia: 'Lluvia',
+    temperatura: 'Temperatura',
+    vegetacion: 'Vegetación',
+  } as PorVariable<string>,
   heroH: '¿Qué está cambiando en tu zona del Perú?',
   heroLead: (a: number, b: number) =>
     `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
@@ -34,7 +38,11 @@ const es = {
     'Mapa del Perú en 3D: cada departamento sube o se hunde según cuánto cambió la variable',
   // Explorador
   explorador: 'Explorador',
-  mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
+  mapH: {
+    lluvia: 'Lluvia anual',
+    temperatura: 'Temperatura media',
+    vegetacion: 'Vegetación (NDVI)',
+  } as PorVariable<string>,
   mapSub: 'Cambio por década',
   mapSubAnio: 'Cada departamento frente a su propio promedio',
   /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
@@ -53,21 +61,37 @@ const es = {
       ['Igual', 'sin cambio'],
       ['Se hunde', 'más frío'],
     ],
+    vegetacion: [
+      ['Sube', 'más verde'],
+      ['Igual', 'sin cambio'],
+      ['Se hunde', 'menos verde'],
+    ],
   } as PorVariable<[string, string][]>,
   noChange: 'sin cambio',
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
-  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
-  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
-  calorNota:
-    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+  /** Mapa de color por celda (temperatura o vegetación) */
+  calor: {
+    temperatura: {
+      media: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
+      anio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
+      nota: 'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+    },
+    vegetacion: {
+      media: (a: number, b: number) => `Color: verdor medio (NDVI) ${a}–${b} en cada celda`,
+      anio: (anio: number) => `Color: verdor (NDVI) de ${anio} en cada celda`,
+      nota: 'Celdas de ~27 km con el NDVI de MODIS (NASA): cada año, la media de al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
+    },
+  },
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
       `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
     temperatura: (fuente: string) =>
       `Temperatura del aire a 2 m: °C, promedio anual del departamento (${fuente}).`,
+    vegetacion: (fuente: string) =>
+      `Vegetación: NDVI (0 = suelo desnudo, 1 = muy verde), promedio anual de las celdas del departamento (${fuente}).`,
   } as PorVariable<(fuente: string) => string>,
   spinOn: 'Pausar giro',
   spinOff: 'Girar el mapa',
@@ -77,12 +101,12 @@ const es = {
   railHint: 'Toca una zona',
   // Ficha
   kind: (r: Region) => `Departamento de la ${r}`,
-  unitAxis: { lluvia: 'mm/año', temperatura: '°C' } as PorVariable<string>,
+  unitAxis: { lluvia: 'mm/año', temperatura: '°C', vegetacion: 'NDVI' } as PorVariable<string>,
   /** local: copia de NASA POWER, con celdas de ~50 km; con la API, el tamaño depende de su fuente */
   src: (variable: Variable, celdas: number, fuente: string, local: boolean) =>
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
-      : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? ' de ~50 km' : ''}`,
+      : `${fuente}, ${{ lluvia: 'lluvia', temperatura: 'temperatura', vegetacion: 'NDVI' }[variable]} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local && variable !== 'vegetacion' ? ' de ~50 km' : ''}`,
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
@@ -105,6 +129,9 @@ const es = {
   } as Record<Region, string>,
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
+  /** pocos_datos con celdas suficientes: el motivo es la serie corta */
+  fewAnios: (n: number) =>
+    `La serie tiene solo ${n} años; necesitamos al menos 20 para medir una tendencia confiable, así que no sacamos conclusiones.`,
   fewCeldas: (n: number, fuente: string, local: boolean) =>
     n === 0
       ? `Ninguna celda de ${fuente}${local ? ' (de unos 50 km)' : ''} cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.`
@@ -140,6 +167,7 @@ const es = {
   verb: {
     lluvia: ['la lluvia sube', 'la lluvia baja'],
     temperatura: ['la temperatura sube', 'la temperatura baja'],
+    vegetacion: ['la vegetación sube', 'la vegetación baja'],
   } as PorVariable<[string, string]>,
   howH: 'Cómo lo sabemos',
   howMethod: 'Método',
@@ -163,6 +191,7 @@ const es = {
   tapP: {
     lluvia: 'Verás cuánto cambió su lluvia y si el cambio es real o casualidad.',
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
+    vegetacion: 'Verás cuánto cambió su verdor (NDVI) y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
   timeModeAria: 'Qué ver en el mapa',
@@ -248,7 +277,7 @@ const en: Textos = {
   variableLbl: 'Variable',
   perfilLbl: 'Profile',
   periodoLbl: 'Period',
-  variables: { lluvia: 'Rainfall', temperatura: 'Temperature' },
+  variables: { lluvia: 'Rainfall', temperatura: 'Temperature', vegetacion: 'Vegetation' },
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
@@ -263,7 +292,11 @@ const en: Textos = {
   ocean: 'Pacific Ocean',
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
-  mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
+  mapH: {
+    lluvia: 'Annual rainfall',
+    temperatura: 'Mean temperature',
+    vegetacion: 'Vegetation (NDVI)',
+  },
   mapSub: 'Change per decade',
   mapSubAnio: 'Each department vs its own average',
   mapModoTendencia: (a, b) => `trend ${a}–${b}`,
@@ -281,20 +314,35 @@ const en: Textos = {
       ['Flat', 'no change'],
       ['Sinks', 'cooler'],
     ],
+    vegetacion: [
+      ['Rises', 'greener'],
+      ['Flat', 'no change'],
+      ['Sinks', 'less green'],
+    ],
   },
   noChange: 'no change',
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
-  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
-  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
-  calorNota:
-    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  calor: {
+    temperatura: {
+      media: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
+      anio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
+      nota: 'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+    },
+    vegetacion: {
+      media: (a, b) => `Colour: mean greenness (NDVI) ${a}–${b} in each cell`,
+      anio: (anio) => `Colour: greenness (NDVI) of ${anio} in each cell`,
+      nota: 'Cells of ~27 km with MODIS NDVI (NASA): each year, the mean of at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
+    },
+  },
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>
       `Rainfall: millimetres per year, average of the department cells (${fuente}).`,
     temperatura: (fuente) => `Air temperature at 2 m: °C, department annual average (${fuente}).`,
+    vegetacion: (fuente) =>
+      `Vegetation: NDVI (0 = bare ground, 1 = very green), annual average of the department cells (${fuente}).`,
   },
   spinOn: 'Pause rotation',
   spinOff: 'Rotate the map',
@@ -304,11 +352,11 @@ const en: Textos = {
   railHint: 'Tap an area',
   kind: (r) =>
     `${({ costa: 'Coastal', sierra: 'Highland', selva: 'Rainforest' } as Record<Region, string>)[r]} department`,
-  unitAxis: { lluvia: 'mm/yr', temperatura: '°C' },
+  unitAxis: { lluvia: 'mm/yr', temperatura: '°C', vegetacion: 'NDVI' },
   src: (variable, celdas, fuente, local) =>
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
-      : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+      : `${fuente}, annual ${{ lluvia: 'rainfall', temperatura: 'temperature', vegetacion: 'NDVI' }[variable]} averaged over ${celdas} ${local && variable !== 'vegetacion' ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
   avisoFijo: (_variable, lag1, motivo) =>
@@ -336,6 +384,8 @@ const en: Textos = {
   },
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
+  fewAnios: (n) =>
+    `The series has only ${n} years; we need at least 20 to measure a reliable trend, so we draw no conclusion.`,
   fewCeldas: (n, fuente, local) =>
     n === 0
       ? `No ${fuente} cell${local ? ' (about 50 km wide)' : ''} falls inside this department, so it has no series of its own. We draw no conclusion.`
@@ -370,6 +420,7 @@ const en: Textos = {
   verb: {
     lluvia: ['rainfall rises', 'rainfall falls'],
     temperatura: ['temperature rises', 'temperature falls'],
+    vegetacion: ['vegetation rises', 'vegetation falls'],
   },
   howH: 'How we know',
   howMethod: 'Method',
@@ -394,6 +445,8 @@ const en: Textos = {
     lluvia: "You'll see how much its rainfall changed and whether the change is real or chance.",
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
+    vegetacion:
+      "You'll see how much its greenness (NDVI) changed and whether the change is real or chance.",
   },
   timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
@@ -468,8 +521,16 @@ export const ORDEN_PERFILES: Perfil[] = ['agricultor', 'estudiante']
 /** Frase simple de la ficha según el perfil (solo cambian los textos, no los datos). */
 export const FRASES = {
   es: {
-    farmMore: { lluvia: 'más lluvia', temperatura: 'más calor' } as PorVariable<string>,
-    farmLess: { lluvia: 'menos lluvia', temperatura: 'menos calor' } as PorVariable<string>,
+    farmMore: {
+      lluvia: 'más lluvia',
+      temperatura: 'más calor',
+      vegetacion: 'más verde',
+    } as PorVariable<string>,
+    farmLess: {
+      lluvia: 'menos lluvia',
+      temperatura: 'menos calor',
+      vegetacion: 'menos verde',
+    } as PorVariable<string>,
     agricultorUp: (z: string, x: string, desde: number) =>
       `Los años en ${z} vienen con ${x} que en ${desde}, y es una tendencia sostenida.`,
     agricultorCas: (z: string) =>
@@ -479,10 +540,20 @@ export const FRASES = {
     estudianteCas: (p: string, q: string, m: number) =>
       `p = ${p} y q = ${q} tras corregir entre ${m} zonas. No cumple todas las condiciones de «cambio real».`,
     few: (z: string) => `En ${z} hay muy pocas celdas con datos. No sacamos conclusiones.`,
+    fewAnios: (z: string, n: number) =>
+      `En ${z} solo hay ${n} años de datos. No sacamos conclusiones.`,
   },
   en: {
-    farmMore: { lluvia: 'more rain', temperatura: 'more heat' } as PorVariable<string>,
-    farmLess: { lluvia: 'less rain', temperatura: 'less heat' } as PorVariable<string>,
+    farmMore: {
+      lluvia: 'more rain',
+      temperatura: 'more heat',
+      vegetacion: 'greener',
+    } as PorVariable<string>,
+    farmLess: {
+      lluvia: 'less rain',
+      temperatura: 'less heat',
+      vegetacion: 'less green',
+    } as PorVariable<string>,
     agricultorUp: (z: string, x: string, desde: number) =>
       `Years in ${z} bring ${x} than in ${desde}, and it is a steady trend.`,
     agricultorCas: (z: string) => `${z} has good years and bad years, but no clear trend.`,
@@ -491,6 +562,7 @@ export const FRASES = {
     estudianteCas: (p: string, q: string, m: number) =>
       `p = ${p} and q = ${q} after correcting across ${m} areas. It does not meet all the conditions of a real change.`,
     few: (z: string) => `${z} has very few cells with data. We draw no conclusion.`,
+    fewAnios: (z: string, n: number) => `${z} has only ${n} years of data. We draw no conclusion.`,
   },
 }
 
@@ -705,7 +777,7 @@ interface Metodologia {
     fuente: string
     resolucion: string
     anios?: string
-    rango?: 'lluvia' | 'temperatura' | 'local'
+    rango?: 'lluvia' | 'temperatura' | 'vegetacion' | 'local'
     enlace: Enlace
   }[]
   fuentesNota: string
@@ -759,6 +831,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         resolucion: '≈ 50 × 60 km',
         rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Vegetación',
+        fuente:
+          'MODIS MOD13A3 v061 (NASA LP DAAC) vía AppEEARS: NDVI mensual a 1 km sin nubes, promediado por año y en celdas de 0,25°. En la selva se satura (~0,85)',
+        resolucion: '≈ 27 km (de píxeles de 1 km)',
+        rango: 'vegetacion',
+        enlace: ['MODIS MOD13A3', 'https://lpdaac.usgs.gov/products/mod13a3v061/'],
       },
       {
         variable: 'Copia local (plan B)',
@@ -902,6 +982,14 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         resolucion: '≈ 50 × 60 km',
         rango: 'temperatura',
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
+      },
+      {
+        variable: 'Vegetation',
+        fuente:
+          'MODIS MOD13A3 v061 (NASA LP DAAC) via AppEEARS: cloud-free monthly NDVI at 1 km, averaged per year and over 0.25° cells. It saturates in the rainforest (~0.85)',
+        resolucion: '≈ 27 km (from 1 km pixels)',
+        rango: 'vegetacion',
+        enlace: ['MODIS MOD13A3', 'https://lpdaac.usgs.gov/products/mod13a3v061/'],
       },
       {
         variable: 'Local copy (plan B)',

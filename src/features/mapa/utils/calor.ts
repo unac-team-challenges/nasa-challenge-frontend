@@ -27,6 +27,9 @@ export interface Calor {
    * La misma para la media y para cada año, así los años se comparan entre sí. */
   min: number
   max: number
+  /** Unidad de los valores ('°C' o 'mm/año') y tokens de color de la rampa de la variable. */
+  unidad: string
+  paradas: string[]
 }
 
 /** Percentil p (0–1) de los valores finitos. */
@@ -35,7 +38,7 @@ export function percentil(xs: ArrayLike<number>, p: number): number {
   return v.length ? v[Math.min(v.length - 1, Math.floor(p * v.length))] : NaN
 }
 
-export function prepararCalor(m: Malla): Calor {
+export function prepararCalor(m: Malla, paradas = PARADAS_CALOR): Calor {
   const { dlat, dlon, celdas } = m
   const anios = m.anio_fin - m.anio_inicio + 1
   let lonMin = Infinity
@@ -80,6 +83,8 @@ export function prepararCalor(m: Malla): Calor {
     media,
     min: percentil(serie, 0.02),
     max: percentil(serie, 0.98),
+    unidad: m.unidad,
+    paradas,
   }
 }
 
@@ -158,14 +163,25 @@ export const PARADAS_CALOR = [
   '--calor-5',
 ]
 
+/** Lluvia: seco ocre → verde oliva → turquesa → azul → azul profundo → violeta (más lluvia = más oscuro). */
+export const PARADAS_LLUVIA = [
+  '--lluvia-0',
+  '--lluvia-1',
+  '--lluvia-2',
+  '--lluvia-3',
+  '--lluvia-4',
+  '--lluvia-5',
+  '--lluvia-6',
+]
+
 /**
  * Pinta la malla en `cv` (1 px por celda): la media del periodo o la T2M de un año, siempre con la
- * misma rampa y escala (azul → amarillo → rojo). Los colores se leen del tema actual.
+ * misma rampa y escala (la de su variable). Los colores se leen del tema actual.
  */
 export function dibujarCalor(cv: HTMLCanvasElement, c: Calor, anio: number | null) {
   const valores = anio == null ? c.media : valoresAnio(c, anio)
   const { min: lo, max: hi } = c
-  const lut = lutRampa(PARADAS_CALOR.map(cssVar))
+  const lut = lutRampa(c.paradas.map(cssVar))
   const campo = new Float32Array(c.w * c.h).fill(NaN)
   c.pix.forEach((p, i) => (campo[p] = valores[i]))
   rellenarBordes(campo, c.w, c.h)

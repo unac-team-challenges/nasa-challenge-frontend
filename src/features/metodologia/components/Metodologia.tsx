@@ -50,7 +50,7 @@ export function Metodologia() {
         </div>
       </header>
 
-      <section aria-labelledby="m-fuentes" className="flex flex-col gap-3">
+      <section aria-labelledby="m-fuentes" className="aparece flex flex-col gap-3">
         <h2 id="m-fuentes" className={h2}>
           {m.fuentesH}
         </h2>
@@ -106,7 +106,7 @@ export function Metodologia() {
         <p className="m-0 text-sm text-muted">{m.fuentesNota}</p>
       </section>
 
-      <section aria-labelledby="m-calculo" className="flex flex-col gap-3">
+      <section aria-labelledby="m-calculo" className="aparece flex flex-col gap-3">
         <h2 id="m-calculo" className={h2}>
           {m.calculoH}
         </h2>
@@ -119,7 +119,7 @@ export function Metodologia() {
         </ol>
       </section>
 
-      <section aria-labelledby="m-semaforo" className="flex flex-col gap-3">
+      <section aria-labelledby="m-semaforo" className="aparece flex flex-col gap-3">
         <h2 id="m-semaforo" className={h2}>
           {m.semaforoH}
         </h2>
@@ -133,7 +133,7 @@ export function Metodologia() {
         </dl>
       </section>
 
-      <section aria-labelledby="m-limites" className="flex flex-col gap-3">
+      <section aria-labelledby="m-limites" className="aparece flex flex-col gap-3">
         <h2 id="m-limites" className={h2}>
           {m.limitesH}
         </h2>
@@ -148,7 +148,7 @@ export function Metodologia() {
 
       <section
         aria-labelledby="m-creditos"
-        className="flex flex-col gap-3 border-t border-line pt-6"
+        className="aparece flex flex-col gap-3 border-t border-line pt-6"
       >
         <h2 id="m-creditos" className={h2}>
           {m.creditosH}

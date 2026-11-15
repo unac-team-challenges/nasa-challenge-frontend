@@ -124,8 +124,25 @@ test('un toque simple sigue eligiendo la zona, y el botón de recentrar deshace 
   await expect.poll(async () => (await vista(page)).k, { timeout: 4000 }).toBeCloseTo(1, 1)
 
   // sin gestos, tocar una zona la elige como siempre
+  // Un punto donde el toque cae en Cusco mismo: el centro de su caja puede quedar en el borde de
+  // toque de una vecina pequeña (Apurímac), que está dibujado encima.
   const cusco = (await page.getByRole('button', { name: /^Cusco/i }).boundingBox())!
-  await page.touchscreen.tap(cusco.x + cusco.width / 2, cusco.y + cusco.height / 2)
+  const punto = await page.evaluate((c) => {
+    for (let fy = 0.5; fy < 1; fy += 0.1)
+      for (let fx = 0.1; fx < 1; fx += 0.1) {
+        const [x, y] = [c.x + c.width * fx, c.y + c.height * fy]
+        const el = document.elementFromPoint(x, y)
+        // la zona misma o su propia área de toque (id 08), no la de una vecina
+        if (
+          el?.getAttribute('aria-label')?.startsWith('Cusco') ||
+          el?.getAttribute('data-toque') === '08'
+        )
+          return { x, y }
+      }
+    return null
+  }, cusco)
+  expect(punto, 'algún punto de Cusco recibe el toque').not.toBeNull()
+  await page.touchscreen.tap(punto!.x, punto!.y)
   await expect(page).toHaveURL(/\/zona\/08/)
 })
 

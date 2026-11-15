@@ -30,6 +30,9 @@ const item =
 const tile =
   'grid size-8 flex-none place-items-center rounded-s bg-panel-2 text-muted ring-1 ring-line transition-colors group-data-highlighted/item:bg-accent-soft group-data-highlighted/item:text-accent-text'
 
+/** Solo el idioma viaja a /metodologia (las demás opciones son del mapa) */
+const conIdioma = (p: { lang?: 'es' | 'en' }) => ({ lang: p.lang })
+
 /** Menú "Metodología" de la cabecera: la página entera o directo a una de sus secciones. */
 export function MenuMetodologia() {
   const idioma = useApp((s) => s.idioma)
@@ -79,7 +82,12 @@ export function MenuMetodologia() {
           className="z-50 w-[min(22rem,calc(100vw-24px))] rounded-l border border-line bg-panel p-1.5 text-sm shadow-[0_18px_40px_-12px_var(--shadow)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1 motion-reduce:animate-none"
         >
           <DropdownMenu.Item asChild onSelect={() => (navego.current = true)}>
-            <Link to="/metodologia" aria-current={activa ? 'page' : undefined} className={item}>
+            <Link
+              to="/metodologia"
+              search={conIdioma}
+              aria-current={activa ? 'page' : undefined}
+              className={item}
+            >
               <span className="grid size-8 flex-none place-items-center rounded-s bg-accent text-accent-fg">
                 <BookOpen className="size-4" aria-hidden="true" />
               </span>
@@ -100,6 +108,7 @@ export function MenuMetodologia() {
               <DropdownMenu.Item key={s} asChild onSelect={() => (navego.current = true)}>
                 <Link
                   to="/metodologia"
+                  search={conIdioma}
                   hash={`m-${s}`}
                   hashScrollIntoView={{ behavior: suave ? 'smooth' : 'auto', block: 'start' }}
                   className={item}

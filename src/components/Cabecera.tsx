@@ -28,7 +28,7 @@ const IDIOMAS = [
 /** Contenedor de opciones (variable, perfil, idioma): un riel con la opción activa resaltada */
 const riel =
   'inline-flex flex-none items-center gap-0.5 rounded-m bg-panel-2 p-0.5 ring-1 ring-line'
-/** En celulares angostos solo queda "Detective": el nombre completo sigue en el aria-label */
+/** Bajo 420 px solo queda "Detective" y bajo 360 px solo el logo: el nombre sigue en el aria-label */
 const resto = 'font-display font-semibold max-[419px]:hidden'
 const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed:shadow-sm'
 
@@ -39,9 +39,9 @@ const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed
 export function Cabecera() {
   // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
   const idioma = useApp((s) => s.idioma)
-  const setIdioma = useApp((s) => s.setIdioma)
   const alternarTema = useApp((s) => s.alternarTema)
-  const { variable, setVariable, perfil, setPerfil } = useBusqueda()
+  // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
+  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
@@ -49,7 +49,7 @@ export function Cabecera() {
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]">
       <Link
         to="/"
-        search={(p) => ({ variable: p.variable, perfil: p.perfil })}
+        search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}
         className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
         aria-label={t.inicio}
       >
@@ -61,7 +61,7 @@ export function Cabecera() {
           height={48}
           className="size-10 flex-none transition-transform duration-300 group-hover:-rotate-6 motion-reduce:transition-none sm:size-12 oscuro:drop-shadow-[0_0_1px_rgb(255_255_255/0.5)]"
         />
-        <span className="flex flex-col leading-none">
+        <span className="flex flex-col leading-none max-[359px]:hidden">
           <span className="text-lg tracking-display sm:text-xl">
             {antes && <span className={resto}>{antes}</span>}
             <span className="marca">Detective</span>

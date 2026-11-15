@@ -1,7 +1,7 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VARIABLES, type Variable } from '@/data/datos'
-import { ORDEN_PERFILES, type Perfil } from '@/i18n/textos'
+import { ORDEN_PERFILES, type Idioma, type Perfil } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
 /**
@@ -18,6 +18,8 @@ const esquema = z.object({
     .enum(ORDEN_PERFILES as [Perfil, ...Perfil[]])
     .optional()
     .catch(undefined),
+  /** Idioma: sin él, español. Un enlace compartido en inglés se abre en inglés. */
+  lang: z.enum(['es', 'en']).optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
   anio: z.coerce.number().int().min(1981).max(2100).optional().catch(undefined),
 })
@@ -63,6 +65,11 @@ export function useBusqueda() {
       return poner({ variable })
     },
     setPerfil: (perfil: Perfil) => poner({ perfil }),
+    /** El idioma queda también en la URL (solo `en`; el español es el valor por defecto) */
+    setIdioma: (idioma: Idioma) => {
+      useApp.getState().setIdioma(idioma)
+      return poner({ lang: idioma === 'en' ? 'en' : undefined })
+    },
     /** Elegir una zona abre el informe. `desdeMapa`: la presentación solo sale si se tocó el mapa. */
     seleccionar: (zona: string | null, desdeMapa = false) => {
       useApp.setState({ zonaDesdeMapa: desdeMapa })

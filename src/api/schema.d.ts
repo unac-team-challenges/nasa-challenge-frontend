@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/celdas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * T2M anual de cada celda de NASA POWER (~0,5° × 0,625°) dentro de Perú, para el mapa de calor.
+         *     Solo existe para `temperatura`.
+         */
+        get: operations["celdas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cobertura-arboles": {
         parameters: {
             query?: never;
@@ -131,9 +151,44 @@ export interface components {
              */
             ndvi_anual: number;
         };
+        Celda: {
+            /**
+             * Format: double
+             * @description Centro de la celda.
+             */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** @description Media anual en °C, una por año de `anio_inicio` a `anio_fin`; null si el año no está completo. */
+            t2m: (number | null)[];
+        };
         /** @description Cuerpo de los errores 400 y 404. */
         ErrorRespuesta: {
             error: string;
+        };
+        /** @description `data/celdas/temperatura.json`, tal cual lo deja `pipeline/power.py`. */
+        Malla: {
+            /** Format: int32 */
+            anio_fin: number;
+            /** Format: int32 */
+            anio_inicio: number;
+            celdas: components["schemas"]["Celda"][];
+            /**
+             * Format: double
+             * @description Alto de la celda en grados de latitud.
+             * @example 0.5
+             */
+            dlat: number;
+            /**
+             * Format: double
+             * @description Ancho de la celda en grados de longitud.
+             * @example 0.625
+             */
+            dlon: number;
+            /** @example MERRA-2 vía NASA POWER (T2M) */
+            fuente: string;
+            /** @example °C */
+            unidad: string;
         };
         Punto: {
             /** Format: int32 */
@@ -308,7 +363,7 @@ export interface components {
             stats: components["schemas"]["Stats"];
             /** @description Sobre qué campo de `serie` se calcula `stats` (hoy, "ndvi_anual"). */
             tendencia_de: string;
-            /** @description P. ej. "valle irrigado". */
+            /** @description P. ej. "valle irrigado" o, en Olmos, "riego nuevo y bosque seco". */
             tipo: string;
             /** @description Ubigeo del departamento, como texto ("01"–"25"). */
             ubigeo: string;
@@ -329,6 +384,36 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    celdas: {
+        parameters: {
+            query: {
+                /** @description Obligatoria; solo temperatura */
+                variable: components["schemas"]["Variable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Malla"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
     cobertura: {
         parameters: {
             query?: never;

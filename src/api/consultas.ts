@@ -7,6 +7,7 @@
  */
 import { VARIABLES, type Estado, type Rango, type Variable, type Zona } from '@/data/datos'
 import { api, hayApi } from '@/api/cliente'
+import type { components } from '@/api/schema'
 
 /** Campos de tendencia que la ficha necesita (contrato, `stats`). */
 interface StatsApi {
@@ -255,6 +256,20 @@ export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | nul
         },
       ]),
     )
+  } catch {
+    return null
+  }
+}
+
+/** Malla de NASA POWER (T2M anual por celda), del contrato `/api/celdas`. */
+export type Malla = components['schemas']['Malla']
+
+/** Malla de temperatura desde la API, o null sin API, con error o vacía (se usa la copia local). */
+export async function celdasDeApi(): Promise<Malla | null> {
+  if (!hayApi) return null
+  try {
+    const r = await api.GET('/api/celdas', { params: { query: { variable: 'temperatura' } } })
+    return r.data?.celdas.length ? r.data : null
   } catch {
     return null
   }

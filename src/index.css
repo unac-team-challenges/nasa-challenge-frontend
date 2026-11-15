@@ -26,6 +26,15 @@
   --map-up: #5e95c8;
   --map-down: #c49061;
   --map-green: #5fa07c;
+  /* Mapa de calor (temperatura): azul (frío) → neutro → amarillo → naranja → rojo, igual en claro y oscuro */
+  --frio-2: #2a64ad;
+  --frio-1: #7fb3df;
+  --calor-0: #eef0e6;
+  --calor-1: #ffe38a;
+  --calor-2: #fdb54a;
+  --calor-3: #f57c2b;
+  --calor-4: #d9382a;
+  --calor-5: #96172a;
   --accent: #a8285a;
   --accent-text: #a8285a;
   --accent-fg: #ffffff;

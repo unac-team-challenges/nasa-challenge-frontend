@@ -14,6 +14,7 @@ import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
 import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
+import { dibujarCalor, tieneAnio, varianteCalor, type Calor } from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
@@ -114,6 +115,8 @@ interface DatosMalla {
   /** 0..1: cuánto brilla por el hover (se interpola en cada cuadro). */
   brillo: number
 }
+type TipoCalor = 'real' | 'rayado' | 'apagado'
+
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
 }
@@ -224,10 +227,16 @@ function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa)
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
-  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);
   // Cara superior: Andes, valles y llanura amazónica con el sombreado real (SRTM), sin cambiar la altura del dato
   float hs = texture2D(uMundo, (vXZ - uCaja.xy) / uCaja.zw).r;
-  diffuseColor.rgb *= mix(0.74 + 0.5 * hs, 1.0, vPared);`,
+#ifdef CALOR
+  // Mapa de calor: pared con degradado más marcado y relieve más fuerte, para que no se vea plano
+  diffuseColor.rgb *= mix(1.0, mix(0.35, 1.05, smoothstep(0.0, 1.8, vAlto)), vPared);
+  diffuseColor.rgb *= mix(0.6 + 0.8 * hs, 1.0, vPared);
+#else
+  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);
+  diffuseColor.rgb *= mix(0.74 + 0.5 * hs, 1.0, vPared);
+#endif`,
       )
   }
   mat.customProgramCacheKey = () => 'columna-sombra-relieve'
@@ -407,6 +416,13 @@ export class EscenaPeru {
   private sel: string | null = null
   /** Máquina del tiempo: anomalía de cada zona en el año elegido (null = tendencia) */
   private anio: { valores: Record<string, number>; max: number } | null = null
+  /** Año de la máquina del tiempo (para la malla de calor) */
+  private numeroAnio: number | null = null
+  /** Mapa de calor de temperatura: una textura (1 px por celda) que comparten las 25 tapas */
+  private calor: Calor | null = null
+  private lienzoCalor = document.createElement('canvas')
+  /** Una textura opaca por estado de la tendencia (ver varianteCalor) */
+  private texCalor: Record<TipoCalor, THREE.CanvasTexture> | null = null
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
   private ancho = 1
@@ -503,6 +519,15 @@ export class EscenaPeru {
         return s
       })
       const geom = new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false })
+      // Canal UV 1 = (x, y) proyectado de cada vértice, también en las paredes: la textura de calor
+      // pinta cada pared con el color de su borde (las UV laterales la estirarían en vertical)
+      const pos = geom.attributes.position
+      const uv1 = new Float32Array(pos.count * 2)
+      for (let i = 0; i < pos.count; i++) {
+        uv1[i * 2] = pos.getX(i)
+        uv1[i * 2 + 1] = pos.getY(i)
+      }
+      geom.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2))
       const malla = new THREE.Mesh(
         geom,
         conSombraDeContacto(
@@ -845,13 +870,53 @@ export class EscenaPeru {
    * Máquina del tiempo: cada zona sube o se hunde según cómo fue ese año frente a su
    * promedio. Las columnas se mueven suave porque las alturas se interpolan en cada cuadro.
    */
-  setAnio(anio: { valores: Record<string, number>; max: number } | null) {
+  setAnio(
+    anio: { valores: Record<string, number>; max: number } | null,
+    numero: number | null = null,
+  ) {
     this.anio = anio
+    this.numeroAnio = anio ? numero : null
+    this.dibujarCalor()
     this.pintar()
     this.alturas(false)
     this.textosEtiquetas()
     this.actualizarParticulas()
     this.llenarTarjeta()
+  }
+
+  /**
+   * Malla de temperatura por celda. La textura se ubica con las coordenadas proyectadas: las tapas
+   * de ExtrudeGeometry usan (x, y) de `proyectar` como UV, así que basta escalar y desplazar.
+   */
+  setCalor(calor: Calor | null) {
+    if (calor === this.calor) return
+    this.calor = calor
+    if (this.texCalor) Object.values(this.texCalor).forEach((t) => t.dispose())
+    this.texCalor = null
+    if (calor) {
+      const nueva = () => {
+        const tx = new THREE.CanvasTexture(document.createElement('canvas'))
+        tx.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+        tx.channel = 1 // uv1: tapas y paredes con la posición proyectada
+        tx.repeat.set(1 / (COSLAT * K * calor.spanLon), 1 / (K * calor.spanLat))
+        tx.offset.set((LON0 - calor.lonMin) / calor.spanLon, (LAT0 - calor.latMin) / calor.spanLat)
+        return tx
+      }
+      this.texCalor = { real: nueva(), rayado: nueva(), apagado: nueva() }
+      this.dibujarCalor()
+    }
+    this.pintar()
+  }
+
+  /** Repinta el calor (media o año) y sus variantes con los colores del tema. */
+  private dibujarCalor() {
+    if (!this.calor || !this.texCalor || !tieneAnio(this.calor, this.numeroAnio)) return
+    dibujarCalor(this.lienzoCalor, this.calor, this.numeroAnio)
+    const panel = this.color('--panel')
+    for (const [tipo, tx] of Object.entries(this.texCalor) as [TipoCalor, THREE.CanvasTexture][]) {
+      varianteCalor(tx.image as HTMLCanvasElement, this.lienzoCalor, tipo, panel)
+      tx.needsUpdate = true
+    }
   }
 
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
@@ -901,6 +966,7 @@ export class EscenaPeru {
       down: texturaRayada(this.color('--map-down')),
       green: texturaRayada(this.color('--map-green')),
     }
+    this.dibujarCalor()
     this.pintar()
     this.actualizarParticulas()
   }
@@ -1158,6 +1224,7 @@ export class EscenaPeru {
     this.relieve.geometry.dispose()
     this.mar.material.dispose()
     this.texturas.forEach((t) => t.dispose())
+    if (this.texCalor) Object.values(this.texCalor).forEach((t) => t.dispose())
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     if (this.rayadas) Object.values(this.rayadas).forEach((t) => t.dispose())
     this.renderer.dispose()
@@ -1167,6 +1234,11 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
+    // Temperatura con malla: la tapa muestra el calor por celda; el estado va en rayas y opacidad
+    const calor =
+      this.variable === 'temperatura' && this.calor && tieneAnio(this.calor, this.numeroAnio)
+        ? this.texCalor
+        : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -1176,7 +1248,14 @@ export class EscenaPeru {
       let transparente = false
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
-      if (this.anio && valorAnio != null)
+      if (calor) {
+        // Opaco siempre: el estado va pintado en la textura (rayas o velo), sin columnas cortadas
+        mat.color.set(0xffffff)
+        mapa =
+          calor[
+            d.status === 'real' ? 'real' : d.status === 'posible_casualidad' ? 'rayado' : 'apagado'
+          ]
+      } else if (this.anio && valorAnio != null)
         mat.color.set(colorAnomalia(valorAnio, this.anio.max, this.variable))
       else if (d.status === 'real') mat.color.set(this.color(`--map-${clave}`))
       else if (d.status === 'posible_casualidad') {
@@ -1189,8 +1268,19 @@ export class EscenaPeru {
         transparente = true
         opacidad = 0.16
       }
-      // Recompilar el shader solo si cambia lo que lo define (textura o transparencia)
-      if (!!mat.map !== !!mapa || mat.transparent !== transparente) mat.needsUpdate = true
+      // Recompilar el shader solo si cambia lo que lo define (textura, transparencia o modo calor)
+      const conCalor = !!calor
+      const defs = (mat.defines ??= {})
+      if (
+        !!mat.map !== !!mapa ||
+        mat.transparent !== transparente ||
+        'CALOR' in defs !== conCalor
+      )
+        mat.needsUpdate = true
+      if (conCalor) defs.CALOR = ''
+      else delete defs.CALOR
+      // Algo de brillo en el calor: la luz recorre las tapas grandes (selva) y no se ven planas
+      mat.roughness = conCalor ? 0.5 : 0.75
       mat.map = mapa
       mat.transparent = transparente
       mat.opacity = opacidad

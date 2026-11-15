@@ -64,7 +64,7 @@ export function Leyenda() {
   const muestra = 'h-3.5 w-[18px] flex-none rounded-[3px] box-border'
 
   return (
-    <div className="absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
+    <div className="absolute bottom-[86px] left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
       <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
         <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
           {t.legSum}

@@ -468,3 +468,32 @@ h3 {
     transition: none;
   }
 }
+
+/* Deslizador de la máquina del tiempo en celular: va encima del riel de franjas, sin pista propia */
+@media (max-width: 900px) {
+  .deslizador-riel {
+    appearance: none;
+    background: transparent;
+  }
+  .deslizador-riel::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .deslizador-riel::-moz-range-track {
+    background: transparent;
+  }
+  .deslizador-riel::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 22px;
+    border-radius: 4px;
+    border: 2px solid var(--panel);
+    background: var(--accent);
+  }
+  .deslizador-riel::-moz-range-thumb {
+    width: 8px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid var(--panel);
+    background: var(--accent);
+  }
+}

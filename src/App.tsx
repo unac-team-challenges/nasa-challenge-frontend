@@ -1,19 +1,24 @@
-import { useEffect } from 'react'
+import { Outlet } from '@tanstack/react-router'
+import { lazy, Suspense, useEffect } from 'react'
 import { Cabecera } from './components/Cabecera'
-import { Explorador } from './components/Explorador'
-import { Portada } from './components/Portada'
+import { MapaSkeleton } from './components/Esperas'
+import { ALTO_MAPA_CELULAR } from './lib/disposicion'
+import { useMeta } from './lib/meta'
 import { useRuta } from './lib/ruta'
 import { useDecidirFuente } from './lib/useZonas'
-import { Mapa3D } from './mapa/Mapa3D'
 import { useApp } from './store'
-import { ALTO_MAPA_CELULAR } from './lib/disposicion'
 
+// three.js se descarga aparte (React.lazy)
+const Mapa3D = lazy(() => import('./mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+
+/** Diseño común de todas las pantallas: cabecera arriba y la ruta activa debajo. */
 export default function App() {
   const idioma = useApp((s) => s.idioma)
   const conWebgl = useApp((s) => s.conWebgl)
   const modoMapa = useApp((s) => s.modoMapa)
   const ruta = useRuta()
   useDecidirFuente(ruta)
+  useMeta(ruta)
   useEffect(() => {
     document.documentElement.lang = idioma
   }, [idioma])
@@ -29,13 +34,20 @@ export default function App() {
       <Cabecera />
       <main className="relative flex flex-1 flex-col">
         {/* Un solo mapa para la portada y el explorador: al cambiar de pantalla no se recarga */}
-        <div
-          className={`absolute inset-x-0 top-0 z-0 overflow-hidden ${ALTO_MAPA_CELULAR} min-[901px]:inset-0 min-[901px]:h-auto`}
-        >
-          {/* En 2D el mapa lo dibuja el explorador, en la zona que no tapa el informe */}
-          {!en2d && <Mapa3D modo={ruta} />}
-        </div>
-        {ruta === 'explorar' ? <Explorador /> : <Portada />}
+        {ruta !== 'metodologia' && (
+          <div
+            className={`absolute inset-x-0 top-0 z-0 overflow-hidden ${ALTO_MAPA_CELULAR} min-[901px]:inset-0 min-[901px]:h-auto`}
+          >
+            {/* En 2D el mapa lo dibuja el explorador, en la zona que no tapa el informe */}
+            {!en2d && (
+              // three.js pesa casi la mitad de la web: baja aparte mientras se ve el esqueleto
+              <Suspense fallback={<MapaSkeleton explorar={ruta === 'explorar'} anunciar={false} />}>
+                <Mapa3D modo={ruta} />
+              </Suspense>
+            )}
+          </div>
+        )}
+        <Outlet />
       </main>
     </div>
   )

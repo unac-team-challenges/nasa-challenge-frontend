@@ -1,9 +1,10 @@
-import { useState, type CSSProperties } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '../i18n/textos'
 import { ALTO_MAPA_CELULAR } from '../lib/disposicion'
 import { useVista } from '../lib/useZonas'
 import { useApp } from '../store'
-import { FranjasPeru } from './FranjasPeru'
+import { Button } from './ui/button'
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 /** El texto sale (index.css .saliendo) antes de cambiar de pantalla; el mapa sigue y vuela. */
@@ -11,11 +12,12 @@ const SALIDA_MS = 320
 
 /**
  * Portada: el mapa 3D es el fondo de la pantalla con el Perú a la derecha (lo corre la escena);
- * a la izquierda, la pregunta, las franjas, los perfiles y el botón, cada bloque en su panel.
+ * a la izquierda, la pregunta, los perfiles y el botón, cada bloque en su panel.
  * El mapa lo dibuja App y es el mismo del explorador: al entrar, la cámara vuela sin recargar.
  */
 export function Portada() {
-  const { idioma, setPerfil, conWebgl } = useApp()
+  const { idioma, conWebgl } = useApp()
+  const navigate = useNavigate()
   const t = TEXTOS[idioma]
   // La portada habla de la lluvia: sus años y su fuente
   const { rango, fuente } = useVista('lluvia')
@@ -23,13 +25,13 @@ export function Portada() {
   const [saliendo, setSaliendo] = useState(false)
 
   const explorar = (perfil?: Perfil) => {
-    if (perfil) setPerfil(perfil)
+    const ir = () => navigate({ to: '/explorar', search: (s) => (perfil ? { ...s, perfil } : s) })
     if (reducido()) {
-      location.assign('#explorar')
+      ir()
       return
     }
     setSaliendo(true)
-    setTimeout(() => location.assign('#explorar'), SALIDA_MS)
+    setTimeout(ir, SALIDA_MS)
   }
 
   return (
@@ -57,14 +59,8 @@ export function Portada() {
             <p className="m-0 mt-3 max-w-120 text-[17px] text-muted">{t.heroLead(a, b)}</p>
           </div>
           <div
-            className="vidrio entrada rounded-l px-4 py-3.5"
-            style={{ '--retraso': '0.08s' } as CSSProperties}
-          >
-            <FranjasPeru />
-          </div>
-          <div
             className="vidrio entrada flex flex-col gap-2.5 rounded-l px-4 py-3.5"
-            style={{ '--retraso': '0.16s' } as CSSProperties}
+            style={{ '--retraso': '0.08s' } as CSSProperties}
           >
             <h2 className="m-0 text-[15px] font-semibold">{t.whoH}</h2>
             <div className="grid grid-cols-1 gap-2 min-[521px]:grid-cols-2">
@@ -86,19 +82,26 @@ export function Portada() {
           </div>
           <div
             className="vidrio entrada flex flex-wrap items-center gap-x-4 gap-y-2 rounded-l px-4 py-3"
-            style={{ '--retraso': '0.24s' } as CSSProperties}
+            style={{ '--retraso': '0.16s' } as CSSProperties}
           >
-            <a
-              href="#explorar"
-              onClick={(e) => {
-                e.preventDefault()
-                explorar()
-              }}
-              className="presionable inline-flex min-h-10 items-center rounded-s border border-accent bg-accent px-3.5 text-sm font-semibold text-accent-fg no-underline transition-[filter] hover:brightness-110"
-            >
-              {t.exploreBtn}
-            </a>
+            <Button asChild variant="default">
+              <Link
+                to="/explorar"
+                search={(s) => s}
+                onClick={(e: MouseEvent) => {
+                  // clic normal: el texto sale y luego se navega; con Ctrl/⌘ el navegador abre otra pestaña
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                  e.preventDefault()
+                  explorar()
+                }}
+              >
+                {t.exploreBtn}
+              </Link>
+            </Button>
             <span className="text-[13px] text-muted">{t.fuenteReal(fuente)}</span>
+            <Link to="/metodologia" className="text-[13px] text-accent-text">
+              {t.metodologiaEnlace}
+            </Link>
           </div>
         </div>
       </div>

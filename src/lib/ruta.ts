@@ -1,22 +1,17 @@
-import { useSyncExternalStore } from 'react'
+import { useRouterState } from '@tanstack/react-router'
 
-/**
- * Rutas por hash, como el prototipo (#inicio, #explorar, #expediente-1…).
- * Pendiente: pasar a TanStack Router + Zod (/zona/20?perfil=agricultor) cuando haya más pantallas.
- */
-export type Ruta = 'inicio' | 'explorar'
-
-function leer(): Ruta {
-  const h = location.hash.replace('#', '')
-  // Los expedientes llegan en otro PR: por ahora abren el explorador
-  return h === 'explorar' || h.startsWith('expediente') ? 'explorar' : 'inicio'
-}
-
-function suscribir(cb: () => void) {
-  addEventListener('hashchange', cb)
-  return () => removeEventListener('hashchange', cb)
-}
+/** Pantalla actual, según la ruta de TanStack Router (src/router.tsx). */
+export type Ruta = 'inicio' | 'explorar' | 'metodologia'
 
 export function useRuta(): Ruta {
-  return useSyncExternalStore(suscribir, leer, () => 'inicio')
+  return useRouterState({
+    select: (s) => {
+      const p = s.location.pathname
+      return p.startsWith('/explorar') || p.startsWith('/zona/')
+        ? 'explorar'
+        : p.startsWith('/metodologia')
+          ? 'metodologia'
+          : 'inicio'
+    },
+  })
 }

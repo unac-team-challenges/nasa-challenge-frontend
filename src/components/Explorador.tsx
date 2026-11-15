@@ -7,13 +7,14 @@ import { useRango, useZonas } from '../lib/useZonas'
 import { escenaActiva } from '../mapa/escena'
 import { Mapa2D } from '../mapa/Mapa2D'
 import { useApp } from '../store'
+import { useBusqueda } from '../lib/busqueda'
 import { colorDireccion } from '../lib/direccion'
-import { Ficha } from './Ficha'
 import { BarraTiempo } from './BarraTiempo'
+import { Ficha } from './Ficha'
 import { Leyenda } from './Leyenda'
+import { Button } from './ui/button'
 
-const boton =
-  'presionable inline-flex size-10 cursor-pointer items-center justify-center rounded-s border border-line-2 bg-panel/92 hover:border-fg'
+const boton = 'bg-panel/92'
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 /** Ancho del informe abierto en escritorio y de su franja minimizada. */
@@ -31,8 +32,9 @@ const RETRASO_INFO_S = 1.3
  * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
-  const { idioma, variable, sel, sinNino, informeMin, setInformeMin, seleccionar } = useApp()
-  const { conWebgl, modoMapa, setModoMapa, anio, girando } = useApp()
+  const { idioma, sinNino, informeMin, setInformeMin } = useApp()
+  const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
+  const { variable, sel, anio, seleccionar } = useBusqueda()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
@@ -147,23 +149,21 @@ export function Explorador() {
                 aria-label={t.vistaMapa}
               >
                 {(['3d', '2d'] as const).map((m) => (
-                  <button
+                  <Button
                     key={m}
-                    type="button"
+                    variant="toggle"
+                    size="sm"
                     aria-pressed={modoMapa === m}
                     onClick={() => setModoMapa(m)}
-                    className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm ${
-                      modoMapa === m ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
-                    }`}
                   >
                     {m.toUpperCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
-            <button
-              type="button"
-              className={`${boton} disabled:cursor-default disabled:opacity-40`}
+            <Button
+              size="icon"
+              className={boton}
               disabled={!en3d}
               aria-pressed={girando}
               aria-label={girando ? t.spinOn : t.spinOff}
@@ -180,9 +180,9 @@ export function Explorador() {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              size="icon"
               className={boton}
               aria-label={t.recenter}
               title={t.recenter}
@@ -197,7 +197,7 @@ export function Explorador() {
                   strokeLinecap="round"
                 />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

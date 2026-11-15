@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { TEXTOS } from '../i18n/textos'
 import { useRango, useZonas } from '../lib/useZonas'
 import { anomaliasAnio } from '../data/datos'
+import { esUbigeo, useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
 import { EscenaPeru, escenaActiva, type ModoMapa } from './escena'
 import { Mapa2D } from './Mapa2D'
@@ -20,7 +21,14 @@ export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, variable, tema, sel, conWebgl, anio, periodo } = useApp()
+  const { idioma, tema, conWebgl, periodo } = useApp()
+  const busqueda = useBusqueda()
+  const { variable, sel, anio } = busqueda
+  // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
+  const busquedaRef = useRef(busqueda)
+  useEffect(() => {
+    busquedaRef.current = busqueda
+  })
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const rango = useRango()
@@ -32,14 +40,15 @@ export function Mapa3D({ modo }: Props) {
     const e = new EscenaPeru(contenedor.current, capa.current, {
       oceano: TEXTOS[useApp.getState().idioma].ocean,
       modo: modoInicial.current,
-      alElegir: (id) => useApp.getState().seleccionar(id),
+      alElegir: (id) => busquedaRef.current.seleccionar(id),
       alGirar: (g) => useApp.getState().setGirando(g),
     })
     escena.current = e
     escenaActiva.current = e
     e.aplicarTema()
     e.setIdioma(useApp.getState().idioma)
-    const { variable: v, sel: s } = useApp.getState()
+    const { variable: v, sel: s0 } = busquedaRef.current
+    const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
     if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
     useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
@@ -66,7 +75,7 @@ export function Mapa3D({ modo }: Props) {
   }, [zonas, variable])
 
   useEffect(() => {
-    if (modo === 'explorar') escena.current?.seleccionar(sel, true)
+    if (modo === 'explorar') escena.current?.seleccionar(sel && esUbigeo(sel) ? sel : null, true)
   }, [sel, modo])
 
   useEffect(() => {

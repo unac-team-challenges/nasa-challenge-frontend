@@ -1,20 +1,24 @@
+import { Link } from '@tanstack/react-router'
 import type { Variable } from '../data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '../i18n/textos'
+import { useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
+import { Button } from './ui/button'
 
 /**
  * Barra superior: marca, variable, perfil, idioma y tema.
  * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
- * Pendiente: el menú de expedientes.
  */
 export function Cabecera() {
-  const { idioma, setIdioma, alternarTema, variable, setVariable, perfil, setPerfil } = useApp()
+  const { idioma, setIdioma, alternarTema } = useApp()
+  const { variable, setVariable, perfil, setPerfil } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4.5 gap-y-2.5 border-b border-line bg-panel px-4 py-2.5">
-      <a
-        href="#inicio"
+      <Link
+        to="/"
+        search={(p) => ({ variable: p.variable, perfil: p.perfil })}
         className="mr-auto flex items-center gap-2.5 text-fg no-underline"
         aria-label={t.inicio}
       >
@@ -34,7 +38,7 @@ export function Cabecera() {
           <rect x="15.5" y="7" width="3" height="9" rx="1" fill="var(--up)" />
         </svg>
         <b className="font-display text-base font-bold tracking-display sm:text-lg">{t.marca}</b>
-      </a>
+      </Link>
       <div className="order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-0 min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
         <div
           className="inline-flex flex-none overflow-hidden rounded-s border border-line-2"
@@ -42,17 +46,15 @@ export function Cabecera() {
           aria-label={t.variableLbl}
         >
           {variables.map(([v, nombre]) => (
-            <button
+            <Button
               key={v}
-              type="button"
+              variant="toggle"
+              size="sm"
               aria-pressed={variable === v}
               onClick={() => setVariable(v)}
-              className={`presionable min-h-10 cursor-pointer border-0 px-3 text-sm ${
-                variable === v ? 'bg-fg font-semibold text-bg' : 'bg-transparent'
-              }`}
             >
               {nombre}
-            </button>
+            </Button>
           ))}
         </div>
         <label className="sr-only" htmlFor="perfil">
@@ -72,24 +74,20 @@ export function Cabecera() {
         </select>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="presionable inline-flex min-h-10 cursor-pointer items-center rounded-s border border-line-2 bg-panel px-3.5 text-sm hover:border-fg"
+        <Button asChild variant="ghost" className="hidden sm:inline-flex">
+          <Link to="/metodologia">{t.metodologiaCorto}</Link>
+        </Button>
+        <Button
           aria-label={t.cambiarIdioma}
           onClick={() => setIdioma(idioma === 'es' ? 'en' : 'es')}
         >
           {idioma === 'es' ? 'EN' : 'ES'}
-        </button>
-        <button
-          type="button"
-          className="presionable inline-flex size-10 cursor-pointer items-center justify-center rounded-s border border-line-2 bg-panel hover:border-fg"
-          aria-label={t.cambiarTema}
-          onClick={alternarTema}
-        >
+        </Button>
+        <Button size="icon" aria-label={t.cambiarTema} onClick={alternarTema}>
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor" />
           </svg>
-        </button>
+        </Button>
       </div>
     </header>
   )

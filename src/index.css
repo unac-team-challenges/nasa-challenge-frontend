@@ -30,7 +30,7 @@
   --accent-text: #a8285a;
   --accent-fg: #ffffff;
   --accent-soft: #eed8e1;
-  --sea: #c7d1d4;
+  --sea: #a9c3d3; /* azul suave: en claro, el mar no se confunde con la tierra */
   --plane: #4b5e68;
   --shadow: rgba(26, 42, 51, 0.1);
   --nino: #ebdfbe;
@@ -454,10 +454,17 @@ h3 {
 }
 .zoom2d {
   transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* el suelo (canvas) y el SVG se agrandan en la tarjeta gráfica, sin volver a pintarse */
+  will-change: transform;
+}
+/* Etiquetas del 2D: se deslizan con el zoom (las del 3D las mueve la escena cada cuadro) */
+.lbl2d {
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 @media (prefers-reduced-motion: reduce) {
   .zona2d,
-  .zoom2d {
+  .zoom2d,
+  .lbl2d {
     transition: none;
   }
 }

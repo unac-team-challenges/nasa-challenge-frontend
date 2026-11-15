@@ -13,7 +13,7 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
 
   // Elegir perfil lleva al explorador
   await page.getByRole('button', { name: /Agricultor/ }).click()
-  await expect(page).toHaveURL(/#explorar$/)
+  await expect(page).toHaveURL(/\/explorar\?.*perfil=agricultor/)
   await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
   await expect(page.locator('#perfil')).toHaveValue('agricultor')
 
@@ -65,14 +65,15 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
     .getByRole('link', { name: /Detective del Perú|Detective of Peru|home/i })
     .first()
     .click()
-  await expect(page).not.toHaveURL(/#explorar$/)
+  await expect(page).not.toHaveURL(/\/explorar/)
 
   expect(errores).toEqual([])
 })
 
 test('sin WebGL: el explorador cae al mapa 2D', async ({ page }) => {
-  await page.goto('/?sinwebgl#explorar')
+  await page.goto('/explorar?sinwebgl')
   await expect(page.getByRole('group', { name: 'Mapa del Perú en 2D' })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Vista del mapa' })).toHaveCount(0)
-  await expect(page.locator('canvas')).toHaveCount(0)
+  // El 2D pinta su suelo en un canvas 2D (data-suelo2d); lo que no debe haber es el del 3D
+  await expect(page.locator('canvas:not([data-suelo2d])')).toHaveCount(0)
 })

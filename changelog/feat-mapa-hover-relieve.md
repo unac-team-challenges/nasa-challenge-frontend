@@ -85,13 +85,13 @@ Medí con `mapa-v2/bench/bench.mjs` (Chromium, 1440 × 900 a escala 1,5), con el
 - **Con el mouse en movimiento, +9 puntos de CPU.** Viene de la ficha: unos 12 layouts/s al pasar rápido por varios departamentos (se mide al llenarla) y de la animación de elevación y brillo.
 - **Sin GPU:** la primera versión del relieve (256 × 256, siempre visible) bajaba los cuadros a la mitad. Con 192 × 192 y el apagado automático, queda igual o mejor que antes.
 
-`pnpm lint`, `pnpm build`, `pnpm test` (16) y `pnpm e2e` (4) pasan en local. Sin errores de shader en la consola, en tema claro y oscuro.
+`pnpm lint`, `pnpm build`, `pnpm test` (38) y `pnpm e2e` (7) pasan en local. Sin errores de shader en la consola, en tema claro y oscuro.
 
 ## Cómo probar
 
 ```bash
 pnpm install
-pnpm dev   # abrir /#explorar
+pnpm dev   # abrir /explorar
 ```
 
 Qué mirar:
@@ -231,5 +231,18 @@ Con «reducir movimiento» no hay presentación ni demoras.
 
 - `pnpm lint` y `pnpm build`: pasan.
 - `pnpm test`: 20 pruebas (16 de antes y 4 de la ficha).
-- `pnpm e2e`: 4 de 4.
+- `pnpm e2e`: 7 de 7 (el recorrido completo tarda ~1 min con WebGL por software).
 - Sin errores de WebGL ni de shader en tema claro y oscuro, en escritorio (1440 × 860) y en celular (390 × 844).
+
+## Integración con el router (#20)
+
+Esta rama se unió a `developer` después de las rutas con TanStack Router:
+
+- El mapa único vive en `App.tsx` (layout de la raíz), por encima del `<Outlet/>`, con `React.lazy` y su esqueleto. No aparece en `/metodologia`.
+- `Portada`, `Explorador`, `Mapa2D` y `Mapa3D` leen variable, zona y año de la URL (`useBusqueda`), no del store. «Explorar el mapa» navega a `/explorar` tras la salida del texto (con Ctrl/⌘ o clic central abre otra pestaña normal).
+- `ExploradorSkeleton` ahora es solo el informe: el mapa ya está de fondo.
+- Una zona inexistente (`/zona/99`) no se marca ni se acerca en el 2D ni en el 3D (antes rompía `zoomA`).
+- 2D: el zoom a la zona se aplica con CSS al suelo y al SVG juntos (`will-change: transform`, sin volver a pintar el canvas al cambiar de tema), y las etiquetas HTML se mueven con él sin agrandarse. La zona bajo el puntero se dibuja al final, como en #15.
+- Playwright: tiempo máximo por prueba de 150 s; con SwiftShader el 3D va a pocos cuadros por segundo.
+
+Pendientes del PR, con la decisión tomada: textos de las 2 figuras nuevas se dejan como están (datos verificados: kené, Patrimonio Cultural de la Nación 2008; danza de tijeras, UNESCO 2010); en pantalla táctil se mantiene tocar para elegir, sin ficha; ancho fijo de la ficha.

@@ -11,7 +11,7 @@ import tseslint from 'typescript-eslint'
 // Ver ARQUITECTURE.md: dirección de dependencias app -> features -> capas compartidas.
 const compartidas = ['components', 'hooks', 'lib', 'utils', 'stores', 'api', 'data', 'i18n']
 // Cada carpeta de src/features es una feature; las nuevas quedan protegidas solas.
-const features = readdirSync('./src/features', { withFileTypes: true })
+const features = readdirSync(`${import.meta.dirname}/src/features`, { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => d.name)
 
@@ -52,13 +52,15 @@ export default defineConfig([
     plugins: { 'import-x': importX },
     settings: {
       'import-x/resolver-next': [
-        createTypeScriptImportResolver({ project: './tsconfig.app.json' }),
+        createTypeScriptImportResolver({ project: `${import.meta.dirname}/tsconfig.app.json` }),
       ],
     },
     rules: {
       'import-x/no-restricted-paths': [
         'error',
         {
+          // zonas relativas a la raíz del repo, no al cwd desde donde se lance eslint
+          basePath: import.meta.dirname,
           zones: [
             // las capas compartidas no conocen features ni app
             ...compartidas.flatMap((c) => [

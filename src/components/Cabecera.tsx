@@ -10,15 +10,15 @@ import { Button } from '@/components/ui/button'
  * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
  */
 export function Cabecera() {
-  const { idioma, setIdioma, alternarTema } = useApp()
-  const { variable, setVariable, perfil, setPerfil } = useBusqueda()
+  const { idioma, alternarTema } = useApp()
+  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4.5 gap-y-2.5 border-b border-line bg-panel px-4 py-2.5">
       <Link
         to="/"
-        search={(p) => ({ variable: p.variable, perfil: p.perfil })}
+        search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}
         className="mr-auto flex items-center gap-2.5 text-fg no-underline"
         aria-label={t.inicio}
       >
@@ -75,7 +75,9 @@ export function Cabecera() {
       </div>
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" className="hidden sm:inline-flex">
-          <Link to="/metodologia">{t.metodologiaCorto}</Link>
+          <Link to="/metodologia" search={(p) => ({ lang: p.lang })}>
+            {t.metodologiaCorto}
+          </Link>
         </Button>
         <Button
           aria-label={t.cambiarIdioma}

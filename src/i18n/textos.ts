@@ -86,6 +86,10 @@ const es = {
     pocos_datos: 'Pocos datos',
   } as Record<Estado, string>,
   perDecade: 'por década',
+  /** Ficha del 3D al pasar el puntero */
+  vsPromedio: 'frente a su promedio',
+  ic95: 'IC 95 %',
+  anios: 'años',
   pctDecade: (p: string) => `${p} por década frente a su promedio`,
   range: (a: string, b: string) => `Rango probable: entre ${a} y ${b}`,
   fewCeldas: (n: number, fuente: string, local: boolean) =>
@@ -241,6 +245,9 @@ const en: Textos = {
     pocos_datos: 'Not enough data',
   },
   perDecade: 'per decade',
+  vsPromedio: 'vs. its average',
+  ic95: '95% CI',
+  anios: 'years',
   pctDecade: (p) => `${p} per decade vs its average`,
   range: (a, b) => `Likely range: ${a} to ${b}`,
   fewCeldas: (n, fuente, local) =>

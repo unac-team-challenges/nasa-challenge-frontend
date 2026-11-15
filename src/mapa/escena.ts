@@ -13,6 +13,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
+import { fmtAnomalia, fmtP, fmtValor } from '../lib/formato'
+import { TEXTOS } from '../i18n/textos'
 import { Fauna, type Animal } from './fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
@@ -28,6 +30,10 @@ const ESCALA_MIN = 0.12
 const FPS_FONDO = 30
 const FPS_SIN_FOCO = 15
 const ELEVA_SEL = 0.35
+/** El departamento bajo el puntero sube un poco (como fill-extrusion en Mapbox o deck.gl). */
+const ELEVA_HOVER = 0.18
+/** Brillo de acento del departamento bajo el puntero (emisivo, entra y sale suave). */
+const BRILLO_HOVER = 0.2
 const LON0 = -75.0
 const LAT0 = -9.2
 const K = 2.2
@@ -106,6 +112,8 @@ interface DatosMalla {
   objetivo: number
   centro: THREE.Vector3
   contorno: THREE.LineSegments<THREE.BufferGeometry, THREE.LineDashedMaterial>
+  /** 0..1: cuánto brilla por el hover (se interpola en cada cuadro). */
+  brillo: number
 }
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -281,6 +289,35 @@ function texturaRayada(hex: string) {
   return tx
 }
 
+/** Ficha técnica que aparece al pasar el puntero por un departamento (texto, nunca HTML). */
+function crearTarjeta(capa: HTMLElement) {
+  const nuevo = (clase: string, padre: HTMLElement, tag = 'div') => {
+    const el = document.createElement(tag)
+    el.className = clase
+    padre.appendChild(el)
+    return el
+  }
+  const raiz = nuevo('ficha3d', capa)
+  const caja = nuevo('ficha3d-caja', raiz)
+  const nombre = nuevo('ficha3d-nombre', caja)
+  const valor = nuevo('ficha3d-valor', caja)
+  const estado = nuevo('ficha3d-estado', caja)
+  const ic = nuevo('ficha3d-ic', caja)
+  return {
+    raiz,
+    nombre,
+    valor,
+    estado,
+    ic,
+    rango: nuevo('ficha3d-rango', ic, 'span'),
+    punto: nuevo('ficha3d-punto', ic, 'span'),
+    meta: nuevo('ficha3d-meta', caja),
+    /** Tamaño medido al llenarla (una lectura de layout por cambio de hover, no por cuadro). */
+    ancho: 0,
+    alto: 0,
+  }
+}
+
 interface Vuelo {
   p0: THREE.Vector3
   t0: THREE.Vector3
@@ -344,6 +381,8 @@ export class EscenaPeru {
   private tipTimer = 0
   private destruida = false
   private tip: HTMLDivElement
+  private tarjeta: ReturnType<typeof crearTarjeta>
+  private acento = new THREE.Color()
   private idioma: 'es' | 'en' = 'es'
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
   private quitarEventos: () => void
@@ -416,7 +455,14 @@ export class EscenaPeru {
       )
       contorno.computeLineDistances()
       malla.add(contorno)
-      malla.userData = { id: z.id, h: 0.4, objetivo: 0.4, centro: new THREE.Vector3(), contorno }
+      malla.userData = {
+        id: z.id,
+        h: 0.4,
+        objetivo: 0.4,
+        centro: new THREE.Vector3(),
+        contorno,
+        brillo: 0,
+      }
       this.mapa.add(malla)
       this.mallas.push(malla)
       this.porId.set(z.id, malla)
@@ -598,6 +644,7 @@ export class EscenaPeru {
     })
     this.tip = nuevaEtiqueta('tip3d')
     this.tip.hidden = true
+    this.tarjeta = crearTarjeta(capaEtiquetas)
     this.particulas = { geo: geoP, puntos }
 
     const ro = new ResizeObserver(() => this.redimensionar())
@@ -700,6 +747,7 @@ export class EscenaPeru {
     this.alturas(instantaneo)
     this.textosEtiquetas()
     this.actualizarParticulas()
+    this.llenarTarjeta()
   }
 
   /**
@@ -712,6 +760,7 @@ export class EscenaPeru {
     this.alturas(false)
     this.textosEtiquetas()
     this.actualizarParticulas()
+    this.llenarTarjeta()
   }
 
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
@@ -727,6 +776,7 @@ export class EscenaPeru {
   /** Relee los tokens del tema (claro/oscuro) y repinta. */
   aplicarTema() {
     this.colores.clear()
+    this.acento.set(this.color('--accent'))
     const bg = new THREE.Color(this.color('--bg'))
     const claro = esTemaClaro()
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
@@ -773,16 +823,87 @@ export class EscenaPeru {
     return v
   }
 
-  /** Resalta la zona bajo el puntero tocando solo 2 materiales (antes se repintaban los 25). */
+  /**
+   * Zona bajo el puntero: cambia el contorno de 2 departamentos y llena la ficha. La elevación y el
+   * brillo entran suave en cuadro(); aquí no se recompila ningún material.
+   */
   private setHover(id: string | null) {
     if (id === this.hover) return
     const antes = this.hover ? this.porId.get(this.hover) : undefined
-    antes?.material.emissive.set(0x000000)
     this.hover = id
+    if (antes) this.pintarContorno(antes)
     const m = id ? this.porId.get(id) : undefined
-    m?.material.emissive.set(this.color('--accent')).multiplyScalar(0.18)
+    if (m) this.pintarContorno(m)
+    this.llenarTarjeta()
     this.renderer.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
     this.sucio = true
+  }
+
+  /** Contorno: acento si está elegida, color del texto si está bajo el puntero, punteado si hay pocos datos. */
+  private pintarContorno(m: Malla) {
+    const d = this.zonas[m.userData.id]
+    if (!d) return
+    const pocos = d.status === 'pocos_datos'
+    const lm = m.userData.contorno.material
+    lm.color.set(
+      m.userData.id === this.sel
+        ? this.color('--accent')
+        : m.userData.id === this.hover
+          ? this.color('--fg')
+          : this.color(pocos ? '--muted' : '--bg'),
+    )
+    lm.dashSize = pocos ? 0.35 : 1
+    lm.gapSize = pocos ? 0.25 : 0.0001
+  }
+
+  /**
+   * Ficha técnica del departamento bajo el puntero: cambio por década (o anomalía del año), estado,
+   * rango probable (IC 95 %) dibujado frente al cero, q y años. Patrón de tooltip de deck.gl.
+   */
+  private llenarTarjeta() {
+    const T = this.tarjeta
+    const d = this.hover ? this.zonas[this.hover] : undefined
+    T.raiz.classList.toggle('on', !!d)
+    if (!d || !this.hover) return
+    const t = TEXTOS[this.idioma]
+    const v = this.variable
+    const valorAnio = this.anio?.valores[this.hover]
+    const enAnio = !!this.anio && valorAnio != null
+    const fuerte = document.createElement('strong')
+    const chico = document.createElement('small')
+    if (d.status === 'pocos_datos') fuerte.textContent = '—'
+    else if (enAnio) {
+      fuerte.textContent = fmtAnomalia(valorAnio, v, this.idioma)
+      chico.textContent = t.vsPromedio
+    } else {
+      fuerte.textContent = fmtValor(d.slope_per_decade, v, this.idioma)
+      chico.textContent = t.perDecade
+    }
+    T.nombre.textContent = NOMBRE[this.hover]
+    T.valor.replaceChildren(fuerte, chico)
+    T.estado.textContent = t.status[d.status]
+    T.raiz.dataset.estado = d.status
+    T.raiz.dataset.clave = claveMapa(d.slope_per_decade, v)
+    // Rango probable frente al cero: si la barra cruza la línea del medio, puede ser casualidad
+    const conIc = !enAnio && d.status !== 'pocos_datos'
+    T.ic.hidden = !conIc
+    if (conIc) {
+      const m =
+        Math.max(Math.abs(d.ci_low), Math.abs(d.ci_high), Math.abs(d.slope_per_decade)) * 1.15 || 1
+      const x = (val: number) => 50 + (val / m) * 50
+      T.rango.style.left = x(d.ci_low).toFixed(1) + '%'
+      T.rango.style.width = (x(d.ci_high) - x(d.ci_low)).toFixed(1) + '%'
+      T.punto.style.left = x(d.slope_per_decade).toFixed(1) + '%'
+    }
+    T.meta.textContent =
+      d.status === 'pocos_datos'
+        ? `${d.n_years} ${t.anios}`
+        : (conIc
+            ? `${t.ic95}: ${fmtValor(d.ci_low, v, this.idioma)} … ${fmtValor(d.ci_high, v, this.idioma)}\n`
+            : '') + `q = ${fmtP(d.q_value, this.idioma)} · ${d.n_years} ${t.anios}`
+    T.ancho = T.raiz.offsetWidth
+    T.alto = T.raiz.offsetHeight
+    this.posEtiqueta.delete(T.raiz)
   }
 
   setTextoOceano(t: string) {
@@ -793,6 +914,7 @@ export class EscenaPeru {
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
     if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
+    this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.sucio = true
   }
@@ -938,7 +1060,6 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    const acento = this.color('--accent')
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -966,14 +1087,8 @@ export class EscenaPeru {
       mat.map = mapa
       mat.transparent = transparente
       mat.opacity = opacidad
-      mat.emissive.set(0x000000)
-      if (m.userData.id === this.hover) mat.emissive.set(acento).multiplyScalar(0.18)
-      const pocos = d.status === 'pocos_datos'
-      const elegida = m.userData.id === this.sel
-      const lm = m.userData.contorno.material
-      lm.color.set(elegida ? acento : this.color(pocos ? '--muted' : '--bg'))
-      lm.dashSize = pocos ? 0.35 : 1
-      lm.gapSize = pocos ? 0.25 : 0.0001
+      mat.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
+      this.pintarContorno(m)
     }
     this.sucio = true
   }
@@ -1162,14 +1277,27 @@ export class EscenaPeru {
       if (k >= 1) this.vuelo = null
     }
     let moviendo = false
+    const quieto = reducido()
     for (const m of this.mallas) {
+      const id = m.userData.id
       const dh = m.userData.objetivo - m.userData.h
-      const dz = -PISO + (m.userData.id === this.sel ? ELEVA_SEL : 0) - m.position.z
+      const eleva = id === this.sel ? ELEVA_SEL : id === this.hover ? ELEVA_HOVER : 0
+      const dz = -PISO + eleva - m.position.z
+      const db = (id === this.hover ? 1 : 0) - m.userData.brillo
       if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) {
         moviendo = true
         m.userData.h += dh * (this.anio ? 0.07 : 0.12)
         m.scale.z = m.userData.h
         m.position.z += dz * 0.2
+      }
+      if (db !== 0) {
+        // entra rápido y sale más lento; con «reducir movimiento», de golpe
+        m.userData.brillo =
+          quieto || Math.abs(db) < 0.01
+            ? m.userData.brillo + db
+            : m.userData.brillo + db * (db > 0 ? 0.35 : 0.18)
+        m.material.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
+        moviendo = true
       }
     }
     this.moviendo = moviendo
@@ -1208,6 +1336,24 @@ export class EscenaPeru {
     if (!fuera) el.style.transform = tf
   }
 
+  /** La ficha sigue la cara superior del departamento; no se sale del mapa y baja si no cabe arriba. */
+  private ubicarTarjeta() {
+    const m = this.hover ? this.porId.get(this.hover) : undefined
+    if (!m) return
+    const T = this.tarjeta
+    const v = this.v3
+      .set(m.userData.centro.x, m.position.z + m.scale.z + 0.3, m.userData.centro.z)
+      .project(this.camara)
+    const mitad = T.ancho / 2 + 8
+    const x = Math.min(this.ancho - mitad, Math.max(mitad, ((v.x + 1) / 2) * this.ancho))
+    const y = ((1 - v.y) / 2) * this.alto
+    const abajo = y - T.alto - 22 < 8
+    const tf = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px) translate(-50%, ${abajo ? '22px' : 'calc(-100% - 22px)'})`
+    if (this.posEtiqueta.get(T.raiz) === tf) return
+    this.posEtiqueta.set(T.raiz, tf)
+    T.raiz.style.transform = tf
+  }
+
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
@@ -1239,6 +1385,7 @@ export class EscenaPeru {
       if (p.el.hidden !== celular()) p.el.hidden = celular()
       if (!p.el.hidden) this.ubicarEtiqueta(p.el, p.x, -PISO, p.z)
     }
+    this.ubicarTarjeta()
     const lima = malla('15')
     if (lima)
       this.ubicarEtiqueta(

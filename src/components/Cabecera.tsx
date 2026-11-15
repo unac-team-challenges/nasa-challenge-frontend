@@ -55,7 +55,7 @@ export function Cabecera() {
       >
         {/* Logo del equipo sin fondo (scripts/logo.py); en oscuro, un contorno claro despega el aro azul */}
         <img
-          src="/logo.webp"
+          src="/logo.png"
           alt=""
           width={48}
           height={48}

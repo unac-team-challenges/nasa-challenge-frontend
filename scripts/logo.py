@@ -1,4 +1,4 @@
-"""Genera public/logo.webp: el logo del equipo (logo.jpeg, fondo blanco) con fondo transparente.
+"""Genera public/logo.png: el logo del equipo (logo.jpeg, fondo blanco) con fondo transparente.
 
 No es un "borrar el blanco" a ciegas: el vidrio de la lupa también es casi blanco.
   1. Dentro del lente (círculo fijo, medido en el jpeg de 2048 px) todo queda opaco.
@@ -16,7 +16,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
 
-SALIDA = Path(__file__).resolve().parent.parent / "public" / "logo.webp"
+SALIDA = Path(__file__).resolve().parent.parent / "public" / "logo.png"
 LADO = 160
 # Lente en el jpeg original de 2048 px (borde exterior del aro azul ≈ 530 px)
 CENTRO, RADIO = (1069, 862), 500
@@ -58,9 +58,7 @@ def main(origen: str) -> None:
     lado = max(out.size)
     cuadro = Image.new("RGBA", (lado, lado))
     cuadro.paste(out, ((lado - out.width) // 2, (lado - out.height) // 2))
-    cuadro.resize((LADO, LADO), Image.Resampling.LANCZOS).save(
-        SALIDA, "WEBP", quality=90, method=6
-    )
+    cuadro.resize((LADO, LADO), Image.Resampling.LANCZOS).save(SALIDA, "PNG", optimize=True)
     print(f"{SALIDA} ({SALIDA.stat().st_size // 1024} KB)")
 
 

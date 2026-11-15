@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { TEXTOS } from '@/i18n/textos'
-import { anomaliasAnio, FUENTE_LOCAL } from '@/data/datos'
+import { anomaliasAnio } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
 import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor, num } from '@/utils/formato'
@@ -33,17 +33,6 @@ function Titulo({ children, extra }: { children: ReactNode; extra?: ReactNode })
   )
 }
 
-/** Explicaciones: una idea por viñeta, en letra chica y apagada. */
-function Notas({ items }: { items: string[] }) {
-  return (
-    <ul className="m-0 grid list-disc gap-0.5 pl-4 text-[11.5px] leading-snug text-muted marker:text-line">
-      {items.map((x) => (
-        <li key={x}>{x}</li>
-      ))}
-    </ul>
-  )
-}
-
 /** Barra de color de la malla con sus dos extremos. */
 function Escala({ calor, extremo }: { calor: Calor; extremo: (x: number) => string }) {
   return (
@@ -67,13 +56,13 @@ function Escala({ calor, extremo }: { calor: Calor; extremo: (x: number) => stri
  * mapa de color, el perfil (agricultor o estudiante), el idioma y el tema (colores por token).
  */
 export function Leyenda() {
-  const { idioma, conWebgl } = useApp()
+  const { idioma } = useApp()
   const periodo = usePeriodo()
   const { variable, vegetacion, perfil, sel } = useBusqueda()
   const anio = useAnio()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
-  const { rango, fuente } = useVista()
+  const { rango } = useVista()
   const [abierta, setAbierta] = useState(false)
   // Al elegir un departamento se minimiza: el informe y la ficha del puntero necesitan el espacio
   const [selPrevia, setSelPrevia] = useState(sel)
@@ -244,13 +233,6 @@ export function Leyenda() {
           <Escala calor={calor} extremo={extremo} />
         </section>
       )}
-      <Notas
-        items={[
-          ...(calor && conCalor ? t.calorNota[variable] : []),
-          // La máquina del tiempo usa la copia local
-          t.varDef[variable](anual ? FUENTE_LOCAL : fuente),
-        ]}
-      />
     </>
   )
 
@@ -260,30 +242,18 @@ export function Leyenda() {
     ['baja', t.vegBaja],
     ['igual', t.vegIgual],
   ]
+  // Modo Vegetación: tres cosas que leer, sin notas (el detalle está en el informe y en Metodología)
   const contenidoVegetacion = (
     <>
-      {calor && (
-        <section className="grid gap-1">
-          <Titulo>{t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}</Titulo>
-          <Escala calor={calor} extremo={extremo} />
-          <Notas items={t.legVegMallaNota} />
-        </section>
-      )}
-      {/* Solo el 3D tiene relieve y plantas */}
-      {conWebgl && (
-        <section className="grid gap-1">
-          <Titulo>{t.legRegiones}</Titulo>
-          <div className="grid grid-cols-3 gap-x-2 text-xs">
-            {['--veg-0', '--veg-2', '--veg-4'].map((token, i) => (
-              <span key={token} className="flex items-center gap-1.5 leading-tight text-fg">
-                <span className={muestra} style={{ background: `var(${token})` }} />
-                {t.regionNombre[i]}
-              </span>
-            ))}
-          </div>
-          <Notas items={[t.vegAltura, t.vegPlantas]} />
-        </section>
-      )}
+      <section className="grid gap-1">
+        <Titulo>{t.legVegAltura}</Titulo>
+        {calor && (
+          <>
+            <Titulo>{t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}</Titulo>
+            <Escala calor={calor} extremo={extremo} />
+          </>
+        )}
+      </section>
       <section className="grid gap-1">
         <Titulo>{t.legCuadros}</Titulo>
         <div className="grid grid-cols-3 gap-x-2 text-xs">
@@ -297,7 +267,6 @@ export function Leyenda() {
             </span>
           ))}
         </div>
-        <Notas items={[t.legVegNota]} />
       </section>
     </>
   )

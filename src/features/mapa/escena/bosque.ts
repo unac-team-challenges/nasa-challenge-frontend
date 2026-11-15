@@ -11,7 +11,7 @@
  *
  * Costo: una malla instanciada por especie (11 draw calls, low-poly, color por vértice). Todo se
  * mueve en la GPU: crecer al entrar al modo (una ola de norte a sur), el viento y la altura del
- * relieve, que sube con el terreno (uAlto). El CPU solo sube 3 números por cuadro.
+ * cara de su departamento, que sube y baja con el dato (uTope). El CPU solo sube 25 alturas por cuadro.
  */
 import * as THREE from 'three'
 import { DEPARTAMENTOS } from '@/data/datos'
@@ -340,8 +340,9 @@ export function resumenPorDepto(
 }
 
 const VS_DECL = `#include <common>
-uniform float uTime, uCrece, uBase, uAlto;
-attribute vec4 aPlanta; // altitud 0..1 (0..6000 m), retraso 0..1, fase, viento 0..1`
+uniform float uTime, uCrece;
+uniform float uTope[${DEPARTAMENTOS.length}];
+attribute vec4 aPlanta; // departamento, retraso 0..1, fase, viento 0..1`
 
 export class Bosque {
   private grupo = new THREE.Group()
@@ -350,8 +351,7 @@ export class Bosque {
   private uniforms = {
     uTime: { value: 0 },
     uCrece: { value: 0 },
-    uBase: { value: 0 },
-    uAlto: { value: 0 },
+    uTope: { value: new Float32Array(DEPARTAMENTOS.length) },
   }
   /** 0 = sin plantas, 1 = bosque entero; avanza hacia `objetivo` en paso(). */
   private crece = 0
@@ -376,7 +376,7 @@ export class Bosque {
         .replace(
           '#include <project_vertex>',
           `vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
-  mvPosition.y += uBase + aPlanta.x * uAlto - 0.02; // sobre el relieve, que sube y baja con el modo
+  mvPosition.y += uTope[int(aPlanta.x + 0.5)]; // sobre la cara de su departamento (sube y baja con el dato)
   mvPosition = modelViewMatrix * mvPosition;
   gl_Position = projectionMatrix * mvPosition;`,
         )
@@ -388,7 +388,7 @@ export class Bosque {
 
   /**
    * Planta el bosque con la malla de vegetación (una vez por malla). elev(lon, lat) da la altitud
-   * en metros; deptoDe descarta lo que cae fuera del Perú. base = nivel del mar en la escena.
+   * en metros; deptoDe ubica cada planta en su departamento (fuera del Perú no se planta).
    */
   plantar(
     c: Calor,
@@ -396,9 +396,7 @@ export class Bosque {
     deptoDe: (lon: number, lat: number) => number,
     aEscena: (lon: number, lat: number) => number[],
     pocas: boolean,
-    base: number,
   ) {
-    this.uniforms.uBase.value = base
     if (c === this.plantado) return
     this.plantado = c
     this.vaciar()
@@ -413,13 +411,12 @@ export class Bosque {
       const [x, z] = aEscena(lon, lat)
       const retraso = 0.8 * ((latN - lat) / c.spanLat) + 0.2 * rnd()
       const lista = porEspecie.get(e) ?? []
-      const alt = Math.max(0, elev(lon, lat)) / 6000
       lista.push(
         x,
         z,
         rnd() * Math.PI * 2,
         TAMANO[e][0] * escala * (0.8 + 0.4 * rnd()),
-        alt,
+        k,
         retraso,
         rnd() * 6.28,
       )
@@ -454,13 +451,13 @@ export class Bosque {
       const aPlanta = new Float32Array(n * 4)
       const malla = new THREE.InstancedMesh(geo, this.material, n)
       for (let i = 0; i < n; i++) {
-        const [x, z, giro, s, alt, retraso, fase] = v.slice(i * 7, i * 7 + 7)
+        const [x, z, giro, s, k, retraso, fase] = v.slice(i * 7, i * 7 + 7)
         d.position.set(x, 0, z)
         d.rotation.set(0, giro, 0)
         d.scale.setScalar(s)
         d.updateMatrix()
         malla.setMatrixAt(i, d.matrix)
-        aPlanta.set([alt, retraso, fase, TAMANO[e][1]], i * 4)
+        aPlanta.set([k, retraso, fase, TAMANO[e][1]], i * 4)
       }
       geo.setAttribute('aPlanta', new THREE.InstancedBufferAttribute(aPlanta, 4))
       malla.frustumCulled = false // la altura la pone el shader
@@ -470,10 +467,10 @@ export class Bosque {
   }
 
   /**
-   * Por cuadro: crece hacia `on` (1,8 s al entrar, 0,6 s al salir), el viento y la altura del
-   * relieve. Devuelve true mientras crece o se va (para seguir dibujando a pleno ritmo).
+   * Por cuadro: crece hacia `on` (1,8 s al entrar, 0,6 s al salir), el viento y la altura de cada
+   * departamento. Devuelve true mientras crece o se va (para seguir dibujando a pleno ritmo).
    */
-  paso(dt: number, on: boolean, alto: number, quieto: boolean) {
+  paso(dt: number, on: boolean, topes: ArrayLike<number>, quieto: boolean) {
     const meta = on && this.mallas.length ? 1 : 0
     const antes = this.crece
     if (quieto) this.crece = meta
@@ -484,7 +481,7 @@ export class Bosque {
     const U = this.uniforms
     U.uCrece.value = this.crece
     if (!quieto) U.uTime.value += dt
-    U.uAlto.value = alto
+    U.uTope.value.set(topes)
     return this.crece !== antes
   }
 

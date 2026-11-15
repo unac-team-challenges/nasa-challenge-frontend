@@ -64,17 +64,6 @@ const es = {
   calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
   calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
   /** Notas del color, una idea por viñeta */
-  calorNota: {
-    lluvia: [
-      'Más oscuro = llueve más: la costa es ocre y la selva, violeta.',
-      'Celdas NASA POWER de ~50 km (MERRA-2).',
-      'En los Andes el valor sale suavizado.',
-    ],
-    temperatura: [
-      'Celdas NASA POWER de ~50 km (MERRA-2).',
-      'En los Andes el valor sale suavizado: la celda mezcla valles y cumbres.',
-    ],
-  } as PorVariable<string[]>,
   /** Qué dice la altura, según quién mira: [tendencia, año a año] */
   legAltura: {
     agricultor: ['Altura: cuánto cambió por década', 'Altura: ese año frente a lo normal'],
@@ -104,25 +93,14 @@ const es = {
   vegSube: 'Más vegetación',
   vegBaja: 'Menos árboles',
   vegIgual: 'Sin cambio claro',
-  legVegNota:
-    'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
   vegIntroH: 'Vegetación: 5 lugares medidos',
   vegIntro:
     'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
   legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
-  legVegMallaNota: [
-    'Más verde = más vegetación: la selva es verde oscuro y la costa, ocre.',
-    'Celdas de ~27 km; cada año, al menos 6 meses sin nubes.',
-    'En la selva el NDVI se satura (~0,85): dice dónde hay vegetación, no cuánto bosque se pierde.',
-  ],
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
   // Relieve, bosque y ficha del modo Vegetación
-  vegAltura:
-    'Relieve real sobre el nivel del mar (SRTM, ×25): la costa es la franja baja y seca, la sierra son los Andes y la selva el llano verde del este.',
-  legRegiones: 'Relieve y regiones',
-  vegPlantas:
-    'Las plantas son las de cada zona, según el verdor y la altitud: cactus y algarrobos en la costa, cultivos en los valles regados, molles, ichu y queñuas en los Andes, y selva con aguajes en la Amazonía.',
+  legVegAltura: 'Altura: más verde, más alta',
   ndviMedio: 'NDVI medio',
   ndviNivel: [
     'Desierto o suelo desnudo',
@@ -135,12 +113,6 @@ const es = {
     n ? `MODIS ${a}–${b} · ${n} celdas de ~27 km` : `MODIS ${a}–${b} · celda más cercana`,
   regionNombre: ['Costa', 'Sierra', 'Selva'],
   altitudMedia: (m: number) => `altitud media ${String(m).replace(/\B(?=(\d{3})+$)/g, ' ')} m`,
-  varDef: {
-    lluvia: (fuente: string) =>
-      `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
-    temperatura: (fuente: string) =>
-      `Temperatura del aire a 2 m: °C, promedio anual del departamento (${fuente}).`,
-  } as PorVariable<(fuente: string) => string>,
   spinOn: 'Pausar giro',
   spinOff: 'Girar el mapa',
   recenter: 'Volver a la vista inicial',
@@ -559,17 +531,6 @@ const en: Textos = {
   calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
   calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
-  calorNota: {
-    lluvia: [
-      'Darker = more rain: the coast is ochre and the jungle, violet.',
-      'NASA POWER cells of ~50 km (MERRA-2).',
-      'In the Andes values are smoothed.',
-    ],
-    temperatura: [
-      'NASA POWER cells of ~50 km (MERRA-2).',
-      'In the Andes values are smoothed: a cell mixes valleys and peaks.',
-    ],
-  },
   legAltura: {
     agricultor: ['Height: how much it changed per decade', 'Height: that year vs normal'],
     estudiante: ['Height: Sen slope per decade', 'Height: anomaly vs the mean'],
@@ -596,24 +557,13 @@ const en: Textos = {
   vegSube: 'More vegetation',
   vegBaja: 'Fewer trees',
   vegIgual: 'No clear change',
-  legVegNota:
-    'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
   vegIntroH: 'Vegetation: 5 measured places',
   vegIntro:
     'The background colour is the greenness (NDVI) of all of Peru, measured by the MODIS satellites. The 5 squares are places studied up close: on the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
   legVegMalla: (a, b) => `Background: mean greenness (NDVI) ${a}–${b}`,
-  legVegMallaNota: [
-    'Greener = more vegetation: the rainforest is dark green and the coast, ochre.',
-    'Cells of ~27 km; each year, at least 6 cloud-free months.',
-    'In the rainforest NDVI saturates (~0.85): it shows where vegetation is, not how much forest is lost.',
-  ],
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
-  vegAltura:
-    'Real relief above sea level (SRTM, ×25): the coast is the low, dry strip, the Andes the mountains and the rainforest the green plain to the east.',
-  legRegiones: 'Relief and regions',
-  vegPlantas:
-    'Plants are those of each zone, by greenness and altitude: cacti and carob trees on the coast, crops in irrigated valleys, molle trees, ichu grass and queñuas in the Andes, and rainforest with aguaje palms in the Amazon.',
+  legVegAltura: 'Height: greener, taller',
   ndviMedio: 'mean NDVI',
   ndviNivel: [
     'Desert or bare soil',
@@ -626,11 +576,6 @@ const en: Textos = {
     n ? `MODIS ${a}–${b} · ${n} cells of ~27 km` : `MODIS ${a}–${b} · nearest cell`,
   regionNombre: ['Coast', 'Andes', 'Rainforest'],
   altitudMedia: (m) => `mean altitude ${m.toLocaleString('en-US')} m`,
-  varDef: {
-    lluvia: (fuente) =>
-      `Rainfall: millimetres per year, average of the department cells (${fuente}).`,
-    temperatura: (fuente) => `Air temperature at 2 m: °C, department annual average (${fuente}).`,
-  },
   spinOn: 'Pause rotation',
   spinOff: 'Rotate the map',
   recenter: 'Back to the starting view',

@@ -44,7 +44,6 @@ const es = {
   mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
   mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
-  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -64,12 +63,28 @@ const es = {
   calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
   calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
   calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
-  calorNota: {
-    lluvia:
-      'Celdas NASA POWER de ~50 km (MERRA-2). Más oscuro = llueve más: la costa es ocre y la selva, violeta. En los Andes el valor sale suavizado.',
-    temperatura:
-      'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
-  } as PorVariable<string>,
+  /** Notas del color, una idea por viñeta */
+  /** Qué dice la altura, según quién mira: [tendencia, año a año] */
+  legAltura: {
+    agricultor: ['Altura: cuánto cambió por década', 'Altura: ese año frente a lo normal'],
+    estudiante: ['Altura: pendiente de Sen por década', 'Altura: anomalía frente a la media'],
+  } as Record<Perfil, [string, string]>,
+  /** Rótulos de las columnas para el perfil estudiante: [tendencia, año a año] */
+  legColsEst: [
+    [
+      ['Sube', 'pendiente > 0'],
+      ['Igual', 'pendiente ≈ 0'],
+      ['Se hunde', 'pendiente < 0'],
+    ],
+    [
+      ['Sube', 'anomalía > 0'],
+      ['Igual', 'anomalía ≈ 0'],
+      ['Se hunde', 'anomalía < 0'],
+    ],
+  ] as [[string, string][], [string, string][]],
+  legMax: (v: string) => `máx. ${v}`,
+  legSeguro: 'Qué tan seguro es',
+  legCuadros: 'Los 5 cuadros: su tendencia',
   // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
   vegetacionBtn: 'Vegetación',
   vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
@@ -78,23 +93,26 @@ const es = {
   vegSube: 'Más vegetación',
   vegBaja: 'Menos árboles',
   vegIgual: 'Sin cambio claro',
-  legVegNota:
-    'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
   vegIntroH: 'Vegetación: 5 lugares medidos',
   vegIntro:
     'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
   legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
-  legVegMallaNota:
-    'Celdas de ~27 km, cada año con al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
-  scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
-  varDef: {
-    lluvia: (fuente: string) =>
-      `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
-    temperatura: (fuente: string) =>
-      `Temperatura del aire a 2 m: °C, promedio anual del departamento (${fuente}).`,
-  } as PorVariable<(fuente: string) => string>,
+  // Relieve, bosque y ficha del modo Vegetación
+  legVegAltura: 'Altura: más verde, más alta',
+  ndviMedio: 'NDVI medio',
+  ndviNivel: [
+    'Desierto o suelo desnudo',
+    'Vegetación escasa',
+    'Vegetación moderada',
+    'Vegetación densa',
+    'Bosque denso',
+  ],
+  vegTarjetaMeta: (a: number, b: number, n: number) =>
+    n ? `MODIS ${a}–${b} · ${n} celdas de ~27 km` : `MODIS ${a}–${b} · celda más cercana`,
+  regionNombre: ['Costa', 'Sierra', 'Selva'],
+  altitudMedia: (m: number) => `altitud media ${String(m).replace(/\B(?=(\d{3})+$)/g, ' ')} m`,
   spinOn: 'Pausar giro',
   spinOff: 'Girar el mapa',
   recenter: 'Volver a la vista inicial',
@@ -407,7 +425,6 @@ const es = {
     ['Igual', 'como su promedio'],
     ['Se hunde', 'menos que su promedio'],
   ] as [string, string][],
-  scaleTime: (v: string) => `Columna más alta: ${v} frente a su promedio`,
   legTimeNote: (y: number) => `Año ${y}: cada departamento frente a su propio promedio`,
   tipTime: (nombre: string, v: string, y: number) => `${nombre} en ${y}: ${v} frente a su promedio`,
   // Caso 2: antes y después (NDVI real de MODIS)
@@ -495,7 +512,6 @@ const en: Textos = {
   mapModoTendencia: (a, b) => `trend ${a}–${b}`,
   mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
-  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],
@@ -515,12 +531,25 @@ const en: Textos = {
   calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
   calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
   calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
-  calorNota: {
-    lluvia:
-      'NASA POWER cells of ~50 km (MERRA-2). Darker = more rain: the coast is ochre and the jungle, violet. In the Andes values are smoothed.',
-    temperatura:
-      'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  legAltura: {
+    agricultor: ['Height: how much it changed per decade', 'Height: that year vs normal'],
+    estudiante: ['Height: Sen slope per decade', 'Height: anomaly vs the mean'],
   },
+  legColsEst: [
+    [
+      ['Rises', 'slope > 0'],
+      ['Flat', 'slope ≈ 0'],
+      ['Sinks', 'slope < 0'],
+    ],
+    [
+      ['Rises', 'anomaly > 0'],
+      ['Flat', 'anomaly ≈ 0'],
+      ['Sinks', 'anomaly < 0'],
+    ],
+  ],
+  legMax: (v) => `max. ${v}`,
+  legSeguro: 'How sure it is',
+  legCuadros: 'The 5 squares: their trend',
   vegetacionBtn: 'Vegetation',
   vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
   mapHVeg: 'Vegetation measured by satellite',
@@ -528,22 +557,25 @@ const en: Textos = {
   vegSube: 'More vegetation',
   vegBaja: 'Fewer trees',
   vegIgual: 'No clear change',
-  legVegNota:
-    'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
   vegIntroH: 'Vegetation: 5 measured places',
   vegIntro:
     'The background colour is the greenness (NDVI) of all of Peru, measured by the MODIS satellites. The 5 squares are places studied up close: on the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
   legVegMalla: (a, b) => `Background: mean greenness (NDVI) ${a}–${b}`,
-  legVegMallaNota:
-    'Cells of ~27 km, each year with at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
-  scaleTrend: (v) => `Tallest column: ${v} per decade`,
-  varDef: {
-    lluvia: (fuente) =>
-      `Rainfall: millimetres per year, average of the department cells (${fuente}).`,
-    temperatura: (fuente) => `Air temperature at 2 m: °C, department annual average (${fuente}).`,
-  },
+  legVegAltura: 'Height: greener, taller',
+  ndviMedio: 'mean NDVI',
+  ndviNivel: [
+    'Desert or bare soil',
+    'Sparse vegetation',
+    'Moderate vegetation',
+    'Dense vegetation',
+    'Dense forest',
+  ],
+  vegTarjetaMeta: (a, b, n) =>
+    n ? `MODIS ${a}–${b} · ${n} cells of ~27 km` : `MODIS ${a}–${b} · nearest cell`,
+  regionNombre: ['Coast', 'Andes', 'Rainforest'],
+  altitudMedia: (m) => `mean altitude ${m.toLocaleString('en-US')} m`,
   spinOn: 'Pause rotation',
   spinOff: 'Rotate the map',
   recenter: 'Back to the starting view',
@@ -838,7 +870,6 @@ const en: Textos = {
     ['Flat', 'at its average'],
     ['Sinks', 'below its average'],
   ],
-  scaleTime: (v) => `Tallest column: ${v} vs its average`,
   legTimeNote: (y) => `Year ${y}: each department vs its own average`,
   tipTime: (nombre, v, y) => `${nombre} in ${y}: ${v} vs its average`,
   cmpLbl: 'Compare vegetation in 2001 and 2024',

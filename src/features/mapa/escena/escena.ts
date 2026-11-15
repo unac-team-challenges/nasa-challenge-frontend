@@ -13,6 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
+import { lineaClima } from '@/features/mapa/utils/faunaClima'
 import { datosTarjeta, datosTarjetaVeg } from '@/features/mapa/utils/tarjeta'
 import {
   dibujarCalor,
@@ -1619,11 +1620,37 @@ export class EscenaPeru {
 
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
-    if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
+    if (this.animalHover) this.llenarTip(this.animalHover)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.textosVeg()
     this.sucio = true
+  }
+
+  /**
+   * Globo del personaje: nombre, dato curioso y, al final, lo que dicen los datos de la NASA de su
+   * departamento (variable y año que se ven en el mapa). Todo como texto, nunca HTML.
+   */
+  private llenarTip(a: Animal) {
+    const { nombre, dato, dept } = this.fauna.texto(a, this.idioma)
+    const anio = this.anio && this.numeroAnio != null
+      ? { numero: this.numeroAnio, valor: this.anio.valores[dept] }
+      : null
+    // En el modo Vegetación el mapa muestra el verdor, no la lluvia: el globo habla de lo mismo
+    const k = this.veg ? DEPARTAMENTOS.findIndex((z) => z.id === dept) : -1
+    const ndvi = this.veg ? (k >= 0 ? (this.ndvi?.media[k] ?? null) : null) : undefined
+    const clima = lineaClima(dept, this.zonas?.[dept], this.variable, this.idioma, anio, ndvi)
+    const linea = (clase: string, texto: string) => {
+      const s = document.createElement('span')
+      s.className = clase
+      s.textContent = texto
+      return s
+    }
+    this.tip.replaceChildren(
+      linea('tip3d-nombre', nombre),
+      linea('tip3d-dato', dato),
+      ...(clima ? [linea('tip3d-clima', clima)] : []),
+    )
   }
 
   /** Personaje bajo el puntero: salta y muestra su dato (como texto, nunca HTML). */
@@ -1637,7 +1664,7 @@ export class EscenaPeru {
       return
     }
     const b = this.contenedor.getBoundingClientRect()
-    this.tip.textContent = this.fauna.texto(a, this.idioma)
+    this.llenarTip(a)
     this.tip.style.transform = `translate(${(x - b.left).toFixed(0)}px, ${(y - b.top).toFixed(0)}px) translate(-50%, calc(-100% - 14px))`
     this.tip.hidden = false
     this.renderer.domElement.style.cursor = 'pointer'

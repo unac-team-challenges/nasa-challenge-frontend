@@ -262,6 +262,20 @@ h3 {
   line-height: 1.35;
   box-shadow: 0 6px 18px var(--shadow, rgba(0, 0, 0, 0.2));
 }
+.tip3d > span {
+  display: block;
+}
+.tip3d-nombre {
+  font-weight: 600;
+}
+/* Línea de clima de su departamento: separada del dato curioso */
+.tip3d-clima {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--bg) 28%, transparent);
+  font-size: 12px;
+  opacity: 0.9;
+}
 
 /* Ficha técnica del 3D al pasar el puntero por un departamento (la llena la escena; texto, nunca
    HTML). La posición la escribe la escena en .ficha3d; la entrada y salida se animan en la caja

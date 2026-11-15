@@ -437,9 +437,10 @@ export class Fauna {
     a.salto = 1
   }
 
+  /** Nombre y dato del personaje; el departamento donde vive sirve para sumarle el clima de su zona. */
   texto(a: Animal, idioma: Idioma) {
     const [nombre, dato] = FAUNA_TEXTOS[idioma][a.f.especie]
-    return `${nombre}: ${dato}`
+    return { nombre, dato, dept: a.f.dept }
   }
 
   destruir() {

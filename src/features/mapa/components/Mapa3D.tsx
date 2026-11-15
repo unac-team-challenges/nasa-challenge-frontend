@@ -3,6 +3,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
 import { esUbigeo, useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, type ModoMapa } from '@/features/mapa/escena/escena'
 import { escenaActiva } from '@/features/mapa/escena/activa'
@@ -23,7 +24,9 @@ export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, tema, conWebgl } = useApp()
+  const { idioma, tema, conWebgl } = useApp(
+    useShallow((s) => ({ idioma: s.idioma, tema: s.tema, conWebgl: s.conWebgl })),
+  )
   const periodo = usePeriodo()
   const busqueda = useBusqueda()
   const { variable, sel, vegetacion } = busqueda

@@ -36,7 +36,7 @@ function guardarEleccion(abierta: boolean) {
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {
-  const { idioma } = useApp()
+  const idioma = useApp((s) => s.idioma)
   const periodo = usePeriodo()
   const { variable, vegetacion } = useBusqueda()
   const anio = useAnio()

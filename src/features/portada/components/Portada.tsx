@@ -3,6 +3,7 @@ import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { useVista } from '@/hooks/useZonas'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
@@ -16,7 +17,9 @@ const SALIDA_MS = 320
  * El mapa lo dibuja App y es el mismo del explorador: al entrar, la cámara vuela sin recargar.
  */
 export function Portada() {
-  const { idioma, conWebgl } = useApp()
+  const { idioma, conWebgl } = useApp(
+    useShallow((s) => ({ idioma: s.idioma, conWebgl: s.conWebgl })),
+  )
   const navigate = useNavigate()
   const t = TEXTOS[idioma]
   // La portada habla de la lluvia: sus años y su fuente

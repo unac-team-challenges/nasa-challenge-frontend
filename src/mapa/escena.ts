@@ -137,8 +137,8 @@ const proyectar = ([lon, lat]: number[]) =>
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
 const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
-/** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×11). */
-const RELIEVE = 1.3
+/** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
+const RELIEVE = 1.8
 /** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
 const DPR_RELIEVE = 0.7
 const SUELO_VS = `
@@ -185,7 +185,7 @@ void main() {
   // Color por altitud (t2.r = elevación / 6000 m), nieve sobre ~4800 m y sombreado real del relieve (t.r)
   vec3 suelo = mix(uTierraBaja, uTierraAlta, smoothstep(0.02, 0.7, t2.r));
   suelo = mix(suelo, uNieve, smoothstep(0.8, 0.92, t2.r));
-  suelo *= 0.7 + 0.55 * t.r;
+  suelo *= 0.62 + 0.7 * t.r;
   suelo = mix(suelo, uAgua, t2.g * 0.55);
   suelo = mix(suelo, uFrontera, t2.b * 0.45);
   vec3 col = mix(mar, suelo, tierra);
@@ -196,27 +196,42 @@ void main() {
   #include <fog_fragment>
 }`
 
+/** Relieve real sobre la cara superior de las columnas: la textura y su caja, compartidas con el suelo. */
+interface RelieveTapa {
+  uMundo: { value: THREE.Texture | null }
+  uCaja: { value: THREE.Vector4 }
+}
+
 /**
  * Sombra de contacto en las paredes de cada columna: más oscuras junto al suelo, como una maqueta
  * con oclusión ambiental. Se calcula en el mismo shader (sin pasadas extra ni SSAO). La distancia
  * es en unidades del mundo, así que una columna alta y una baja se oscurecen igual cerca del piso.
  */
-function conSombraDeContacto(mat: THREE.MeshStandardMaterial) {
-  const decl = '#include <common>\nvarying float vAlto, vPared;'
+function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa) {
+  const decl = '#include <common>\nvarying float vAlto, vPared;\nvarying vec2 vXZ;'
   mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uMundo = tapa.uMundo
+    sh.uniforms.uCaja = tapa.uCaja
     sh.vertexShader = sh.vertexShader.replace('#include <common>', decl).replace(
       '#include <begin_vertex>',
       `#include <begin_vertex>
   vPared = 1.0 - abs(normal.z); // tapas: normal ±z en el espacio de la extrusión
-  vAlto = (modelMatrix * vec4(position, 1.0)).y - (modelMatrix * vec4(position.xy, 0.0, 1.0)).y;`,
+  vec4 wPos = modelMatrix * vec4(position, 1.0);
+  vAlto = wPos.y - (modelMatrix * vec4(position.xy, 0.0, 1.0)).y;
+  vXZ = wPos.xz;`,
     )
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', decl).replace(
-      '#include <color_fragment>',
-      `#include <color_fragment>
-  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);`,
-    )
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', decl + '\nuniform sampler2D uMundo;\nuniform vec4 uCaja;')
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);
+  // Cara superior: Andes, valles y llanura amazónica con el sombreado real (SRTM), sin cambiar la altura del dato
+  float hs = texture2D(uMundo, (vXZ - uCaja.xy) / uCaja.zw).r;
+  diffuseColor.rgb *= mix(0.74 + 0.5 * hs, 1.0, vPared);`,
+      )
   }
-  mat.customProgramCacheKey = () => 'columna-sombra-contacto'
+  mat.customProgramCacheKey = () => 'columna-sombra-relieve'
   return mat
 }
 
@@ -443,6 +458,7 @@ export class EscenaPeru {
    * con setViewOffset, así el lienzo nunca cambia de tamaño al abrir el informe.
    */
   private corrimiento = 0
+  private tapa: RelieveTapa = { uMundo: { value: null }, uCaja: { value: new THREE.Vector4() } }
   private panel = 0
   private alElegir?: (id: string) => void
   private alGirar?: (girando: boolean) => void
@@ -490,7 +506,10 @@ export class EscenaPeru {
       const geom = new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false })
       const malla = new THREE.Mesh(
         geom,
-        conSombraDeContacto(new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 })),
+        conSombraDeContacto(
+          new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 }),
+          this.tapa,
+        ),
       ) as unknown as Malla
       malla.position.z = -PISO
       // Un solo LineSegments por departamento (antes: una línea y un material por anillo)
@@ -542,6 +561,8 @@ export class EscenaPeru {
     const cajaPeru = { x: -lado / 2, z: -lado / 2, w: lado }
     const sombra = texturaSombraPeru(this.mapa.position, cajaPeru)
     const vacio1 = pixel(153, 0, 0)
+    this.tapa.uMundo.value = vacio1
+    this.tapa.uCaja.value.set(cx0, cz0, cx1 - cx0, cz1 - cz0)
     const vacio2 = pixel(0, 0, 0)
     this.texturas.push(sombra, vacio1, vacio2)
     const u = (v: unknown) => ({ value: v })
@@ -589,6 +610,7 @@ export class EscenaPeru {
         tx.needsUpdate = true
         this.texturas.push(tx)
         matSuelo.uniforms[clave].value = tx
+        if (clave === 'uMundo') this.tapa.uMundo.value = tx
         this.sucio = true
       })
     this.mar = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matSuelo)

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { TEXTOS } from '../i18n/textos'
-import { anomaliasAnio } from '../data/datos'
+import { anomaliasAnio, FUENTE_LOCAL } from '../data/datos'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
-import { useZonas } from '../lib/useZonas'
+import { useVista, useZonas } from '../lib/useZonas'
 import { useApp } from '../store'
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
@@ -11,6 +11,7 @@ export function Leyenda() {
   const { idioma, variable } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
+  const { rango, fuente } = useVista()
   // Abierta en escritorio; en celular empieza cerrada para no tapar el mapa
   const [abierta, setAbierta] = useState(() => !matchMedia('(max-width: 900px)').matches)
   // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
@@ -121,13 +122,16 @@ export function Leyenda() {
           {anio == null
             ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
             : t.scaleTime(
-                fmtAnomalia(anomaliasAnio(variable, periodo).max, variable, idioma).replace(
+                fmtAnomalia(anomaliasAnio(variable, periodo, rango).max, variable, idioma).replace(
                   '+',
                   '',
                 ),
               )}
         </p>
-        <p className="m-0 text-xs text-muted">{t.varDef[variable]}</p>
+        <p className="m-0 text-xs text-muted">
+          {/* La máquina del tiempo usa la copia local */}
+          {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+        </p>
       </details>
     </div>
   )

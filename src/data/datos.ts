@@ -10,6 +10,12 @@ export type Variable = 'lluvia' | 'temperatura'
 export type Periodo = 'largo' | 'reciente'
 export type Estado = 'real' | 'posible_casualidad' | 'pocos_datos'
 export type Region = 'costa' | 'sierra' | 'selva'
+/** Años que cubre una tendencia (de la API o de la copia local). */
+export type Rango = { year_start: number; year_end: number }
+
+export const VARIABLES: Variable[] = ['lluvia', 'temperatura']
+/** Fuente de la copia local (src/data/power.json). */
+export const FUENTE_LOCAL = 'NASA POWER (MERRA-2)'
 
 export interface Departamento {
   id: string
@@ -62,7 +68,7 @@ interface BloqueVariable {
 const DATOS = power as unknown as {
   generado: string
   anios_nino: number[]
-  periodos: Record<Periodo, { year_start: number; year_end: number }>
+  periodos: Record<Periodo, Rango>
   variables: Record<Variable, BloqueVariable>
 }
 
@@ -161,37 +167,50 @@ export function zonasProbadas(zonas: Record<string, Zona>) {
   return Object.values(zonas).filter((z) => z.p_value != null).length
 }
 
-/** Años de El Niño dentro de un periodo. */
-export function ninoEn(periodo: Periodo) {
-  const { year_start, year_end } = PERIODOS[periodo]
+/** Años de El Niño dentro de un rango. */
+export function ninoEn({ year_start, year_end }: Rango) {
   return ANIOS_NINO.filter((y) => y >= year_start && y <= year_end)
 }
 
-/** Serie anual real de una zona en un periodo. */
-export function serie(id: string, variable: Variable, periodo: Periodo, sinNino = false) {
-  const { year_start, year_end } = PERIODOS[periodo]
+/** Serie anual real de una zona dentro de un rango de años. */
+export function serie(id: string, variable: Variable, rango: Rango, sinNino = false) {
+  const { year_start, year_end } = rango
   return (DATOS.variables[variable].series[id] ?? [])
     .filter(([y]) => y >= year_start && y <= year_end && !(sinNino && ANIOS_NINO.includes(y)))
     .map(([y, v]) => ({ y, v }))
 }
 
-/** Anomalía nacional de cada año (promedio de las zonas con datos), para las franjas. */
-export function anomaliasPeru(variable: Variable, periodo: Periodo) {
-  const { year_start, year_end } = PERIODOS[periodo]
+/** Anomalía de cada año frente al promedio de la zona en el rango (lluvia: fracción; temperatura: °C). */
+function anomaliasPorZona(variable: Variable, periodo: Periodo, rango: Rango) {
   const zonas = zonasDe(variable, periodo)
-  const ids = Object.keys(zonas).filter((id) => zonas[id].status !== 'pocos_datos')
-  const porZona = ids.map((id) => {
-    const pts = serie(id, variable, periodo)
+  const porId: Record<string, Record<number, number>> = {}
+  for (const id of Object.keys(zonas)) {
+    if (zonas[id].status === 'pocos_datos') continue
+    const pts = serie(id, variable, rango)
+    if (!pts.length) continue
     const media = pts.reduce((a, p) => a + p.v, 0) / pts.length || 1
-    // Lluvia: diferencia relativa; temperatura: diferencia en grados
-    return Object.fromEntries(
+    porId[id] = Object.fromEntries(
       pts.map((p) => [p.y, variable === 'lluvia' ? (p.v - media) / media : p.v - media]),
     )
-  })
+  }
+  return porId
+}
+
+const CACHE_PERU: Partial<Record<string, { filas: { y: number; a: number }[]; max: number }>> = {}
+
+/** Anomalía nacional de cada año (promedio de las zonas con datos), para las franjas. */
+export function anomaliasPeru(variable: Variable, periodo: Periodo, rango: Rango) {
+  const clave = `${variable}-${periodo}-${rango.year_start}-${rango.year_end}`
+  const guardada = CACHE_PERU[clave]
+  if (guardada) return guardada
+  const porZona = Object.values(anomaliasPorZona(variable, periodo, rango))
   const filas: { y: number; a: number }[] = []
-  for (let y = year_start; y <= year_end; y++)
-    filas.push({ y, a: porZona.reduce((s, z) => s + (z[y] ?? 0), 0) / porZona.length })
-  return { filas, max: Math.max(...filas.map((f) => Math.abs(f.a))) || 1 }
+  for (let y = rango.year_start; y <= rango.year_end; y++) {
+    const conDato = porZona.filter((z) => z[y] != null)
+    // Un año sin datos (el rango de la API puede pasar la copia local) no se pinta
+    if (conDato.length) filas.push({ y, a: conDato.reduce((s, z) => s + z[y], 0) / conDato.length })
+  }
+  return (CACHE_PERU[clave] = { filas, max: Math.max(...filas.map((f) => Math.abs(f.a))) || 1 })
 }
 
 export interface Anomalias {
@@ -204,25 +223,14 @@ export interface Anomalias {
 const CACHE_ANOM: Partial<Record<string, Anomalias>> = {}
 
 /** Máquina del tiempo: cómo fue cada año en cada departamento frente a su propio promedio. */
-export function anomaliasAnio(variable: Variable, periodo: Periodo): Anomalias {
-  const clave = `${variable}-${periodo}`
+export function anomaliasAnio(variable: Variable, periodo: Periodo, rango: Rango): Anomalias {
+  const clave = `${variable}-${periodo}-${rango.year_start}-${rango.year_end}`
   const guardada = CACHE_ANOM[clave]
   if (guardada) return guardada
-  const zonas = zonasDe(variable, periodo)
-  const porId: Record<string, Record<number, number>> = {}
-  const todos: number[] = []
-  for (const id of Object.keys(zonas)) {
-    if (zonas[id].status === 'pocos_datos') continue
-    const pts = serie(id, variable, periodo)
-    const media = pts.reduce((a, p) => a + p.v, 0) / pts.length || 1
-    porId[id] = {}
-    for (const p of pts) {
-      const a = variable === 'lluvia' ? (p.v - media) / media : p.v - media
-      porId[id][p.y] = a
-      todos.push(Math.abs(a))
-    }
-  }
-  todos.sort((x, y) => x - y)
+  const porId = anomaliasPorZona(variable, periodo, rango)
+  const todos = Object.values(porId)
+    .flatMap((z) => Object.values(z).map(Math.abs))
+    .sort((x, y) => x - y)
   const max = todos[Math.floor(todos.length * 0.95)] || 1
   return (CACHE_ANOM[clave] = { porId, max })
 }

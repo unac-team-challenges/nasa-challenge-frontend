@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { TEXTOS } from '../i18n/textos'
-import { useZonas } from '../lib/useZonas'
+import { useRango, useZonas } from '../lib/useZonas'
 import { anomaliasAnio } from '../data/datos'
 import { useApp } from '../store'
 import { EscenaPeru, type ModoMapa } from './escena'
@@ -22,6 +22,7 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const { idioma, variable, tema, sel, conWebgl, anio, periodo } = useApp()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
+  const rango = useRango()
   const alGirarRef = useRef(alGirar)
   useEffect(() => {
     alGirarRef.current = alGirar
@@ -75,13 +76,13 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
       escena.current?.setAnio(null)
       return
     }
-    const an = anomaliasAnio(variable, periodo)
+    const an = anomaliasAnio(variable, periodo, rango)
     const valores: Record<string, number> = {}
     for (const [id, porAnio] of Object.entries(an.porId))
       if (porAnio[anio] != null) valores[id] = porAnio[anio]
     escena.current?.setAnio({ valores, max: an.max })
     // tema: los colores del año se releen del tema
-  }, [anio, variable, periodo, tema])
+  }, [anio, variable, periodo, rango, tema])
 
   useEffect(() => {
     escena.current?.setTextoOceano(t.ocean)

@@ -62,7 +62,11 @@ const N_PESOS = 7
 let pesos: Promise<{ W: number; H: number; p: Uint8Array }> | null = null
 function leerPesos() {
   pesos ??= (async () => {
-    const [m1, m2] = await Promise.all([cargar('/mapa/mundo.png'), cargar('/mapa/mundo2.png')])
+    const base = import.meta.env.BASE_URL
+    const [m1, m2] = await Promise.all([
+      cargar(`${base}mapa/mundo.png`),
+      cargar(`${base}mapa/mundo2.png`),
+    ])
     const C = CAJA_SUELO
     const sx = ((C.lon0 - MUNDO.lon0) / (MUNDO.lon1 - MUNDO.lon0)) * TEX
     const sy = ((MUNDO.lat1 - C.lat1) / (MUNDO.lat1 - MUNDO.lat0)) * TEX

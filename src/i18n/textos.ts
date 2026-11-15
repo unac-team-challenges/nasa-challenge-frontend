@@ -1,5 +1,5 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
-import type { Estado, Periodo, Region, Variable } from '../data/datos'
+import type { Estado, Periodo, Region, Variable } from '@/data/datos'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'

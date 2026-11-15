@@ -10,10 +10,10 @@
  */
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '../data/datos'
-import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '../lib/color'
-import { claveMapa } from '../lib/direccion'
-import { Fauna, type Animal } from './fauna'
+import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
+import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/lib/color'
+import { claveMapa } from '@/lib/direccion'
+import { Fauna, type Animal } from '@/mapa/fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false

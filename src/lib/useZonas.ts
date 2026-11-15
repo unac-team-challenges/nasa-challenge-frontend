@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
-import { datosDeApi, detalleDeApi, type DatosApi } from '../api/consultas'
+import { datosDeApi, detalleDeApi, type DatosApi } from '@/api/consultas'
 import {
   FUENTE_LOCAL,
   PERIODOS,
@@ -9,10 +9,10 @@ import {
   type Rango,
   type Variable,
   type Zona,
-} from '../data/datos'
-import { useApp, type Fuente } from '../store'
-import { useBusqueda } from './busqueda'
-import type { Ruta } from './ruta'
+} from '@/data/datos'
+import { useApp, type Fuente } from '@/store'
+import { useBusqueda } from '@/lib/busqueda'
+import type { Ruta } from '@/lib/ruta'
 
 /** Las dos variables de la API, pedidas una sola vez al abrir la web. */
 function useDatosApi() {

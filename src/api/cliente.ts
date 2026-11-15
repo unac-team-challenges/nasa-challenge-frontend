@@ -4,7 +4,7 @@
  * La URL sale de VITE_API_URL (ver .env.example). Sin URL, el frontend usa directo la copia local.
  */
 import createClient from 'openapi-fetch'
-import type { paths } from './schema'
+import type { paths } from '@/api/schema'
 
 export const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''

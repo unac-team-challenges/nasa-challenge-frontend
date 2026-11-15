@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { METODOLOGIA, TEXTOS } from '../i18n/textos'
-import { useApp } from '../store'
-import { Button } from './ui/button'
+import { METODOLOGIA, TEXTOS } from '@/i18n/textos'
+import { useApp } from '@/store'
+import { Button } from '@/components/ui/button'
 
 const enlace = 'text-accent-text underline-offset-2 hover:underline'
 const h2 = 'm-0 font-display text-2xl font-bold tracking-display'

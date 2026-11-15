@@ -1,6 +1,6 @@
-import { TEXTOS } from '../i18n/textos'
-import { useApp } from '../store'
-import { Skeleton } from './ui/skeleton'
+import { TEXTOS } from '@/i18n/textos'
+import { useApp } from '@/store'
+import { Skeleton } from '@/components/ui/skeleton'
 
 /** Aviso accesible para lectores de pantalla: "Cargando…". */
 function Estado() {

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
-import { crearRouter } from '../router'
+import { crearRouter } from '@/router'
 
 /** Monta la app entera (rutas reales) en una URL de prueba, sin navegador. */
 export function renderRuta(url: string) {

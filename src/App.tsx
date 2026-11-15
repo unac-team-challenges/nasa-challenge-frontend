@@ -1,10 +1,10 @@
 import { Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { Cabecera } from './components/Cabecera'
-import { useMeta } from './lib/meta'
-import { useRuta } from './lib/ruta'
-import { useDecidirFuente } from './lib/useZonas'
-import { useApp } from './store'
+import { Cabecera } from '@/components/Cabecera'
+import { useMeta } from '@/lib/meta'
+import { useRuta } from '@/lib/ruta'
+import { useDecidirFuente } from '@/lib/useZonas'
+import { useApp } from '@/store'
 
 /** Diseño común de todas las pantallas: cabecera arriba y la ruta activa debajo. */
 export default function App() {

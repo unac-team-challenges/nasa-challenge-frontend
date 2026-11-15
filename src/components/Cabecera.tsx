@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import type { Variable } from '../data/datos'
-import { ORDEN_PERFILES, TEXTOS, type Perfil } from '../i18n/textos'
-import { useBusqueda } from '../lib/busqueda'
-import { useApp } from '../store'
-import { Button } from './ui/button'
+import type { Variable } from '@/data/datos'
+import { ORDEN_PERFILES, TEXTOS, type Perfil } from '@/i18n/textos'
+import { useBusqueda } from '@/lib/busqueda'
+import { useApp } from '@/store'
+import { Button } from '@/components/ui/button'
 
 /**
  * Barra superior: marca, variable, perfil, idioma y tema.

@@ -5,8 +5,8 @@
  *      de datos reales (src/data/power.json, mismo método que el pipeline de Josue).
  * Así la app ya "habla" con el backend y la demo nunca se cae.
  */
-import { VARIABLES, type Estado, type Rango, type Variable, type Zona } from '../data/datos'
-import { api, hayApi } from './cliente'
+import { VARIABLES, type Estado, type Rango, type Variable, type Zona } from '@/data/datos'
+import { api, hayApi } from '@/api/cliente'
 
 /** Campos de tendencia que la ficha necesita (contrato, `stats`). */
 interface StatsApi {

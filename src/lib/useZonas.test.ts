@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decidirFuente } from './useZonas'
+import { decidirFuente } from '@/lib/useZonas'
 
 describe('decidirFuente (una sola vez por sesión)', () => {
   it('en la portada espera a la API', () => {

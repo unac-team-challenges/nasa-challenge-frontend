@@ -1,5 +1,5 @@
-import type { Variable } from '../data/datos'
-import type { Idioma } from '../i18n/textos'
+import type { Variable } from '@/data/datos'
+import type { Idioma } from '@/i18n/textos'
 
 export function num(v: number, decimales: number, idioma: Idioma) {
   const s = Math.abs(v).toFixed(decimales)

@@ -6,11 +6,11 @@ import {
   notFound,
   type RouterHistory,
 } from '@tanstack/react-router'
-import App from './App'
-import { NoEncontrada, PantallaError } from './components/Errores'
-import { ExploradorSkeleton, PaginaSkeleton } from './components/Esperas'
-import { Portada } from './components/Portada'
-import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from './lib/busqueda'
+import App from '@/App'
+import { NoEncontrada, PantallaError } from '@/components/Errores'
+import { ExploradorSkeleton, PaginaSkeleton } from '@/components/Esperas'
+import { Portada } from '@/components/Portada'
+import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from '@/lib/busqueda'
 
 /**
  * Rutas con TanStack Router. La búsqueda (?variable, perfil, zona, anio) se valida una vez en la
@@ -31,7 +31,7 @@ const inicio = createRoute({ getParentRoute: () => raiz, path: '/', component: P
 const mapa = createRoute({
   getParentRoute: () => raiz,
   id: 'mapa',
-  component: lazyRouteComponent(() => import('./components/Explorador'), 'Explorador'),
+  component: lazyRouteComponent(() => import('@/components/Explorador'), 'Explorador'),
   pendingComponent: ExploradorSkeleton,
 })
 const explorar = createRoute({ getParentRoute: () => mapa, path: '/explorar' })
@@ -46,7 +46,7 @@ const zona = createRoute({
 const metodologia = createRoute({
   getParentRoute: () => raiz,
   path: '/metodologia',
-  component: lazyRouteComponent(() => import('./components/Metodologia'), 'Metodologia'),
+  component: lazyRouteComponent(() => import('@/components/Metodologia'), 'Metodologia'),
   pendingComponent: PaginaSkeleton,
 })
 

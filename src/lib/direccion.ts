@@ -1,4 +1,4 @@
-import type { Variable } from '../data/datos'
+import type { Variable } from '@/data/datos'
 
 /**
  * Color de dirección del dato.

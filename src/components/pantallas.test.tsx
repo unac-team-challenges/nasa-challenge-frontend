@@ -1,11 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { NOMBRE } from '../data/datos'
-import { renderRuta } from '../test/render'
-import { useApp } from '../store'
-import { ErrorSerie } from './Errores'
-import { FichaSkeleton } from './Esperas'
+import { NOMBRE } from '@/data/datos'
+import { renderRuta } from '@/test/render'
+import { useApp } from '@/store'
+import { ErrorSerie } from '@/components/Errores'
+import { FichaSkeleton } from '@/components/Esperas'
 import { render } from '@testing-library/react'
 
 beforeEach(() => {

@@ -3,8 +3,8 @@
  * scripts/datos_power.py con el mismo método y umbral que el pipeline de Josue).
  * Cuando la API del backend sirva las tendencias, este módulo se cambia por la consulta.
  */
-import geo from './departamentos.json'
-import power from './power.json'
+import geo from '@/data/departamentos.json'
+import power from '@/data/power.json'
 
 export type Variable = 'lluvia' | 'temperatura'
 export type Periodo = 'largo' | 'reciente'

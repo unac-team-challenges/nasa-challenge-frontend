@@ -1,8 +1,8 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
-import { VARIABLES, type Variable } from '../data/datos'
-import { ORDEN_PERFILES, type Perfil } from '../i18n/textos'
-import { useApp } from '../store'
+import { VARIABLES, type Variable } from '@/data/datos'
+import { ORDEN_PERFILES, type Perfil } from '@/i18n/textos'
+import { useApp } from '@/store'
 
 /**
  * Lo que va en la URL (y se comparte): /zona/20?variable=temperatura&perfil=agricultor&anio=2017

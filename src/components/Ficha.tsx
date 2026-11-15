@@ -7,20 +7,20 @@ import {
   type Rango,
   type Variable,
   type Zona,
-} from '../data/datos'
-import { FRASES, TEXTOS, type Idioma, type Perfil } from '../i18n/textos'
-import { useBusqueda } from '../lib/busqueda'
-import { colorDireccion } from '../lib/direccion'
-import { fmtP, fmtPct, fmtValor, num } from '../lib/formato'
-import { useDetalle, useVista, useZonas } from '../lib/useZonas'
-import { useApp } from '../store'
-import { AntesDespues } from './AntesDespues'
-import { ErrorSerie } from './Errores'
-import { GraficoSkeleton } from './Esperas'
-import { Button } from './ui/button'
+} from '@/data/datos'
+import { FRASES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
+import { useBusqueda } from '@/lib/busqueda'
+import { colorDireccion } from '@/lib/direccion'
+import { fmtP, fmtPct, fmtValor, num } from '@/lib/formato'
+import { useDetalle, useVista, useZonas } from '@/lib/useZonas'
+import { useApp } from '@/store'
+import { AntesDespues } from '@/components/AntesDespues'
+import { ErrorSerie } from '@/components/Errores'
+import { GraficoSkeleton } from '@/components/Esperas'
+import { Button } from '@/components/ui/button'
 
 // Recharts y el gráfico se descargan aparte, al abrir la primera ficha
-const GraficoSerie = lazy(() => import('./GraficoSerie').then((m) => ({ default: m.GraficoSerie })))
+const GraficoSerie = lazy(() => import('@/components/GraficoSerie').then((m) => ({ default: m.GraficoSerie })))
 
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
 

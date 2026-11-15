@@ -1,11 +1,11 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { TEXTOS } from '../i18n/textos'
-import { useRango, useZonas } from '../lib/useZonas'
-import { anomaliasAnio } from '../data/datos'
-import { useBusqueda } from '../lib/busqueda'
-import { useApp } from '../store'
-import { EscenaPeru, type ModoMapa } from './escena'
-import { Mapa2D } from './Mapa2D'
+import { TEXTOS } from '@/i18n/textos'
+import { useRango, useZonas } from '@/lib/useZonas'
+import { anomaliasAnio } from '@/data/datos'
+import { useBusqueda } from '@/lib/busqueda'
+import { useApp } from '@/store'
+import { EscenaPeru, type ModoMapa } from '@/mapa/escena'
+import { Mapa2D } from '@/mapa/Mapa2D'
 
 interface Props {
   modo: ModoMapa

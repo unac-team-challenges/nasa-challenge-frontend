@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { anomaliasPeru } from '../data/datos'
-import { TEXTOS } from '../i18n/textos'
-import { colorAnomalia } from '../lib/color'
-import { useBusqueda } from '../lib/busqueda'
-import { fmtAnomalia } from '../lib/formato'
-import { useRango } from '../lib/useZonas'
-import { useApp } from '../store'
-import { Button } from './ui/button'
+import { anomaliasPeru } from '@/data/datos'
+import { TEXTOS } from '@/i18n/textos'
+import { colorAnomalia } from '@/lib/color'
+import { useBusqueda } from '@/lib/busqueda'
+import { fmtAnomalia } from '@/lib/formato'
+import { useRango } from '@/lib/useZonas'
+import { useApp } from '@/store'
+import { Button } from '@/components/ui/button'
 
 /** Milisegundos por año al reproducir. Las columnas se interpolan entre años: el avance se ve suave. */
 const PASO_MS = 850

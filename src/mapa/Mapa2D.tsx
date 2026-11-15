@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '../data/datos'
-import { TEXTOS } from '../i18n/textos'
-import { colorAnomalia } from '../lib/color'
-import { claveMapa } from '../lib/direccion'
-import { fmtAnomalia, fmtValor } from '../lib/formato'
-import { useRango, useZonas } from '../lib/useZonas'
-import { useBusqueda } from '../lib/busqueda'
-import { useApp } from '../store'
-import { CAJA_SUELO, pintarSuelo2D } from './suelo2d'
+import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '@/data/datos'
+import { TEXTOS } from '@/i18n/textos'
+import { colorAnomalia } from '@/lib/color'
+import { claveMapa } from '@/lib/direccion'
+import { fmtAnomalia, fmtValor } from '@/lib/formato'
+import { useRango, useZonas } from '@/lib/useZonas'
+import { useBusqueda } from '@/lib/busqueda'
+import { useApp } from '@/store'
+import { CAJA_SUELO, pintarSuelo2D } from '@/mapa/suelo2d'
 
 const LON0 = -75.0
 const LAT0 = -9.2

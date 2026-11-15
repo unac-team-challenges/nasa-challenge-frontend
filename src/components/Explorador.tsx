@@ -1,21 +1,21 @@
 import { lazy, Suspense, useRef, useState } from 'react'
-import { NOMBRE } from '../data/datos'
-import { TEXTOS } from '../i18n/textos'
-import { fmtValor } from '../lib/formato'
-import { useRango, useZonas } from '../lib/useZonas'
-import type { EscenaPeru } from '../mapa/escena'
-import { Mapa2D } from '../mapa/Mapa2D'
-import { useApp } from '../store'
-import { useBusqueda } from '../lib/busqueda'
-import { colorDireccion } from '../lib/direccion'
-import { BarraTiempo } from './BarraTiempo'
-import { MapaSkeleton } from './Esperas'
-import { Ficha } from './Ficha'
-import { Leyenda } from './Leyenda'
-import { Button } from './ui/button'
+import { NOMBRE } from '@/data/datos'
+import { TEXTOS } from '@/i18n/textos'
+import { fmtValor } from '@/lib/formato'
+import { useRango, useZonas } from '@/lib/useZonas'
+import type { EscenaPeru } from '@/mapa/escena'
+import { Mapa2D } from '@/mapa/Mapa2D'
+import { useApp } from '@/store'
+import { useBusqueda } from '@/lib/busqueda'
+import { colorDireccion } from '@/lib/direccion'
+import { BarraTiempo } from '@/components/BarraTiempo'
+import { MapaSkeleton } from '@/components/Esperas'
+import { Ficha } from '@/components/Ficha'
+import { Leyenda } from '@/components/Leyenda'
+import { Button } from '@/components/ui/button'
 
 // three.js se descarga aparte: mientras llega se ve el esqueleto del mapa
-const Mapa3D = lazy(() => import('../mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+const Mapa3D = lazy(() => import('@/mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
 
 const boton = 'bg-panel/92'
 

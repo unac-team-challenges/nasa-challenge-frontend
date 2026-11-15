@@ -1,13 +1,13 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
-import { ORDEN_PERFILES, TEXTOS } from '../i18n/textos'
-import { useVista } from '../lib/useZonas'
-import { useApp } from '../store'
-import { MapaSkeleton } from './Esperas'
-import { Button } from './ui/button'
+import { ORDEN_PERFILES, TEXTOS } from '@/i18n/textos'
+import { useVista } from '@/lib/useZonas'
+import { useApp } from '@/store'
+import { MapaSkeleton } from '@/components/Esperas'
+import { Button } from '@/components/ui/button'
 
 // three.js pesa casi la mitad de la web: se descarga aparte mientras se ve el esqueleto
-const Mapa3D = lazy(() => import('../mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+const Mapa3D = lazy(() => import('@/mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
 
 /** Portada: el Perú en 3D, la pregunta, los 2 perfiles (agricultor y estudiante) y el botón principal. */
 export function Portada() {

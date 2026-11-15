@@ -7,7 +7,7 @@
  * Por cuadro solo se actualizan ~22 matrices.
  */
 import * as THREE from 'three'
-import { FAUNA_TEXTOS, type Idioma } from '../i18n/textos'
+import { FAUNA_TEXTOS, type Idioma } from '@/i18n/textos'
 
 type Prim = 'B' | 'S' | 'C' | 'Y'
 /** [primitiva, color, posición, escala, rotación?] */

@@ -1,12 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { useRef } from 'react'
 import {
-  ChevronDown,
   CloudRain,
+  GraduationCap,
   Moon,
+  Sprout,
   Sun,
   Thermometer,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
@@ -20,6 +20,11 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+}
+
+const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
+  agricultor: Sprout,
+  estudiante: GraduationCap,
 }
 
 const IDIOMAS = [
@@ -101,30 +106,25 @@ export function Cabecera() {
             )
           })}
         </div>
-        <label className="sr-only" htmlFor="perfil">
-          {t.perfilLbl}
-        </label>
-        <div className={`${riel} relative`}>
-          <UserRound
-            className="pointer-events-none absolute left-3 size-4 text-muted"
-            aria-hidden="true"
-          />
-          <select
-            id="perfil"
-            value={perfil}
-            onChange={(e) => setPerfil(e.target.value as Perfil)}
-            className="min-h-9 cursor-pointer appearance-none rounded-[8px] border-0 bg-transparent pr-8 pl-9 text-sm font-medium hover:bg-panel"
-          >
-            {ORDEN_PERFILES.map((p) => (
-              <option key={p} value={p}>
-                {t.perfiles[p][0]}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 size-4 text-muted"
-            aria-hidden="true"
-          />
+        <div className={riel} role="group" aria-label={t.perfilLbl}>
+          {ORDEN_PERFILES.map((p) => {
+            const Icono = ICONO_PERFIL[p]
+            return (
+              <Button
+                key={p}
+                variant="toggle"
+                size="sm"
+                className={opcion}
+                aria-pressed={perfil === p}
+                title={`${t.perfiles[p][0]}: ${t.perfiles[p][1]}`}
+                onClick={() => setPerfil(p)}
+              >
+                <Icono className="size-4" aria-hidden="true" />
+                {/* En celular solo el ícono: con texto, el segundo botón quedaba fuera de la tira */}
+                <span className="max-[479px]:sr-only">{t.perfiles[p][0]}</span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 

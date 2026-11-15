@@ -16,6 +16,7 @@ import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
+import { SIN_MARGEN } from '@/utils/margenMapa'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
 import { dibujarCalor, tieneAnio } from '@/features/mapa/utils/calor'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
@@ -258,9 +259,14 @@ export function Mapa2D({ interactivo = true }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calor, conCalor, anio, tema, esquema])
 
-  const s = Math.min(tam.w / VB.w, tam.h / VB.h) || 0
+  const celular = tam.w > 0 && tam.w < 600
+  // En celular el mapa se encuadra en lo que dejan libre los paneles; en escritorio ocupa toda la caja
+  const margen = useApp((s) => s.margenMapa)
+  const m = celular && interactivo ? margen : SIN_MARGEN
+  const libre = tam.h - m.arriba - m.abajo
+  const s = Math.min(tam.w / VB.w, libre / VB.h) || 0
   const oX = (tam.w - VB.w * s) / 2
-  const oY = (tam.h - VB.h * s) / 2
+  const oY = m.arriba + (libre - VB.h * s) / 2
   // Una zona que no existe (p. ej. /zona/99) no se marca ni se acerca
   const marcada = interactivo && sel && sel in CAJAS ? sel : null
   // Elegir otra zona o pedir la vista inicial deshace el zoom manual (patrón «ajustar estado al renderizar»)
@@ -275,7 +281,6 @@ export function Mapa2D({ interactivo = true }: Props) {
     zm.k * (oX + (x - VB.x) * s) + zm.tx,
     zm.k * (oY + (y - VB.y) * s) + zm.ty,
   ]
-  const celular = tam.w > 0 && tam.w < 600
   // Zonas demasiado pequeñas para el dedo (Callao, Tumbes…): su área de toque crece con un borde invisible
   const aToque =
     celular && interactivo
@@ -413,7 +418,12 @@ export function Mapa2D({ interactivo = true }: Props) {
           }}
         />
         <svg
-          viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`}
+          // El SVG ocupa toda la caja; el encuadre en el área libre va en el viewBox (mismos oX, oY, s del resto)
+          viewBox={
+            s > 0
+              ? `${VB.x - oX / s} ${VB.y - oY / s} ${tam.w / s} ${tam.h / s}`
+              : `${VB.x} ${VB.y} ${VB.w} ${VB.h}`
+          }
           preserveAspectRatio="xMidYMid meet"
           className="absolute inset-0 h-full w-full overflow-visible"
           role="group"
@@ -506,6 +516,26 @@ export function Mapa2D({ interactivo = true }: Props) {
             />
           )}
 
+          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de las zonas.
+              Va DEBAJO de las zonas: así solo gana en el mar y fuera de la frontera, y no le quita terreno a las vecinas grandes. */}
+          {aToque.map(({ id, d: ruta, trazo }) => (
+            <path
+              key={id}
+              d={ruta}
+              aria-hidden
+              data-toque={id}
+              vectorEffect="non-scaling-stroke"
+              style={{
+                fill: 'none',
+                stroke: 'transparent',
+                strokeWidth: trazo,
+                strokeLinejoin: 'round',
+                pointerEvents: 'stroke',
+              }}
+              onClick={() => seleccionar(id, true)}
+            />
+          ))}
+
           {orden.map(({ id, d: ruta }) => {
             const d = zonas[id]
             const clave = claveMapa(d.slope_per_decade, variable)
@@ -586,25 +616,6 @@ export function Mapa2D({ interactivo = true }: Props) {
               />
             )
           })}
-
-          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de arriba. */}
-          {aToque.map(({ id, d: ruta, trazo }) => (
-            <path
-              key={id}
-              d={ruta}
-              aria-hidden
-              data-toque={id}
-              vectorEffect="non-scaling-stroke"
-              style={{
-                fill: 'none',
-                stroke: 'transparent',
-                strokeWidth: trazo,
-                strokeLinejoin: 'round',
-                pointerEvents: 'stroke',
-              }}
-              onClick={() => seleccionar(id, true)}
-            />
-          ))}
         </svg>
       </div>
 

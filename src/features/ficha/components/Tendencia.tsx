@@ -3,18 +3,13 @@ import { useBusqueda } from '@/lib/busqueda'
 import { TEXTOS, type Perfil } from '@/i18n/textos'
 import type { Zona } from '@/data/datos'
 import { colorDireccion } from '@/utils/direccion'
-import { fmtPct, fmtValor, num } from '@/utils/formato'
+import { fmtPct, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { Confianza } from '@/features/ficha/components/Confianza'
 import { MedidorTendencia } from '@/features/ficha/components/MedidorTendencia'
 import { escalaTendencia } from '@/features/ficha/utils/serie'
-import {
-  cambioEnPeriodo,
-  cifraCampo,
-  fraccion,
-  metrosEquivalentes,
-} from '@/features/ficha/utils/campo'
+import { titularCampo } from '@/features/ficha/utils/campo'
 
 /**
  * El cambio. Agricultor: cuánto cambió en todo el periodo, en palabras de chacra («Desde 2001,
@@ -36,44 +31,28 @@ export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
   const escala = escalaTendencia(Object.values(zonas), variable)
 
   if (perfil === 'agricultor') {
-    const claro = d.status === 'real'
-    const { year_start: desde, year_end: hasta } = rango
-    const cifra = cifraCampo(d, variable, idioma)
-    // Cambio en todo el periodo: la lluvia en %, el calor en °C
-    const total = cambioEnPeriodo(
-      lluvia ? (d.pct_change_per_decade ?? 0) : d.slope_per_decade,
-      desde,
-      hasta,
-    )
-    const titular = !claro
-      ? t.campoSinCambio[variable]
-      : lluvia
-        ? d.pct_change_per_decade != null
-          ? t.campoFrase.lluvia(desde, t.cuanto(fraccion(total), sube, 'antes'))
-          : t.campoRitmo(cifra, sube, desde, hasta)
-        : t.campoFrase.temperatura(desde, `${num(Math.abs(total), 1, idioma)} °C`, sube)
+    const { claro, titular, debajo, metros } = titularCampo(d, variable, rango, idioma)
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span
+            data-leer
             className="font-display text-[28px] leading-[1.1] font-[750] tracking-[-0.015em] min-[521px]:text-[32px]"
             style={{ color: claro ? `var(${color})` : 'var(--muted)' }}
           >
             {titular}
           </span>
-          <span className="text-[13px] text-muted">
-            {claro && (!lluvia || d.pct_change_per_decade != null)
-              ? t.campoRitmo(cifra, sube, desde, hasta)
-              : t.campoPeriodo(desde, hasta)}
+          <span data-leer className="text-[13px] text-muted">
+            {debajo}
           </span>
         </div>
         {/* El calor en metros de altura: solo si el cambio es claro */}
-        {claro && !lluvia && (
+        {metros != null && (
           <div className="flex flex-col gap-1">
             {/* Como la gota de «Un año normal aquí»: el ícono dentro de la misma línea */}
-            <p className="m-0 flex items-center gap-2 font-semibold">
+            <p data-leer className="m-0 flex items-center gap-2 font-semibold">
               <Mountain className="size-5 flex-none text-muted" aria-hidden="true" />
-              {t.campoAltura(`${metrosEquivalentes(total)} m`, sube)}
+              {t.campoAltura(`${metros} m`, sube)}
             </p>
             <p className="m-0 text-xs text-muted">{t.campoAlturaNota}</p>
           </div>

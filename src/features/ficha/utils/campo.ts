@@ -1,5 +1,5 @@
-import type { Variable, Zona } from '@/data/datos'
-import type { Idioma } from '@/i18n/textos'
+import type { Rango, Variable, Zona } from '@/data/datos'
+import { TEXTOS, type Idioma } from '@/i18n/textos'
 import { num } from '@/utils/formato'
 
 /**
@@ -20,9 +20,13 @@ export function listaAnios(anios: number[], idioma: Idioma) {
   return `${anios.slice(0, -1).join(', ')} ${idioma === 'es' ? 'y' : 'and'} ${anios.at(-1)}`
 }
 
-/** Número entero con separador de miles del idioma: 2 310 / 2,310. */
+/**
+ * Número entero con separador de miles del idioma: 18.900 / 18,900 (en español, 4 cifras van
+ * juntas: 2310). Es «es» y no «es-PE»: es-PE separa miles con coma, y la app escribe los decimales
+ * con coma («0,5 °C»); «2,263 mm» se leería (y se oiría con Escuchar) como dos coma algo.
+ */
 export function miles(v: number, idioma: Idioma) {
-  return new Intl.NumberFormat(idioma === 'es' ? 'es-PE' : 'en-US', {
+  return new Intl.NumberFormat(idioma === 'es' ? 'es' : 'en-US', {
     maximumFractionDigits: 0,
   }).format(v)
 }
@@ -76,3 +80,42 @@ export const GRADIENTE_C_POR_KM = 6.5
 
 export const metrosEquivalentes = (grados: number) =>
   Math.round(((Math.abs(grados) / GRADIENTE_C_POR_KM) * 1000) / 10) * 10
+
+/**
+ * El titular del agricultor para una variable: cuánto cambió en todo el periodo, en palabras
+ * («Desde 2001, llueve como un quinto menos que antes»). Solo afirma si el cambio es claro (real);
+ * si no, dice que no se ve un cambio claro. Trae también el ritmo por década y, para el calor, los
+ * metros de altura equivalentes. Lo usan la tendencia y «¿Y el calor?».
+ */
+export function titularCampo(d: Zona, variable: Variable, rango: Rango, idioma: Idioma) {
+  const t = TEXTOS[idioma]
+  const lluvia = variable === 'lluvia'
+  const claro = d.status === 'real'
+  const sube = d.slope_per_decade >= 0
+  const { year_start: desde, year_end: hasta } = rango
+  const cifra = cifraCampo(d, variable, idioma)
+  // Cambio en todo el periodo: la lluvia en %, el calor en °C
+  const total = cambioEnPeriodo(
+    lluvia ? (d.pct_change_per_decade ?? 0) : d.slope_per_decade,
+    desde,
+    hasta,
+  )
+  const sinPct = lluvia && d.pct_change_per_decade == null
+  const titular = !claro
+    ? t.campoSinCambio[variable]
+    : lluvia
+      ? sinPct
+        ? t.campoRitmo(cifra, sube, desde, hasta)
+        : t.campoFrase.lluvia(desde, t.cuanto(fraccion(total), sube, 'antes'))
+      : t.campoFrase.temperatura(desde, `${num(Math.abs(total), 1, idioma)} °C`, sube)
+  return {
+    claro,
+    sube,
+    titular,
+    /** «Son unos 8 % menos cada 10 años…», o el periodo si no hay cambio claro */
+    debajo:
+      claro && !sinPct ? t.campoRitmo(cifra, sube, desde, hasta) : t.campoPeriodo(desde, hasta),
+    /** Metros de altura equivalentes (solo calor con cambio claro) */
+    metros: claro && !lluvia ? metrosEquivalentes(total) : null,
+  }
+}

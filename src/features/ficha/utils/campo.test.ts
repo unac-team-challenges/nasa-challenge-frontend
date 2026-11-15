@@ -7,6 +7,7 @@ import {
   listaAnios,
   metrosEquivalentes,
   miles,
+  titularCampo,
 } from '@/features/ficha/utils/campo'
 
 const zona = (z: Partial<Zona>): Zona => ({
@@ -63,6 +64,8 @@ describe('miles', () => {
     expect(miles(2310.4, 'en').replace(/\s/g, '')).toBe('2,310')
     expect(miles(2310.4, 'es')).toMatch(/^2\D?310$/)
     expect(miles(12, 'es')).toBe('12')
+    // Punto de miles, como la coma decimal del resto de la app; nunca «18,900»
+    expect(miles(18900, 'es')).toBe('18.900')
   })
 })
 
@@ -93,5 +96,26 @@ describe('cambioEnPeriodo y metrosEquivalentes', () => {
   it('grados en metros de altura, redondeado a decenas', () => {
     expect(metrosEquivalentes(0.5)).toBe(80) // 76,9 m
     expect(metrosEquivalentes(-1.1)).toBe(170)
+  })
+})
+
+describe('titularCampo', () => {
+  const rango = { year_start: 2001, year_end: 2024 }
+  it('lluvia con cambio claro: cuánto cambió en todo el periodo, en palabras', () => {
+    const r = titularCampo(zona({ pct_change_per_decade: -8.4 }), 'lluvia', rango, 'es')
+    expect(r.titular).toBe('Desde 2001, llueve como un quinto menos que antes')
+    expect(r.debajo).toBe('Son unos 8 % menos cada 10 años, de 2001 a 2024.')
+    expect(r.metros).toBeNull()
+  })
+  it('calor con cambio claro: grados del periodo y metros de altura', () => {
+    const r = titularCampo(zona({ slope_per_decade: 0.5 }), 'temperatura', rango, 'es')
+    expect(r.titular).toBe('Desde 2001, hace como 1,1 °C más de calor') // 0,5 × 2,3 décadas
+    expect(r.metros).toBe(180)
+  })
+  it('sin cambio claro no afirma nada', () => {
+    const r = titularCampo(zona({ status: 'posible_casualidad' }), 'lluvia', rango, 'es')
+    expect(r.titular).toBe('No se ve un cambio claro en la lluvia')
+    expect(r.debajo).toBe('Comparando los años de 2001 a 2024')
+    expect(r.metros).toBeNull()
   })
 })

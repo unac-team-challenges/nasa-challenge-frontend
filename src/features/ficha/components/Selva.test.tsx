@@ -36,7 +36,10 @@ describe('Caso 2 y selva en la ficha (copia local)', () => {
     for (const dep of ['13', '11']) {
       const { unmount } = ver(dep, 'agricultor')
       expect(screen.getByRole('heading', { name: 'No todo cambio es el clima' })).toBeVisible()
-      expect(screen.getByText(/Se explica sobre todo por el riego/)).toBeVisible()
+      expect(screen.getByText('Es sobre todo por el riego, no por la lluvia.')).toBeVisible()
+      // En hectáreas, la unidad del agricultor, con las dos barras
+      expect(screen.getByText(/el campo verde pasó de unas .* hectáreas/)).toBeVisible()
+      expect(screen.getByText('Campo verde en el recuadro')).toBeVisible()
       expect(screen.getByText(/^Fuente:/)).toBeVisible()
       unmount()
     }

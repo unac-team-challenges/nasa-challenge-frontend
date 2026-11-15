@@ -281,5 +281,29 @@ export function anioNormal(pts: Punto[]) {
   return { promedio: promedio(pts), bajo: cuantil(v, 0.25), alto: cuantil(v, 0.75) }
 }
 
+/**
+ * Cómo fue un año frente a la mitad central de los años (`anioNormal`): por debajo, dentro o por
+ * encima. Es la misma vara que «La mitad de los años, entre … y …» de la tarjeta.
+ */
+export function comoFue(v: number, n: { bajo: number; alto: number }): 'bajo' | 'normal' | 'alto' {
+  return v < n.bajo ? 'bajo' : v > n.alto ? 'alto' : 'normal'
+}
+
 /** 1 mm de lluvia sobre una hectárea son 10 m³ de agua. */
 export const m3PorHectarea = (mm: number) => mm * 10
+
+/**
+ * La tendencia es un cambio claro hacia lo malo (menos lluvia, más calor) pero los años malos no
+ * aumentaron: pasa en Loreto, donde llueve menos en promedio sin más años bajo el umbral de seca.
+ * Ahí la tarjeta lo aclara, para que no se lea como una contradicción con la tendencia.
+ */
+export function tendenciaSinMasMalos(
+  respuesta: RespuestaMalos,
+  d: Pick<Zona, 'status' | 'slope_per_decade'>,
+  variable: Variable,
+) {
+  const empuja = Math.sign(d.slope_per_decade) * (variable === 'lluvia' ? -1 : 1)
+  return (
+    d.status === 'real' && empuja === 1 && (respuesta === 'igual' || respuesta === 'menosSinSeguro')
+  )
+}

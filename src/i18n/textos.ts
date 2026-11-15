@@ -31,6 +31,8 @@ type Fraccion =
   | 'masDoble'
   | 'triple'
   | 'masTriple'
+/** Cómo fue un año frente a la mitad central de los años (ver comoFue). */
+type ComoFue = 'bajo' | 'normal' | 'alto'
 /** Cuánta lluvia faltó (ver cuantoFalto). */
 type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
 
@@ -242,6 +244,16 @@ const es = {
   campoAltura: (metros: string, sube: boolean) =>
     `Es como tener la chacra unos ${metros} más ${sube ? 'abajo' : 'arriba'} en el cerro.`,
   campoAlturaNota: 'Cuenta aproximada: subiendo 1000 metros, el aire se enfría unos 6,5 °C.',
+  /** «¿Y el calor?»: la otra variable, según la que se está viendo */
+  otraH: { lluvia: '¿Y el calor?', temperatura: '¿Y la lluvia?' } as PorVariable<string>,
+  otraVer: { lluvia: 'Ver el calor', temperatura: 'Ver la lluvia' } as PorVariable<string>,
+  /** Solo si los dos cambios son claros: menos lluvia y más calor */
+  otraCruce: 'Menos lluvia y más calor a la vez: la tierra se seca más rápido.',
+  /** Botón para oír la ficha del agricultor */
+  escuchar: 'Escuchar',
+  escucharParar: 'Parar',
+  escucharAria: 'Escuchar este informe en voz alta',
+  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
@@ -355,6 +367,12 @@ const es = {
   malosBase: (a: number, b: number) =>
     `«Lo de siempre» es un año típico de ${a} a ${b}, sin contar los años de El Niño.`,
   malosLeer: 'Cada casilla es un año: «05» es 2005.',
+  /** La tendencia es clara hacia lo malo, pero los años malos no aumentaron (p. ej. Loreto) */
+  malosAclara: {
+    lluvia: 'Ojo: en promedio llueve menos, pero eso todavía no ha traído más años de seca.',
+    temperatura:
+      'Ojo: en promedio hace más calor, pero eso todavía no ha traído más años de calor fuerte.',
+  } as PorVariable<string>,
   dosVeredicto: {
     coinciden: 'Sí coinciden',
     coincidenDebil: 'Apuntan a lo mismo',
@@ -382,6 +400,13 @@ const es = {
     `${c} de temperatura promedio en el año. La mitad de los años, entre ${bajo} y ${alto}.`,
   normalAgua: (m3: string) => `Esa lluvia son unos ${m3} m³ de agua por hectárea.`,
   normalNota: 'Es el promedio de una zona amplia, no de tu chacra: tu campo puede ser distinto.',
+  /** El último año frente a la mitad central de los años (valor con unidad) */
+  normalUltimo: {
+    lluvia: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Llovió ${valor}: ${como === 'bajo' ? 'menos de lo normal aquí' : como === 'alto' ? 'más de lo normal aquí' : 'dentro de lo normal'}.`,
+    temperatura: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Hizo ${valor} de promedio: ${como === 'bajo' ? 'más fresco que lo normal' : como === 'alto' ? 'más caluroso que lo normal' : 'dentro de lo normal'}.`,
+  } as PorVariable<(anio: number, valor: string, como: ComoFue) => string>,
   seguirH: 'Dónde seguir',
   seguirSenamhi: 'Pronósticos y avisos del tiempo (SENAMHI)',
   seguirEnfen: 'Comunicados oficiales sobre El Niño (ENFEN)',
@@ -447,8 +472,13 @@ const es = {
     'No encontramos estudios que expliquen este caso con seguridad, así que no lo afirmamos.',
   verdeH: 'No todo cambio es el clima',
   verdeSub: 'La costa que reverdece',
-  verdeCampo: (valle: string, a: number, b: number) =>
-    `En ${valle} hay ${b - a} km² más de campo verde que en 2001. Se explica sobre todo por el riego, no por la lluvia.`,
+  /** Agricultor: el campo verde en hectáreas (miles ya formateados) y cuánto cambió en palabras */
+  verdeHa: (valle: string, haAntes: string, haDespues: string, cuanto: string) =>
+    `En ${valle}, el campo verde pasó de unas ${haAntes} a unas ${haDespues} hectáreas: ${cuanto}.`,
+  verdeRiego: 'Es sobre todo por el riego, no por la lluvia.',
+  verdeBarras: 'Campo verde en el recuadro',
+  /** hectáreas ya formateadas: "18.900" */
+  verdeBarraHa: (ha: string) => `${ha} ha`,
   /** Recuadros sin causa documentada (Olmos): solo las cifras, sin atribuir el cambio */
   verdeNeutro: (valle: string, a: number, b: number, pct: number) =>
     `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
@@ -777,6 +807,13 @@ const en: Textos = {
   campoAltura: (metros, sube) =>
     `It’s like having your field about ${metros} ${sube ? 'lower' : 'higher'} up the mountain.`,
   campoAlturaNota: 'Rough rule: going up 1000 metres, the air cools by about 6.5 °C.',
+  otraH: { lluvia: 'And the heat?', temperatura: 'And the rain?' },
+  otraVer: { lluvia: 'See the heat', temperatura: 'See the rain' },
+  otraCruce: 'Less rain and more heat at the same time: the soil dries out faster.',
+  escuchar: 'Listen',
+  escucharParar: 'Stop',
+  escucharAria: 'Listen to this report aloud',
+  escucharPararAria: 'Stop reading aloud',
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
@@ -872,6 +909,10 @@ const en: Textos = {
   malosBase: (a, b) =>
     `“Usual” is a typical year from ${a} to ${b}, leaving out the El Niño years.`,
   malosLeer: 'Each box is a year: “05” is 2005.',
+  malosAclara: {
+    lluvia: 'Note: on average it rains less, but that hasn’t brought more drought years yet.',
+    temperatura: 'Note: on average it’s warmer, but that hasn’t brought more scorching years yet.',
+  },
   dosVeredicto: {
     coinciden: 'They agree',
     coincidenDebil: 'They point the same way',
@@ -895,6 +936,12 @@ const en: Textos = {
     `${c} average temperature over the year. Half of the years, between ${bajo} and ${alto}.`,
   normalAgua: (m3) => `That rain is about ${m3} m³ of water per hectare.`,
   normalNota: 'It is the average of a wide area, not of your field: your farm may differ.',
+  normalUltimo: {
+    lluvia: (anio, valor, como) =>
+      `And ${anio}? It rained ${valor}: ${como === 'bajo' ? 'less than normal here' : como === 'alto' ? 'more than normal here' : 'within normal'}.`,
+    temperatura: (anio, valor, como) =>
+      `And ${anio}? It averaged ${valor}: ${como === 'bajo' ? 'cooler than normal' : como === 'alto' ? 'hotter than normal' : 'within normal'}.`,
+  },
   seguirH: 'Where to follow up',
   seguirSenamhi: 'Weather forecasts and warnings (SENAMHI)',
   seguirEnfen: 'Official El Niño communiqués (ENFEN)',
@@ -957,8 +1004,11 @@ const en: Textos = {
   causasNada: 'We found no studies that reliably explain this case, so we do not claim one.',
   verdeH: 'Not every change is the climate',
   verdeSub: 'The coast that turns green',
-  verdeCampo: (valle, a, b) =>
-    `${valle} has ${b - a} km² more green farmland than in 2001. It is explained mostly by irrigation, not by the rain.`,
+  verdeHa: (valle, haAntes, haDespues, cuanto) =>
+    `In ${valle}, green fields went from about ${haAntes} to about ${haDespues} hectares: ${cuanto}.`,
+  verdeRiego: 'It’s mostly irrigation, not rain.',
+  verdeBarras: 'Green fields in the box',
+  verdeBarraHa: (ha) => `${ha} ha`,
   verdeNeutro: (valle, a, b, pct) =>
     `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
   verdeEst: (valle, a, b, pct) =>

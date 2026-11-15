@@ -13,6 +13,7 @@ import {
   cuantoFalto,
   frecuencia,
   respuestaMalos,
+  tendenciaSinMasMalos,
 } from '@/features/ficha/utils/serie'
 
 /**
@@ -44,17 +45,25 @@ export function CampoAniosMalos() {
       aria-labelledby="malos-h"
       className="flex flex-col gap-3.5 rounded-m border border-line p-3.5"
     >
-      <h3 id="malos-h" className="m-0 text-sm font-semibold">
+      <h3 id="malos-h" data-leer className="m-0 text-sm font-semibold">
         {t.malosH[variable]}
       </h3>
 
       {/* La respuesta, en una frase */}
-      <p className="m-0 font-semibold">{t.malosRespuesta[variable][respuesta]}</p>
+      <p data-leer className="m-0 font-semibold">
+        {t.malosRespuesta[variable][respuesta]}
+      </p>
+      {/* Tendencia clara hacia lo malo sin más años malos (Loreto): que no parezca contradicción */}
+      {tendenciaSinMasMalos(respuesta, zonas[sel], variable) && (
+        <p data-leer className="m-0">
+          {t.malosAclara[variable]}
+        </p>
+      )}
 
       {/* Cada cuánto venía un año malo antes y cada cuánto viene ahora */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         {[antes, ahora].map((m, i) => (
-          <div key={m.desde} className={`flex flex-col gap-1 ${i ? 'col-start-3' : ''}`}>
+          <div key={m.desde} data-leer className={`flex flex-col gap-1 ${i ? 'col-start-3' : ''}`}>
             <span className="text-xs text-muted">
               {i ? t.malosAhora : t.malosAntes} · {m.desde}–{m.hasta}
             </span>
@@ -71,7 +80,7 @@ export function CampoAniosMalos() {
 
       {/* Un año malo para ubicarse: el peor de los recientes */}
       {recordar && (
-        <p className="m-0">
+        <p data-leer className="m-0">
           {lluvia
             ? t.malosRecuerdaLluvia(recordar.y, cuantoFalto(recordar.a))
             : t.malosRecuerdaCalor(recordar.y, `${num(Math.abs(recordar.a), 1, idioma)} °C`)}

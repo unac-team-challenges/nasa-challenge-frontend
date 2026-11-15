@@ -16,6 +16,8 @@ import {
   frecuencia,
   mediana,
   respuestaMalos,
+  comoFue,
+  tendenciaSinMasMalos,
   efectoNino,
   anioNormal,
   m3PorHectarea,
@@ -235,5 +237,30 @@ describe('anioParaRecordar y cuantoFalto', () => {
     expect(cuantoFalto(-33)).toBe('tercio')
     expect(cuantoFalto(-50)).toBe('mitad')
     expect(cuantoFalto(-70)).toBe('masMitad')
+  })
+})
+
+describe('comoFue', () => {
+  it('por debajo, dentro o por encima de la mitad central de los años', () => {
+    const n = { bajo: 800, alto: 1200 }
+    expect(comoFue(600, n)).toBe('bajo')
+    expect(comoFue(1000, n)).toBe('normal')
+    expect(comoFue(1300, n)).toBe('alto')
+  })
+})
+
+describe('tendenciaSinMasMalos', () => {
+  const z = (status: 'real' | 'posible_casualidad', slope: number) => ({
+    status,
+    slope_per_decade: slope,
+  })
+  it('Loreto: llueve menos en promedio (cambio real) pero no hay más años de seca', () => {
+    expect(tendenciaSinMasMalos('igual', z('real', -90), 'lluvia')).toBe(true)
+    expect(tendenciaSinMasMalos('menosSinSeguro', z('real', -90), 'lluvia')).toBe(true)
+  })
+  it('no aclara si la tendencia no es clara, va hacia lo bueno o ya hay más años malos', () => {
+    expect(tendenciaSinMasMalos('igual', z('posible_casualidad', -90), 'lluvia')).toBe(false)
+    expect(tendenciaSinMasMalos('igual', z('real', 90), 'lluvia')).toBe(false)
+    expect(tendenciaSinMasMalos('si', z('real', -90), 'lluvia')).toBe(false)
   })
 })

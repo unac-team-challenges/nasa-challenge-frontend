@@ -80,10 +80,14 @@ export function useRango(v?: Variable): Rango {
 
 /** Estadística por zona de la variable elegida: API si está completa; si no, copia local. */
 export function useZonas(): Record<string, Zona> {
-  const { variable } = useBusqueda()
+  return useZonasDe(useBusqueda().variable)
+}
+
+/** Lo mismo para una variable dada (p. ej. la que no se está viendo, para «¿Y el calor?»). */
+export function useZonasDe(variable: Variable): Record<string, Zona> {
   const periodo = usePeriodo()
   const sinNino = useSinNino()
-  const { api } = useVista()
+  const { api } = useVista(variable)
   const local = useMemo(() => zonasDe(variable, periodo, sinNino), [variable, periodo, sinNino])
   return api?.zonas ?? local
 }

@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Variables del producto con unidad, fuente y rango de años. */
+        /** Variables del producto con unidad, fuente y rango de años (`data/variables.json`). */
         get: operations["variables"];
         put?: never;
         post?: never;
@@ -28,7 +28,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Las 25 zonas (departamentos) sin series. */
+        /** Las 25 zonas (departamentos) con su tendencia, sin series. */
         get: operations["zonas"];
         put?: never;
         post?: never;
@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Serie anual de una zona (`id` = ubigeo como texto, "01"–"25"). */
+        /** Serie anual y tendencia de una zona (`id` = ubigeo como texto, "01"–"25"). */
         get: operations["zona"];
         put?: never;
         post?: never;
@@ -69,21 +69,80 @@ export interface components {
             /** Format: double */
             valor: number;
         };
+        /** @description Tendencia lineal del periodo `year_start`–`year_end`, ya calculada por el pipeline. */
+        Stats: {
+            /** @description Cuidado al interpretar la tendencia: siempre en lluvia (IMERG 2014) y si `lag1 > 0.5`. */
+            aviso?: string | null;
+            /** Format: double */
+            ci_high: number;
+            /**
+             * Format: double
+             * @description Intervalo del 95 % de la pendiente, por década.
+             */
+            ci_low: number;
+            /**
+             * Format: double
+             * @description En años calendario: `valor ≈ intercept + slope_per_decade / 10 × año`.
+             */
+            intercept: number;
+            /**
+             * Format: double
+             * @description Autocorrelación de orden 1.
+             */
+            lag1: number;
+            /** Format: int32 */
+            n_years: number;
+            /**
+             * Format: double
+             * @description Antes de Benjamini-Hochberg.
+             */
+            p_value: number;
+            /**
+             * Format: double
+             * @description Solo lluvia.
+             */
+            pct_change_per_decade?: number | null;
+            /**
+             * Format: double
+             * @description Después de Benjamini-Hochberg.
+             */
+            q_value: number;
+            /**
+             * Format: double
+             * @description Unidad de la variable por década.
+             */
+            slope_per_decade: number;
+            status: components["schemas"]["Status"];
+            /** Format: int32 */
+            year_end: number;
+            /** Format: int32 */
+            year_start: number;
+        };
+        /**
+         * @description Semáforo de la tendencia.
+         * @enum {string}
+         */
+        Status: "real" | "posible_casualidad" | "pocos_datos";
         /** @enum {string} */
         Variable: "lluvia" | "temperatura";
-        /** @description `GET /api/variables` */
+        /** @description `GET /api/variables`: una entrada de `data/variables.json`, tal cual. */
         VariableInfo: {
             /** Format: int32 */
-            anio_fin?: number | null;
+            anio_fin: number;
             /** Format: int32 */
-            anio_inicio?: number | null;
+            anio_inicio: number;
             descripcion: string;
             fuente: string;
             id: string;
             unidad: string;
         };
-        /** @description `GET /api/zonas`: una zona del mapa (sin serie). */
+        /** @description `GET /api/zonas`: una zona del mapa con su tendencia (sin serie). */
         Zona: {
+            /**
+             * Format: int32
+             * @description Celdas de la malla de la fuente que entran en el promedio.
+             */
+            celdas: number;
             /** @description Ubigeo como texto: "01"–"25". */
             id: string;
             /** Format: double */
@@ -91,9 +150,18 @@ export interface components {
             /** Format: double */
             lon: number;
             nombre: string;
+            /** @description Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha. */
+            nota?: string | null;
+            stats: components["schemas"]["Stats"];
         };
-        /** @description `GET /api/zonas/{id}`: serie anual de la zona. `stats` (tendencia) llega con el cálculo de Sebastian. */
+        /**
+         * @description `GET /api/zonas/{id}`: los campos de `Zona` (con su `stats`) más la serie anual del mismo periodo.
+         *     Campos explícitos y no `flatten`: `Zona` lleva `additionalProperties: false` (por `deny_unknown_fields`)
+         *     y un `allOf` contradiría el contrato. Un test comprueba que no se desincronicen.
+         */
         ZonaDetalle: {
+            /** Format: int32 */
+            celdas: number;
             fuente: string;
             id: string;
             /** Format: double */
@@ -104,6 +172,7 @@ export interface components {
             /** @description Aviso si el promedio es poco fiable (menos de 4 celdas): mostrarlo en la ficha. */
             nota?: string | null;
             serie: components["schemas"]["Punto"][];
+            stats: components["schemas"]["Stats"];
             unidad: string;
             variable: string;
         };

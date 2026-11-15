@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from 'react'
 import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { colorAnomalia } from '@/utils/color'
@@ -126,6 +133,26 @@ function zoomA(id: string | null, oX: number, oY: number, s: number) {
   return { k, tx: oX * (1 - k) + (cx - VX + k * VX) * s, ty: oY * (1 - k) + (cy - VY + k * VY) * s }
 }
 
+/** Zoom máximo con los dedos (veces el tamaño inicial) y desplazamiento mínimo para que un toque cuente como arrastre (px). */
+const K_MAX = 6
+const UMBRAL_ARRASTRE = 8
+
+interface Vista {
+  k: number
+  tx: number
+  ty: number
+}
+
+/** Mantiene el mapa cubriendo la caja: ni se pasa del zoom máximo ni deja huecos en los bordes. */
+function limitar(v: Vista, w: number, h: number): Vista {
+  const k = Math.min(K_MAX, Math.max(1, v.k))
+  return {
+    k,
+    tx: Math.min(0, Math.max(w * (1 - k), v.tx)),
+    ty: Math.min(0, Math.max(h * (1 - k), v.ty)),
+  }
+}
+
 /** Dónde va la imagen del suelo, en las mismas coordenadas que los departamentos. */
 const SUELO = (() => {
   const [x, y] = proyectar([CAJA_SUELO.lon0, CAJA_SUELO.lat1])
@@ -178,6 +205,13 @@ export function Mapa2D({ interactivo = true }: Props) {
   const lienzo = useRef<HTMLCanvasElement>(null)
   const caja = useRef<HTMLDivElement>(null)
   const [tam, setTam] = useState({ w: 0, h: 0 })
+  // Zoom y desplazamiento hechos con los dedos; null = sigue el zoom automático a la zona elegida
+  const [manual, setManual] = useState<Vista | null>(null)
+  const [gestando, setGestando] = useState(false)
+  const dedos = useRef(new Map<number, { x: number; y: number }>())
+  const inicio = useRef<{ v: Vista; mx: number; my: number; d: number } | null>(null)
+  const arrastrado = useRef(false)
+  const reinicio2d = useApp((x) => x.reinicio2d)
 
   // El suelo se pinta una vez por tema (también si cambia el tema del sistema)
   const [esquema, setEsquema] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches)
@@ -209,13 +243,87 @@ export function Mapa2D({ interactivo = true }: Props) {
   const oY = (tam.h - VB.h * s) / 2
   // Una zona que no existe (p. ej. /zona/99) no se marca ni se acerca
   const marcada = interactivo && sel && sel in CAJAS ? sel : null
-  const zm = zoomA(marcada, oX, oY, s)
+  // Elegir otra zona o pedir la vista inicial deshace el zoom manual (patrón «ajustar estado al renderizar»)
+  const [previa, setPrevia] = useState({ marcada, reinicio2d })
+  if (previa.marcada !== marcada || previa.reinicio2d !== reinicio2d) {
+    setPrevia({ marcada, reinicio2d })
+    setManual(null)
+  }
+  const zm = manual ?? zoomA(marcada, oX, oY, s)
   // Posición en pantalla ya con el zoom: las etiquetas se mueven con el mapa sin agrandarse
   const aPantalla = ([x, y]: [number, number]) => [
     zm.k * (oX + (x - VB.x) * s) + zm.tx,
     zm.k * (oY + (y - VB.y) * s) + zm.ty,
   ]
   const celular = tam.w > 0 && tam.w < 600
+
+  // Gestos táctiles: un dedo arrastra, dos dedos pellizcan. El centro de los dedos es el ancla:
+  // el punto del mapa que estaba bajo ellos sigue bajo ellos. Con ratón no cambia nada.
+  const anclar = () => {
+    const ps = [...dedos.current.values()]
+    if (!ps.length) return (inicio.current = null)
+    const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length
+    const my = ps.reduce((a, p) => a + p.y, 0) / ps.length
+    const d = ps.length > 1 ? Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) : 0
+    inicio.current = { v: manual ?? zm, mx, my, d }
+  }
+  const aCaja = (e: PointerEvent) => {
+    const r = caja.current!.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+  const terminarDedo = (e: PointerEvent) => {
+    if (!dedos.current.delete(e.pointerId)) return
+    anclar()
+    if (!dedos.current.size && gestando) setGestando(false)
+  }
+  const gestos = interactivo
+    ? {
+        onPointerDown: (e: PointerEvent) => {
+          if (e.pointerType !== 'touch') return
+          if (!dedos.current.size) arrastrado.current = false
+          dedos.current.set(e.pointerId, aCaja(e))
+          if (dedos.current.size > 1) arrastrado.current = true
+          anclar()
+        },
+        onPointerMove: (e: PointerEvent) => {
+          if (!dedos.current.has(e.pointerId) || !inicio.current) return
+          dedos.current.set(e.pointerId, aCaja(e))
+          const ps = [...dedos.current.values()]
+          const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length
+          const my = ps.reduce((a, p) => a + p.y, 0) / ps.length
+          const i = inicio.current
+          if (!arrastrado.current && Math.hypot(mx - i.mx, my - i.my) < UMBRAL_ARRASTRE) return
+          arrastrado.current = true
+          setGestando(true)
+          const d = ps.length > 1 ? Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) : 0
+          const k = i.d && d ? i.v.k * (d / i.d) : i.v.k
+          const kk = Math.min(K_MAX, Math.max(1, k))
+          // el punto del mapa que estaba bajo el ancla sigue bajo el ancla
+          setManual(
+            limitar(
+              {
+                k: kk,
+                tx: mx - (kk * (i.mx - i.v.tx)) / i.v.k,
+                ty: my - (kk * (i.my - i.v.ty)) / i.v.k,
+              },
+              tam.w,
+              tam.h,
+            ),
+          )
+        },
+        // Solo los dedos del gesto hacen algo aquí: un toque suelto o el ratón no cambian ningún
+        // estado, así un render no reordena la zona entre «pointerdown» y el «click».
+        onPointerUp: (e: PointerEvent) => terminarDedo(e),
+        onPointerCancel: (e: PointerEvent) => terminarDedo(e),
+        // Si el dedo arrastró, el toque que sigue no elige zona
+        onClickCapture: (e: MouseEvent) => {
+          if (!arrastrado.current) return
+          e.stopPropagation()
+          e.preventDefault()
+          arrastrado.current = false
+        },
+      }
+    : {}
 
   const valor = (id: string) => {
     const d = zonas[id]
@@ -247,10 +355,16 @@ export function Mapa2D({ interactivo = true }: Props) {
   if (marcada && !CLAVE.includes(marcada)) conEtiqueta.push(marcada)
 
   return (
-    <div ref={caja} className="absolute inset-0 overflow-hidden">
+    <div
+      ref={caja}
+      className="absolute inset-0 overflow-hidden"
+      // touch-action: none solo dentro del mapa interactivo: los gestos son del mapa, no de la página
+      style={interactivo ? { touchAction: 'none' } : undefined}
+      {...gestos}
+    >
       {/* Suelo real: mar con profundidad y espuma, relieve, ríos, fronteras y sombra del Perú */}
       <div
-        className="zoom2d absolute inset-0"
+        className={`zoom2d absolute inset-0 ${gestando ? 'gestando' : ''}`}
         style={{
           transform: `translate(${zm.tx}px, ${zm.ty}px) scale(${zm.k})`,
           transformOrigin: '0 0',
@@ -448,7 +562,9 @@ export function Mapa2D({ interactivo = true }: Props) {
                 return (
                   <span
                     key={id}
-                    className={'lbl3d lbl2d' + (id === marcada ? ' sel' : '')}
+                    className={
+                      'lbl3d lbl2d' + (id === marcada ? ' sel' : '') + (gestando ? ' gestando' : '')
+                    }
                     style={{
                       transform: `translate(${x + dx}px, ${y + dy}px) translate(-50%, -50%)`,
                     }}

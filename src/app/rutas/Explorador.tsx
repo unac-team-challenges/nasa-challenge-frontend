@@ -92,6 +92,7 @@ export function Explorador() {
     seleccionar(null)
     setInformeMin(true)
     escenaActiva.current?.recentrar()
+    useApp.setState((s) => ({ reinicio2d: s.reinicio2d + 1 }))
   }
   // El informe y la zona del mapa se mueven juntos, cuando la presentación ya se va
   const demoraPanel = !informeMin && abrirTarde ? `${RETRASO_INFO_S - 0.2}s` : '0s'

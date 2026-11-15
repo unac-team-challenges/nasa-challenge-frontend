@@ -1,7 +1,7 @@
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
 import { VALLES } from '@/features/ficha/data/caso2'
 import { useVegetacion } from '@/hooks/useVegetacion'
-import { TEXTOS } from '@/i18n/textos'
+import { TEXTOS, type Perfil } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
 const etiqueta =
@@ -10,8 +10,9 @@ const etiqueta =
 /**
  * Caso 2 (antes y después): NDVI real de MODIS de un valle irrigado, 2001 frente a 2024,
  * con un deslizador. Aparece en la ficha de los departamentos que tienen un valle analizado.
+ * El agricultor lo lee como campo ganado; el estudiante, con el NDVI, el umbral y la resolución.
  */
-export function AntesDespues({ departamento }: { departamento: string }) {
+export function AntesDespues({ departamento, perfil }: { departamento: string; perfil: Perfil }) {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
   const local = VALLES[departamento]
@@ -25,7 +26,11 @@ export function AntesDespues({ departamento }: { departamento: string }) {
   return (
     <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
       <h3 className="m-0 text-sm font-semibold">{t.cmpH}</h3>
-      <p className="m-0">{t.cmpTexto(v.nombre, v.areaAntes, v.areaDespues, pct)}</p>
+      <p className="m-0">
+        {perfil === 'agricultor'
+          ? t.cmpCampo(v.nombre, v.areaAntes, v.areaDespues)
+          : t.cmpTexto(v.nombre, v.areaAntes, v.areaDespues, pct)}
+      </p>
       <div className="relative overflow-hidden rounded-m border border-line bg-panel-2">
         <ReactCompareSlider
           aria-label={t.cmpLbl}
@@ -60,7 +65,12 @@ export function AntesDespues({ departamento }: { departamento: string }) {
         <span>{t.cmpVerde}</span>
       </div>
       <p className="m-0 text-xs text-muted">{t.cmpCap}</p>
-      <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
+      {perfil === 'estudiante' && (
+        <>
+          <p className="m-0 text-xs text-muted">{t.cmpUmbral}</p>
+          <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
+        </>
+      )}
     </div>
   )
 }

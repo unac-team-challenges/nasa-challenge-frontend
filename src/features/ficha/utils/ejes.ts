@@ -37,3 +37,14 @@ export function ejeY(unidad: string) {
     },
   }
 }
+
+/** Los gráficos se animan al entrar y al cambiar de datos, salvo con «reducir movimiento». */
+export function animacion() {
+  const quieto =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  return {
+    isAnimationActive: !quieto,
+    animationDuration: 450,
+    animationEasing: 'ease-out' as const,
+  }
+}

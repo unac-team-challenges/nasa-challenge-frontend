@@ -12,6 +12,8 @@ interface Props {
   pie: string
   /** Lluvia: se ofrece quitar los años de El Niño */
   conNino: boolean
+  /** Lo que va debajo del gráfico (frase de los peores años, botón del CSV) */
+  extra?: ReactNode
   /** El gráfico (cargado aparte, con lazy) */
   children: ReactNode
 }
@@ -20,7 +22,7 @@ interface Props {
  * Gráfico de la ficha con su título, su pie y sus estados: esqueleto mientras baja Recharts o la
  * serie, aviso con «Reintentar» si la serie no llegó.
  */
-export function Figura({ titulo, estado, reintentar, pie, conNino, children }: Props) {
+export function Figura({ titulo, estado, reintentar, pie, conNino, extra, children }: Props) {
   const { idioma, sinNino, setSinNino } = useApp()
   const t = TEXTOS[idioma]
   return (
@@ -34,7 +36,7 @@ export function Figura({ titulo, estado, reintentar, pie, conNino, children }: P
         ) : (
           <Suspense fallback={<GraficoSkeleton />}>{children}</Suspense>
         )}
-        <figcaption className="text-xs text-muted">{pie}</figcaption>
+        {pie && <figcaption className="text-xs text-muted">{pie}</figcaption>}
       </figure>
       {conNino && (
         <label className="flex cursor-pointer items-center gap-2.5 text-sm">
@@ -47,6 +49,7 @@ export function Figura({ titulo, estado, reintentar, pie, conNino, children }: P
           {t.ninoToggle}
         </label>
       )}
+      {extra}
     </section>
   )
 }

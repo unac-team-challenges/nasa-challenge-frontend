@@ -98,29 +98,44 @@ const es = {
     n === 0
       ? `Ninguna celda de ${fuente}${local ? ' (de unos 50 km)' : ''} cae dentro de este departamento, así que no tiene serie propia. No sacamos conclusiones.`
       : `Solo ${n} ${n === 1 ? 'celda' : 'celdas'} de ${fuente}${local ? ' (de unos 50 km)' : ''} ${n === 1 ? 'cae' : 'caen'} en este departamento. Necesitamos al menos 4 para medir una tendencia confiable, así que no sacamos conclusiones.`,
-  chartCap: (lluvia: boolean, sinNino: boolean, anios: string) =>
-    'Puntos: valor de cada año. Línea gruesa: tendencia (pendiente de Sen). Zona sombreada: rango probable.' +
-    (lluvia
-      ? sinNino
-        ? ` Sin los años de El Niño (${anios}).`
-        : ` Franjas: años de El Niño (${anios}).`
-      : ''),
   ninoToggle: 'Quitar los años de El Niño',
+  /** Pie de la serie del estudiante (la leyenda ya dice qué es cada marca) */
+  ninoCap: (sinNino: boolean, anios: string) =>
+    sinNino ? `Sin los años de El Niño (${anios}).` : `Años de El Niño: ${anios}.`,
   ninoOn: 'Viendo la tendencia sin los años de El Niño.',
   clueH: 'Pista: sube aquí, baja allá',
   clue: (nombre: string, verbo: string, valor: string, estado: string) =>
     `Mientras tanto, en ${nombre} ${verbo} ${valor} por década (${estado}).`,
   clueBtn: (nombre: string) => `Ir a ${nombre}`,
-  // Ficha del agricultor
-  /** valor sin signo: "8 %" o "0,21 °C" */
-  campoCambio: {
+  // Ficha: el mismo dato, contado para el agricultor o para el estudiante
+  /** Confianza en palabras de campo: [título, explicación] */
+  confCampo: {
+    real: ['Seguro', 'Pasa año tras año: no es suerte.'],
+    posible_casualidad: [
+      'Puede ser casualidad',
+      'Hay años buenos y años malos, pero todavía no se ve un cambio claro.',
+    ],
+    pocos_datos: ['Faltan datos', 'No hay datos suficientes aquí para decir algo.'],
+  } as Record<Estado, [string, string]>,
+  /** valor sin signo: "8 %" o "0,20 °C" */
+  campoFrase: {
     lluvia: (valor: string, sube: boolean) =>
-      `${valor} ${sube ? 'más' : 'menos'} lluvia cada 10 años`,
+      `Cada 10 años llueve un ${valor} ${sube ? 'más' : 'menos'}`,
     temperatura: (valor: string, sube: boolean) =>
-      `${valor} ${sube ? 'más de calor' : 'menos de calor'} cada 10 años`,
+      `Cada 10 años hace ${valor} ${sube ? 'más de calor' : 'más de frío'}`,
   } as PorVariable<(valor: string, sube: boolean) => string>,
   campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
-  campoNoSeguro: 'Ojo: todavía no es seguro, puede ser casualidad.',
+  medExtremos: {
+    lluvia: ['Llueve menos', 'Llueve más'],
+    temperatura: ['Más frío', 'Más calor'],
+  } as PorVariable<[string, string]>,
+  medIgual: 'Igual',
+  medAria: (valor: string, a: string, b: string) =>
+    `Cambio por década: ${valor}; rango probable entre ${a} y ${b}`,
+  medCampoPie: 'La aguja marca el cambio. La zona clara, hasta dónde podría llegar.',
+  medTecPie: (pct: boolean) =>
+    `Pendiente de Sen y su IC 95 %${pct ? ', en % del promedio de cada departamento' : ''}, en la misma escala para los 25 departamentos.`,
+  formula: 'Sen: la mediana de las pendientes entre todos los pares de años.',
   campoPeores: {
     lluvia: (anios: string) => `Los años más secos: ${anios}.`,
     temperatura: (anios: string) => `Los años más calurosos: ${anios}.`,
@@ -130,66 +145,93 @@ const es = {
     lluvia: '% frente a lo normal',
     temperatura: '°C frente a lo normal',
   } as PorVariable<string>,
-  anomCap: (variable: Variable, a: number, b: number, sinNino: boolean, anios: string) =>
-    (variable === 'lluvia'
-      ? 'Barra hacia arriba: año con más lluvia que lo normal. Hacia abajo: con menos.'
-      : 'Barra hacia arriba: año más caluroso que lo normal. Hacia abajo: más frío.') +
-    ` Lo normal es el promedio de ${a} a ${b}.` +
-    (variable === 'lluvia'
-      ? sinNino
-        ? ` Sin los años de El Niño (${anios}).`
-        : ` Franjas: años de El Niño (${anios}).`
-      : ''),
-  anomTip: (anio: number, valor: string) => `${anio}: ${valor} frente a lo normal`,
-  vigilarH: 'Qué vigilar en tu campo',
-  vigilarIntro: (real: boolean): string =>
-    real
-      ? 'La tendencia es sostenida. Algunas ideas para prepararte:'
-      : 'Todavía no es seguro, pero conviene estar atento:',
-  /** clave: variable y si sube */
-  vigilar: {
-    lluvia: {
-      baja: [
-        'Planifica el agua de riego: los años secos se están volviendo más comunes.',
-        'Prefiere cultivos y variedades que aguanten mejor la falta de agua.',
-        'Revisa canales y reservorios antes de la temporada de lluvias.',
-      ],
-      sube: [
-        'Cuida el suelo de la erosión y los huaicos en los años muy lluviosos.',
-        'Revisa el drenaje de tus parcelas para que el agua no se quede.',
-        'Más humedad puede traer más hongos y plagas: vigila tus cultivos.',
-      ],
-    },
-    temperatura: {
-      sube: [
-        'Con más calor el suelo se seca antes: tus cultivos pueden pedir más riego.',
-        'Cuando puedas, siembra en las fechas más frescas.',
-        'El calor puede traer plagas que antes no llegaban a tu zona.',
-      ],
-      baja: [
-        'Cuidado con las heladas, sobre todo en las noches despejadas.',
-        'Prefiere variedades que resistan mejor el frío.',
-        'Protege los almácigos y los animales en las noches más frías.',
-      ],
-    },
-  } as PorVariable<{ sube: string[]; baja: string[] }>,
-  vigilarNota:
-    'Son ideas generales, no una recomendación técnica. Consulta con tu agencia agraria.',
-  // Ficha del estudiante
+  /** [arriba, abajo] */
+  anomLeyenda: {
+    lluvia: ['Año lluvioso', 'Año seco'],
+    temperatura: ['Año más caluroso', 'Año más frío'],
+  } as PorVariable<[string, string]>,
+  nino: 'El Niño',
+  anomCap: (a: number, b: number, lluvia: boolean, sinNino: boolean) =>
+    `Cada barra es un año comparado con lo normal: el promedio de ${a} a ${b}.` +
+    (lluvia && sinNino ? ' Sin los años de El Niño.' : ''),
+  anomTip: {
+    lluvia: (valor: string, sube: boolean) =>
+      `${valor} ${sube ? 'más' : 'menos'} lluvia que lo normal`,
+    temperatura: (valor: string, sube: boolean) =>
+      `${valor} ${sube ? 'más caluroso' : 'más frío'} que lo normal`,
+  } as PorVariable<(valor: string, sube: boolean) => string>,
+  anomTipValor: (v: string) => `${v} en el año`,
   serieH: 'La serie año por año',
-  serieTip: (anio: number, valor: string) => `${anio}: ${valor}`,
-  tendenciaTip: (valor: string) => `Tendencia: ${valor}`,
-  preguntasH: 'Para investigar',
-  preguntas: (variable: Variable, contraste: string | null) =>
-    [
-      variable === 'lluvia'
-        ? '¿La tendencia se mantiene si quitas los años de El Niño? Usa el interruptor y compara la cifra.'
-        : null,
-      '¿Por qué un cambio puede verse grande y aun así ser «posible casualidad»? Mira el rango probable.',
-      contraste ? `¿Por qué en ${contraste} el cambio va en sentido contrario?` : null,
-      '¿Cambia el resultado si eliges el periodo largo, desde 1981?',
-    ].filter((p): p is string => p != null),
+  serieLeyenda: {
+    puntos: 'Valor del año',
+    tendencia: 'Tendencia (Sen)',
+    banda: 'Rango probable (IC 95 %)',
+  },
+  serieTipTend: (v: string) => `Tendencia: ${v}`,
+  serieTipRes: (v: string) => `${v} frente a la tendencia`,
   csvBtn: 'Descargar la serie (CSV)',
+  dosEje: 'mm por década',
+  dosTip: (v: string, a: string, b: string) => `${v} por década (entre ${a} y ${b})`,
+  cmpCampo: (valle: string, a: number, b: number) =>
+    `En ${valle} hay ${b - a} km² más de campo verde que en 2001: pasó de ${a} a ${b} km².`,
+  cmpUmbral: 'Área verde: píxeles con NDVI anual mayor que 0,3. Tendencia del NDVI con TFPW y Sen.',
+  // Ficha del agricultor: años malos, El Niño, año normal, compartir y dónde seguir
+  malosH: {
+    lluvia: '¿Los años secos vienen más seguido?',
+    temperatura: '¿Los años calurosos vienen más seguido?',
+  } as PorVariable<string>,
+  malosResumen: {
+    lluvia: (antes: number, ahora: number) =>
+      ahora - antes > 1
+        ? `Ahora hay más años secos que antes (${ahora} frente a ${antes}).`
+        : antes - ahora > 1
+          ? `Ahora hay menos años secos que antes (${ahora} frente a ${antes}).`
+          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
+    temperatura: (antes: number, ahora: number) =>
+      ahora - antes > 1
+        ? `Ahora hay más años calurosos que antes (${ahora} frente a ${antes}).`
+        : antes - ahora > 1
+          ? `Ahora hay menos años calurosos que antes (${ahora} frente a ${antes}).`
+          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
+  } as PorVariable<(antes: number, ahora: number) => string>,
+  malosDef: {
+    lluvia: 'Año seco: llovió 20 % o más por debajo de lo normal.',
+    temperatura: 'Año caluroso: 0,3 °C o más por encima de lo normal.',
+  } as PorVariable<string>,
+  malosPunto: { lluvia: 'Año seco', temperatura: 'Año caluroso' } as PorVariable<string>,
+  malosOtro: 'Otro año',
+  malosAntes: 'Antes',
+  malosAhora: 'Ahora',
+  malosDe: (n: number) => `de ${n} años`,
+  malosLeer: 'Cada casilla es un año: «05» es 2005.',
+  dosVeredicto: {
+    coinciden: 'Sí coinciden',
+    coincidenDebil: 'Apuntan a lo mismo',
+    noCoinciden: 'No coinciden',
+    dudoso: 'No está claro',
+    pocos: 'No se pueden comparar',
+  },
+  ninoAquiH: '¿Qué trae El Niño aquí?',
+  /** valor sin signo: "81 %" o "0,5 °C" */
+  ninoAqui: {
+    lluvia: (zona: string, anios: string, valor: string, sube: boolean) =>
+      `En los años de El Niño (${anios}), en ${zona} llovió en promedio ${valor} ${sube ? 'más' : 'menos'} que lo normal.`,
+    temperatura: (zona: string, anios: string, valor: string, sube: boolean) =>
+      `En los años de El Niño (${anios}), ${zona} estuvo en promedio ${valor} ${sube ? 'más caluroso' : 'más frío'} que lo normal.`,
+  } as PorVariable<(zona: string, anios: string, valor: string, sube: boolean) => string>,
+  ninoSinAnios: 'Con los años de El Niño quitados, aquí no se puede ver lo que trae.',
+  ninoEnfen: 'Ver el estado de alerta de El Niño (ENFEN)',
+  normalH: 'Un año normal aquí',
+  normalLluvia: (mm: string, bajo: string, alto: string) =>
+    `${mm} de lluvia al año. La mayoría de años, entre ${bajo} y ${alto}.`,
+  normalTemp: (c: string, bajo: string, alto: string) =>
+    `${c} de temperatura promedio en el año. La mayoría de años, entre ${bajo} y ${alto}.`,
+  normalAgua: (m3: string) => `Esa lluvia son unos ${m3} m³ de agua por hectárea.`,
+  normalNota: 'Es el promedio de una zona amplia, no de tu chacra: tu campo puede ser distinto.',
+  seguirH: 'Dónde seguir',
+  seguirSenamhi: 'Pronósticos y avisos del tiempo (SENAMHI)',
+  seguirEnfen: 'Comunicados oficiales sobre El Niño (ENFEN)',
+  enlaceNueva: '(se abre en otra pestaña)',
   dosH: '¿Coinciden dos fuentes de NASA?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'modelo, la del mapa' },
@@ -375,88 +417,125 @@ const en: Textos = {
     n === 0
       ? `No ${fuente} cell${local ? ' (about 50 km wide)' : ''} falls inside this department, so it has no series of its own. We draw no conclusion.`
       : `Only ${n} ${fuente} ${n === 1 ? 'cell' : 'cells'}${local ? ' (about 50 km wide)' : ''} ${n === 1 ? 'falls' : 'fall'} in this department. We need at least 4 to measure a reliable trend, so we draw no conclusion.`,
-  chartCap: (lluvia, sinNino, anios) =>
-    "Dots: each year's value. Thick line: trend (Sen's slope). Shaded area: likely range." +
-    (lluvia
-      ? sinNino
-        ? ` El Niño years (${anios}) removed.`
-        : ` Bands: El Niño years (${anios}).`
-      : ''),
   ninoToggle: 'Remove El Niño years',
+  ninoCap: (sinNino, anios) =>
+    sinNino ? `Without the El Niño years (${anios}).` : `El Niño years: ${anios}.`,
   ninoOn: 'Showing the trend without El Niño years.',
   clueH: 'Clue: up here, down there',
   clue: (nombre, verbo, valor, estado) =>
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
-  campoCambio: {
-    lluvia: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} rain every 10 years`,
-    temperatura: (valor, sube) => `${valor} ${sube ? 'warmer' : 'cooler'} every 10 years`,
+  confCampo: {
+    real: ['Certain', 'It happens year after year: it is not luck.'],
+    posible_casualidad: [
+      'May be chance',
+      'There are good years and bad years, but no clear change yet.',
+    ],
+    pocos_datos: ['Not enough data', 'There is not enough data here to say anything.'],
+  },
+  campoFrase: {
+    lluvia: (valor, sube) => `Every 10 years it rains ${valor} ${sube ? 'more' : 'less'}`,
+    temperatura: (valor, sube) => `Every 10 years it gets ${valor} ${sube ? 'warmer' : 'cooler'}`,
   },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
-  campoNoSeguro: 'Careful: it is not certain yet, it may be chance.',
+  medExtremos: {
+    lluvia: ['Less rain', 'More rain'],
+    temperatura: ['Cooler', 'Warmer'],
+  },
+  medIgual: 'Same',
+  medAria: (valor, a, b) => `Change per decade: ${valor}; likely range between ${a} and ${b}`,
+  medCampoPie: 'The needle marks the change. The light area, how far it could go.',
+  medTecPie: (pct) =>
+    `Sen’s slope and its 95 % CI${pct ? ', as % of each department’s average' : ''}, on the same scale for all 25 departments.`,
+  formula: 'Sen: the median of the slopes between every pair of years.',
   campoPeores: {
     lluvia: (anios) => `The driest years: ${anios}.`,
     temperatura: (anios) => `The hottest years: ${anios}.`,
   },
   anomH: 'Each year compared with normal',
   anomEje: { lluvia: '% vs normal', temperatura: '°C vs normal' },
-  anomCap: (variable, a, b, sinNino, anios) =>
-    (variable === 'lluvia'
-      ? 'Bar up: a year with more rain than normal. Bar down: with less.'
-      : 'Bar up: a year hotter than normal. Bar down: cooler.') +
-    ` Normal is the average from ${a} to ${b}.` +
-    (variable === 'lluvia'
-      ? sinNino
-        ? ` Without the El Niño years (${anios}).`
-        : ` Stripes: El Niño years (${anios}).`
-      : ''),
-  anomTip: (anio, valor) => `${anio}: ${valor} vs normal`,
-  vigilarH: 'What to watch on your farm',
-  vigilarIntro: (real) =>
-    real
-      ? 'The trend is steady. Some ideas to get ready:'
-      : 'It is not certain yet, but stay alert:',
-  vigilar: {
-    lluvia: {
-      baja: [
-        'Plan your irrigation water: dry years are becoming more common.',
-        'Choose crops and varieties that handle water shortage better.',
-        'Check canals and reservoirs before the rainy season.',
-      ],
-      sube: [
-        'Protect the soil from erosion and mudslides in very rainy years.',
-        'Check your plots’ drainage so water does not pool.',
-        'More moisture can bring more fungi and pests: watch your crops.',
-      ],
-    },
-    temperatura: {
-      sube: [
-        'With more heat the soil dries sooner: your crops may need more water.',
-        'When you can, plant in the cooler dates.',
-        'Heat can bring pests that did not reach your area before.',
-      ],
-      baja: [
-        'Watch out for frost, especially on clear nights.',
-        'Choose varieties that resist cold better.',
-        'Protect seedbeds and animals on the coldest nights.',
-      ],
-    },
+  anomLeyenda: {
+    lluvia: ['Rainy year', 'Dry year'],
+    temperatura: ['Hotter year', 'Cooler year'],
   },
-  vigilarNota: 'These are general ideas, not technical advice. Ask your local agricultural office.',
+  nino: 'El Niño',
+  anomCap: (a, b, lluvia, sinNino) =>
+    `Each bar is a year compared with normal: the average from ${a} to ${b}.` +
+    (lluvia && sinNino ? ' Without the El Niño years.' : ''),
+  anomTip: {
+    lluvia: (valor, sube) => `${valor} ${sube ? 'more' : 'less'} rain than normal`,
+    temperatura: (valor, sube) => `${valor} ${sube ? 'hotter' : 'cooler'} than normal`,
+  },
+  anomTipValor: (v) => `${v} in the year`,
   serieH: 'The series year by year',
-  serieTip: (anio, valor) => `${anio}: ${valor}`,
-  tendenciaTip: (valor) => `Trend: ${valor}`,
-  preguntasH: 'To investigate',
-  preguntas: (variable, contraste) =>
-    [
-      variable === 'lluvia'
-        ? 'Does the trend hold if you remove the El Niño years? Use the switch and compare the number.'
-        : null,
-      'Why can a change look large and still be a “possible coincidence”? Look at the likely range.',
-      contraste ? `Why does ${contraste} change in the opposite direction?` : null,
-      'Does the result change if you pick the long period, from 1981?',
-    ].filter((p): p is string => p != null),
+  serieLeyenda: {
+    puntos: 'Value of the year',
+    tendencia: 'Trend (Sen)',
+    banda: 'Likely range (95 % CI)',
+  },
+  serieTipTend: (v) => `Trend: ${v}`,
+  serieTipRes: (v) => `${v} vs the trend`,
   csvBtn: 'Download the series (CSV)',
+  dosEje: 'mm per decade',
+  dosTip: (v, a, b) => `${v} per decade (between ${a} and ${b})`,
+  cmpCampo: (valle, a, b) =>
+    `${valle} has ${b - a} km² more green farmland than in 2001: from ${a} to ${b} km².`,
+  cmpUmbral: 'Green area: pixels with annual NDVI above 0.3. NDVI trend with TFPW and Sen.',
+  malosH: {
+    lluvia: 'Are dry years coming more often?',
+    temperatura: 'Are hot years coming more often?',
+  },
+  malosResumen: {
+    lluvia: (antes, ahora) =>
+      ahora - antes > 1
+        ? `There are more dry years now than before (${ahora} vs ${antes}).`
+        : antes - ahora > 1
+          ? `There are fewer dry years now than before (${ahora} vs ${antes}).`
+          : `About the same as before (${ahora} vs ${antes}).`,
+    temperatura: (antes, ahora) =>
+      ahora - antes > 1
+        ? `There are more hot years now than before (${ahora} vs ${antes}).`
+        : antes - ahora > 1
+          ? `There are fewer hot years now than before (${ahora} vs ${antes}).`
+          : `About the same as before (${ahora} vs ${antes}).`,
+  },
+  malosDef: {
+    lluvia: 'Dry year: 20 % or more below normal rainfall.',
+    temperatura: 'Hot year: 0.3 °C or more above normal.',
+  },
+  malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year' },
+  malosOtro: 'Other year',
+  malosAntes: 'Before',
+  malosAhora: 'Now',
+  malosDe: (n) => `of ${n} years`,
+  malosLeer: 'Each box is a year: “05” is 2005.',
+  dosVeredicto: {
+    coinciden: 'They agree',
+    coincidenDebil: 'They point the same way',
+    noCoinciden: 'They disagree',
+    dudoso: 'Not clear',
+    pocos: 'Cannot compare',
+  },
+  ninoAquiH: 'What does El Niño bring here?',
+  ninoAqui: {
+    lluvia: (zona, anios, valor, sube) =>
+      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than normal.`,
+    temperatura: (zona, anios, valor, sube) =>
+      `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than normal.`,
+  },
+  ninoSinAnios: 'With the El Niño years removed, we cannot show what it brings here.',
+  ninoEnfen: 'See the El Niño alert status (ENFEN)',
+  normalH: 'A normal year here',
+  normalLluvia: (mm, bajo, alto) =>
+    `${mm} of rain a year. Most years, between ${bajo} and ${alto}.`,
+  normalTemp: (c, bajo, alto) =>
+    `${c} average temperature over the year. Most years, between ${bajo} and ${alto}.`,
+  normalAgua: (m3) => `That rain is about ${m3} m³ of water per hectare.`,
+  normalNota: 'It is the average of a wide area, not of your field: your farm may differ.',
+  seguirH: 'Where to follow up',
+  seguirSenamhi: 'Weather forecasts and warnings (SENAMHI)',
+  seguirEnfen: 'Official El Niño communiqués (ENFEN)',
+  enlaceNueva: '(opens in a new tab)',
   dosH: 'Do two NASA sources agree?',
   dosFuente: {
     power: { nombre: 'NASA POWER', tipo: 'model, the one on the map' },
@@ -552,12 +631,6 @@ export const ORDEN_PERFILES: Perfil[] = ['agricultor', 'estudiante']
 /** Frase simple de la ficha según el perfil (solo cambian los textos, no los datos). */
 export const FRASES = {
   es: {
-    farmMore: { lluvia: 'más lluvia', temperatura: 'más calor' } as PorVariable<string>,
-    farmLess: { lluvia: 'menos lluvia', temperatura: 'menos calor' } as PorVariable<string>,
-    agricultorUp: (z: string, x: string, desde: number) =>
-      `Los años en ${z} vienen con ${x} que en ${desde}, y es una tendencia sostenida.`,
-    agricultorCas: (z: string) =>
-      `En ${z} hay años buenos y años malos, pero no se ve una tendencia clara.`,
     estudianteUp: (p: string, q: string, m: number, val: string) =>
       `Mann-Kendall con prewhitening da p = ${p}; corregido entre ${m} zonas, q = ${q} (menor que 0,05). Pendiente de Sen: ${val} por década.`,
     estudianteCas: (p: string, q: string, m: number) =>
@@ -565,11 +638,6 @@ export const FRASES = {
     few: (z: string) => `En ${z} hay muy pocas celdas con datos. No sacamos conclusiones.`,
   },
   en: {
-    farmMore: { lluvia: 'more rain', temperatura: 'more heat' } as PorVariable<string>,
-    farmLess: { lluvia: 'less rain', temperatura: 'less heat' } as PorVariable<string>,
-    agricultorUp: (z: string, x: string, desde: number) =>
-      `Years in ${z} bring ${x} than in ${desde}, and it is a steady trend.`,
-    agricultorCas: (z: string) => `${z} has good years and bad years, but no clear trend.`,
     estudianteUp: (p: string, q: string, m: number, val: string) =>
       `Mann-Kendall with pre-whitening gives p = ${p}; corrected across ${m} areas, q = ${q} (below 0.05). Sen's slope: ${val} per decade.`,
     estudianteCas: (p: string, q: string, m: number) =>

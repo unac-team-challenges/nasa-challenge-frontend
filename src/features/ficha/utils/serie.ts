@@ -62,3 +62,99 @@ export function serieCsv(pts: Punto[], variable: Variable) {
   const cabecera = variable === 'lluvia' ? 'anio,lluvia_mm' : 'anio,temperatura_c'
   return [cabecera, ...pts.map((p) => `${p.y},${+p.v.toFixed(3)}`)].join('\n')
 }
+
+/** Primer año de cada racha de años seguidos (2015, 2016 → 2015): ahí va la etiqueta «El Niño». */
+export function iniciosDeRacha(anios: number[]) {
+  return anios.filter((y) => !anios.includes(y - 1))
+}
+
+/**
+ * La tendencia como la marca el medidor. Lluvia: en % de su propio promedio (la misma cuenta que
+ * pct_change_per_decade), así un departamento muy lluvioso no aplasta la escala de los demás.
+ * Temperatura: en °C. Devuelve también si quedó en %.
+ */
+export function medida(
+  z: Pick<Zona, 'slope_per_decade' | 'ci_low' | 'ci_high' | 'pct_change_per_decade'>,
+  variable: Variable,
+) {
+  const f =
+    variable === 'lluvia' && z.pct_change_per_decade != null && z.slope_per_decade !== 0
+      ? z.pct_change_per_decade / z.slope_per_decade
+      : null
+  const k = f ?? 1
+  return { v: z.slope_per_decade * k, lo: z.ci_low * k, hi: z.ci_high * k, pct: f != null }
+}
+
+/**
+ * Escala común del medidor: el mayor |valor| entre las pendientes y rangos de todas las zonas con
+ * datos, para que la aguja de un departamento se pueda comparar con la de otro.
+ */
+export function escalaTendencia(zonas: Zona[], variable: Variable) {
+  const vals = zonas
+    .filter((z) => z.status !== 'pocos_datos')
+    .map((z) => medida(z, variable))
+    .flatMap((m) => [m.v, m.lo, m.hi].map(Math.abs))
+  return Math.max(...vals, 1e-9)
+}
+
+/**
+ * Qué es un «año malo» para el campo, frente a lo normal: lluvia, un año seco (20 % o más por
+ * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima).
+ */
+export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3 } as const
+
+export function esMalo(anomalia: number, variable: Variable) {
+  return variable === 'lluvia'
+    ? anomalia <= UMBRAL_MALO.lluvia
+    : anomalia >= UMBRAL_MALO.temperatura
+}
+
+/**
+ * Los años malos en dos mitades del periodo (antes / ahora), para ver si vienen más seguido.
+ * Cada mitad trae sus años con su anomalía y si fue malo.
+ */
+export function aniosMalosPorMitad(pts: Punto[], variable: Variable) {
+  const filas = anomalias(pts, variable)
+  if (filas.length < 4) return null
+  const corte = Math.floor((filas[0].y + filas[filas.length - 1].y) / 2)
+  const mitad = (f: typeof filas) => ({
+    desde: f[0].y,
+    hasta: f[f.length - 1].y,
+    anios: f.map((x) => ({ ...x, malo: esMalo(x.a, variable) })),
+    malos: f.filter((x) => esMalo(x.a, variable)).length,
+  })
+  return {
+    antes: mitad(filas.filter((f) => f.y <= corte)),
+    ahora: mitad(filas.filter((f) => f.y > corte)),
+  }
+}
+
+/**
+ * Cuánto se apartan de lo normal, en promedio, los años de El Niño de la serie (lluvia en %,
+ * temperatura en °C). null si la serie no tiene años de El Niño (o se quitaron).
+ */
+export function efectoNino(pts: Punto[], variable: Variable, nino: number[]) {
+  const enNino = anomalias(pts, variable).filter((f) => nino.includes(f.y))
+  if (!enNino.length) return null
+  return {
+    anios: enNino.map((f) => f.y),
+    promedio: enNino.reduce((s, f) => s + f.a, 0) / enNino.length,
+  }
+}
+
+/** Cuantil con interpolación lineal (q entre 0 y 1). */
+function cuantil(ordenados: number[], q: number) {
+  const i = (ordenados.length - 1) * q
+  const a = Math.floor(i)
+  const b = Math.ceil(i)
+  return ordenados[a] + (ordenados[b] - ordenados[a]) * (i - a)
+}
+
+/** Un año normal: el promedio y entre qué valores cae la mitad central de los años. */
+export function anioNormal(pts: Punto[]) {
+  const v = pts.map((p) => p.v).sort((x, y) => x - y)
+  return { promedio: promedio(pts), bajo: cuantil(v, 0.25), alto: cuantil(v, 0.75) }
+}
+
+/** 1 mm de lluvia sobre una hectárea son 10 m³ de agua. */
+export const m3PorHectarea = (mm: number) => mm * 10

@@ -23,6 +23,30 @@ describe('explorador con la URL', () => {
     expect(screen.getByLabelText('Perfil')).toHaveValue('agricultor')
   })
 
+  it('el agricultor ve años secos, El Niño, año normal y dónde seguir, sin fuentes ni WhatsApp', async () => {
+    renderRuta('/zona/20?perfil=agricultor')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    for (const h of [
+      '¿Los años secos vienen más seguido?',
+      '¿Qué trae El Niño aquí?',
+      'Un año normal aquí',
+      'Dónde seguir',
+    ])
+      expect(await within(informe).findByRole('heading', { name: h })).toBeVisible()
+    // Sin «¿Coinciden dos fuentes?» ni botón de WhatsApp: el agricultor no los necesita
+    expect(
+      within(informe).queryByRole('heading', { name: '¿Coinciden dos fuentes de NASA?' }),
+    ).toBeNull()
+    expect(within(informe).queryByRole('link', { name: /WhatsApp/ })).toBeNull()
+  })
+
+  it('el estudiante no ve los bloques del agricultor', async () => {
+    renderRuta('/zona/20?perfil=estudiante')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] })
+    expect(within(informe).queryByRole('heading', { name: '¿Qué trae El Niño aquí?' })).toBeNull()
+  })
+
   it('cambiar la variable escribe en la URL y marca el botón', async () => {
     const router = renderRuta('/explorar')
     const grupo = await screen.findByRole('group', { name: 'Variable' })

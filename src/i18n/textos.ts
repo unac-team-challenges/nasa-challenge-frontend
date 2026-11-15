@@ -276,7 +276,7 @@ const es = {
     temperatura:
       'Año caluroso: 0,3 °C o más por encima de lo normal de los primeros años del periodo.',
     vegetacion:
-      'Año de poco verdor: NDVI 0,01 o más por debajo de lo normal de los primeros años del periodo.',
+      'Año de poco verdor: NDVI por debajo de lo normal de los primeros años del periodo en 0,01 o en lo que suele variar este departamento, lo que sea mayor.',
   } as PorVariable<string>,
   malosPunto: {
     lluvia: 'Año seco',
@@ -753,7 +753,7 @@ const en: Textos = {
     lluvia: 'Dry year: 20 % or more below the normal rainfall of the first years of the period.',
     temperatura: 'Hot year: 0.3 °C or more above the normal of the first years of the period.',
     vegetacion:
-      'Low-greenness year: NDVI 0.01 or more below the normal of the first years of the period.',
+      'Low-greenness year: NDVI below the normal of the first years of the period by 0.01 or by how much this department usually varies, whichever is larger.',
   },
   malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year', vegetacion: 'Low-greenness year' },
   malosOtro: 'Other year',

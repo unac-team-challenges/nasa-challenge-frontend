@@ -113,14 +113,25 @@ export function escalaTendencia(zonas: Zona[], variable: Variable) {
 
 /**
  * Qué es un «año malo» para el campo, frente a lo normal: lluvia, un año seco (20 % o más por
- * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima); vegetación, un año de poco verdor (NDVI 0,01 o más por debajo).
+ * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima); vegetación, un año de
+ * poco verdor: NDVI por debajo de lo normal en 0,01 o en lo que varía ese departamento (1 desviación
+ * típica de sus primeros años), lo que sea mayor. El piso evita que el ruido del satélite en la selva
+ * (NDVI saturado, ~0,003) cuente como año malo; la desviación típica evita que casi todos los años de
+ * la costa norte, que varía hasta 0,06, salgan malos.
  */
 export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3, vegetacion: -0.01 } as const
 
-export function esMalo(anomalia: number, variable: Variable) {
-  return variable === 'temperatura'
-    ? anomalia >= UMBRAL_MALO.temperatura
-    : anomalia <= UMBRAL_MALO[variable]
+/** `umbralVeg`: lo que baja el NDVI de ese departamento para ser año malo (positivo); solo vegetación. */
+export function esMalo(anomalia: number, variable: Variable, umbralVeg = -UMBRAL_MALO.vegetacion) {
+  if (variable === 'temperatura') return anomalia >= UMBRAL_MALO.temperatura
+  if (variable === 'vegetacion') return anomalia <= -umbralVeg
+  return anomalia <= UMBRAL_MALO[variable]
+}
+
+/** Desviación típica de los valores de la serie. */
+function desvio(pts: Punto[]) {
+  const m = promedio(pts)
+  return Math.sqrt(pts.reduce((s, p) => s + (p.v - m) ** 2, 0) / pts.length)
 }
 
 /**
@@ -132,13 +143,17 @@ export function esMalo(anomalia: number, variable: Variable) {
 export function aniosMalosPorMitad(pts: Punto[], variable: Variable) {
   if (pts.length < 4) return null
   const corte = Math.floor((pts[0].y + pts[pts.length - 1].y) / 2)
-  const base = promedio(pts.filter((p) => p.y <= corte))
+  const primera = pts.filter((p) => p.y <= corte)
+  const base = promedio(primera)
   const filas = anomalias(pts, variable, base)
+  // Vegetación: el umbral sale de lo que varía el departamento en sus primeros años (con piso)
+  const umbral = Math.max(-UMBRAL_MALO.vegetacion, desvio(primera))
+  const malo = (a: number) => esMalo(a, variable, umbral)
   const mitad = (f: typeof filas) => ({
     desde: f[0].y,
     hasta: f[f.length - 1].y,
-    anios: f.map((x) => ({ ...x, malo: esMalo(x.a, variable) })),
-    malos: f.filter((x) => esMalo(x.a, variable)).length,
+    anios: f.map((x) => ({ ...x, malo: malo(x.a) })),
+    malos: f.filter((x) => malo(x.a)).length,
   })
   return {
     antes: mitad(filas.filter((f) => f.y <= corte)),

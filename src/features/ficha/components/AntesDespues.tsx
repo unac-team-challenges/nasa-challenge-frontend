@@ -103,12 +103,9 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
         <span>{t.cmpVerde}</span>
       </div>
       <p className="m-0 text-xs text-muted">{t.cmpCap}</p>
-      {perfil === 'estudiante' && (
-        <>
-          <p className="m-0 text-xs text-muted">{t.cmpUmbral}</p>
-          <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
-        </>
-      )}
+      {/* Es un recuadro, no el departamento: lo ven los dos perfiles (docs/olmos-caso2.md) */}
+      <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
+      {perfil === 'estudiante' && <p className="m-0 text-xs text-muted">{t.cmpUmbral}</p>}
       {riego && <FuentesCitadas ids={CAUSA_VERDE[departamento]} perfil={perfil} />}
     </section>
   )

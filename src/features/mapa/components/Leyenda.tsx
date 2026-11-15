@@ -67,7 +67,7 @@ function Escala({ calor, extremo }: { calor: Calor; extremo: (x: number) => stri
  * mapa de color, el perfil (agricultor o estudiante), el idioma y el tema (colores por token).
  */
 export function Leyenda() {
-  const { idioma } = useApp()
+  const { idioma, conWebgl } = useApp()
   const periodo = usePeriodo()
   const { variable, vegetacion, perfil, sel } = useBusqueda()
   const anio = useAnio()
@@ -267,6 +267,21 @@ export function Leyenda() {
           <Titulo>{t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}</Titulo>
           <Escala calor={calor} extremo={extremo} />
           <Notas items={t.legVegMallaNota} />
+        </section>
+      )}
+      {/* Solo el 3D tiene relieve y plantas */}
+      {conWebgl && (
+        <section className="grid gap-1">
+          <Titulo>{t.legRegiones}</Titulo>
+          <div className="grid grid-cols-3 gap-x-2 text-xs">
+            {['--veg-0', '--veg-2', '--veg-4'].map((token, i) => (
+              <span key={token} className="flex items-center gap-1.5 leading-tight text-fg">
+                <span className={muestra} style={{ background: `var(${token})` }} />
+                {t.regionNombre[i]}
+              </span>
+            ))}
+          </div>
+          <Notas items={[t.vegAltura, t.vegPlantas]} />
         </section>
       )}
       <section className="grid gap-1">

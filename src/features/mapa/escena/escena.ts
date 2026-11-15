@@ -23,7 +23,14 @@ import {
   type Calor,
 } from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
-import { Bosque, crearLocalizador, ndviPorDepto } from '@/features/mapa/escena/bosque'
+import {
+  Bosque,
+  crearLocalizador,
+  REGIONES,
+  resumenPorDepto,
+  type Region,
+} from '@/features/mapa/escena/bosque'
+import { Terreno } from '@/features/mapa/escena/terreno'
 import {
   COLOR_TENDENCIA,
   LUGARES_VEGETACION,
@@ -205,6 +212,21 @@ const claveCalor = (c: Calor): ClaveCalor =>
   c.paradas === PARADAS_VEG ? 'vegetacion' : c.paradas === PARADAS_LLUVIA ? 'lluvia' : 'temperatura'
 /** Duración del fundido de color entre modos (s). */
 const FUNDIDO = 0.75
+/** Relieve del modo Vegetación: 6000 m son RELIEVE_VEG unidades (~×25), el suelo vecino sube igual. */
+const RELIEVE_VEG = 3
+/** Nivel del mar del relieve del Perú: medio centímetro sobre el de los vecinos (sin parpadeo). */
+const MAR_VEG = -PISO - 0.005
+/** Nombres de las 3 regiones (modo Vegetación), sobre un punto típico de cada una. */
+const ETIQUETAS_REGION: { r: Region; es: string; en: string; lon: number; lat: number }[] = [
+  { r: 'costa', es: 'Costa', en: 'Coast', lon: -79.1, lat: -7.9 },
+  { r: 'sierra', es: 'Sierra', en: 'Andes', lon: -75.4, lat: -11.9 },
+  { r: 'selva', es: 'Selva', en: 'Rainforest', lon: -74.6, lat: -5.6 },
+]
+const COLOR_REGION: Record<Region, string> = {
+  costa: '--veg-0',
+  sierra: '--veg-2',
+  selva: '--veg-4',
+}
 
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -686,11 +708,23 @@ export class EscenaPeru {
   /** Bosque del modo Vegetación (plantas de cada zona según el NDVI y la altitud). */
   private bosque: Bosque
   private localizar = crearLocalizador()
-  /** NDVI medio de cada departamento: la altura de su columna en el modo Vegetación. */
-  private ndvi: ReturnType<typeof ndviPorDepto> | null = null
+  /** NDVI, altitud y regiones de cada departamento (modo Vegetación: ficha y altura de la columna). */
+  private ndvi: ReturnType<typeof resumenPorDepto> | null = null
+  /** Relieve real del Perú pintado con el NDVI (modo Vegetación). */
+  private terreno: Terreno
+  /** 0 = columnas del dato, 1 = relieve del modo Vegetación arriba; se anima en cuadro(). */
+  private relieveVeg = 0
+  /** Altura actual del relieve (unidades por 6000 m). */
+  private altoVeg = 0
+  private etiquetasRegion: {
+    el: HTMLDivElement
+    x: number
+    z: number
+    lon: number
+    lat: number
+  }[] = []
   /** Altitud del suelo (canal R de mundo2.png: 0..255 = 0..6000 m), para saber qué planta crece. */
   private elevacion: Uint8ClampedArray | null = null
-  private topes = new Float32Array(DEPARTAMENTOS.length)
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
   private ancho = 1
@@ -712,6 +746,8 @@ export class EscenaPeru {
     el: HTMLDivElement
     x: number
     z: number
+    lon: number
+    lat: number
     departamento: string
   }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
@@ -953,6 +989,16 @@ export class EscenaPeru {
     this.relieve.renderOrder = 1
     this.relieve.frustumCulled = false // la caja de la geometría es plana; el relieve sube en el shader
     this.escena.add(this.relieve)
+    this.terreno = new Terreno({
+      escena: this.escena,
+      uMundo: matSuelo.uniforms.uMundo,
+      uMundo2: matSuelo.uniforms.uMundo2,
+      uCaja: matSuelo.uniforms.uCaja,
+      aEscena,
+      base: MAR_VEG,
+      luz: DIR_LUZ,
+      celular: celular(),
+    })
 
     // Etiquetas flotantes (capa HTML encima del lienzo; texto, nunca HTML)
     capaEtiquetas.replaceChildren()
@@ -998,7 +1044,23 @@ export class EscenaPeru {
         el,
         x: v.x + this.mapa.position.x,
         z: -v.y + this.mapa.position.z,
+        lon: l.lon,
+        lat: l.lat,
         departamento: l.departamento,
+      })
+    }
+    for (const e of ETIQUETAS_REGION) {
+      const v = proyectar([e.lon, e.lat])
+      const el = nuevaEtiqueta('lbl3d region')
+      el.textContent = e.es
+      el.style.setProperty('--region', `var(${COLOR_REGION[e.r]})`)
+      el.hidden = true
+      this.etiquetasRegion.push({
+        el,
+        x: v.x + this.mapa.position.x,
+        z: -v.y + this.mapa.position.z,
+        lon: e.lon,
+        lat: e.lat,
       })
     }
     for (const p of PAISES) {
@@ -1187,7 +1249,7 @@ export class EscenaPeru {
       const b = r.domElement.getBoundingClientRect()
       ptr.set(((e.clientX - b.left) / b.width) * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1)
       rayo.setFromCamera(ptr, this.camara)
-      const animal = this.fauna.elegir(rayo.ray)
+      const animal = this.veg ? null : this.fauna.elegir(rayo.ray)
       if (animal) return { animal }
       const h = rayo.intersectObjects(this.mallas, false)[0]
       return h ? (h.object as Malla).userData.id : null
@@ -1366,16 +1428,58 @@ export class EscenaPeru {
     this.sucio = true
   }
 
-  /** Con la malla de vegetación: el NDVI de cada departamento (alturas y ficha) y el bosque. */
+  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.png (NaN sin la textura). */
+  private altitud = (lon: number, lat: number) => {
+    const E = this.elevacion
+    if (!E) return NaN
+    const S = 1024
+    const fx = ((lon - MUNDO.lon0) / (MUNDO.lon1 - MUNDO.lon0)) * S - 0.5
+    const fy = ((MUNDO.lat1 - lat) / (MUNDO.lat1 - MUNDO.lat0)) * S - 0.5
+    const x = Math.max(0, Math.min(S - 2, Math.floor(fx)))
+    const y = Math.max(0, Math.min(S - 2, Math.floor(fy)))
+    const tx = Math.min(1, Math.max(0, fx - x))
+    const ty = Math.min(1, Math.max(0, fy - y))
+    const i = y * S + x
+    const arriba = E[i] + (E[i + 1] - E[i]) * tx
+    const abajo = E[i + S] + (E[i + S + 1] - E[i + S]) * tx
+    return ((arriba + (abajo - arriba) * ty) / 255) * 6000
+  }
+
+  /** Altura del relieve del modo Vegetación en un punto, tal como está ahora (sube y baja). */
+  private alturaTerreno(lon: number, lat: number) {
+    return MAR_VEG + (Math.max(0, this.altitud(lon, lat)) / 6000) * this.altoVeg
+  }
+
+  /**
+   * Con la malla de vegetación y la altitud (llegan en cualquier orden): NDVI, altitud y regiones
+   * de cada departamento, el relieve pintado y el bosque.
+   */
   private prepararVegetacion() {
     const c = this.calores.get('vegetacion')
-    if (!c) return
-    this.ndvi = ndviPorDepto(c, this.localizar)
-    this.plantarBosque()
+    if (!c || !this.elevacion) return
+    this.ndvi = resumenPorDepto(c, this.localizar, this.altitud)
+    this.pintarTerreno()
+    this.bosque.plantar(
+      c,
+      this.altitud,
+      this.localizar,
+      (lon, lat) => {
+        const v = proyectar([lon, lat])
+        return [v.x + this.mapa.position.x, -v.y + this.mapa.position.z]
+      },
+      celular(),
+      MAR_VEG,
+    )
     if (this.veg) {
       this.alturas(false)
       this.llenarTarjeta()
     }
+    this.sucio = true
+  }
+
+  private pintarTerreno() {
+    const c = this.calores.get('vegetacion')
+    if (c && this.punteadas) this.terreno.pintar(c, this.color('--accent'), this.color('--bg'))
   }
 
   /** Lee la altitud del suelo una vez (la imagen ya está cargada para el relieve). */
@@ -1390,41 +1494,26 @@ export class EscenaPeru {
     const r = new Uint8ClampedArray(S * S)
     for (let i = 0; i < r.length; i++) r[i] = d[i * 4]
     this.elevacion = r
-    this.plantarBosque()
+    this.prepararVegetacion()
   }
 
-  /** Planta el bosque cuando ya están la malla de vegetación y la altitud (llegan en cualquier orden). */
-  private plantarBosque() {
-    const c = this.calores.get('vegetacion')
-    const E = this.elevacion
-    if (!c || !E) return
-    const S = 1024
-    const elev = (lon: number, lat: number) => {
-      const x = Math.floor(((lon - MUNDO.lon0) / (MUNDO.lon1 - MUNDO.lon0)) * S)
-      const y = Math.floor(((MUNDO.lat1 - lat) / (MUNDO.lat1 - MUNDO.lat0)) * S)
-      return x < 0 || y < 0 || x >= S || y >= S ? NaN : (E[y * S + x] / 255) * 6000
-    }
-    this.bosque.plantar(
-      c,
-      elev,
-      this.localizar,
-      (lon, lat) => {
-        const v = proyectar([lon, lat])
-        return [v.x + this.mapa.position.x, -v.y + this.mapa.position.z]
-      },
-      celular(),
-    )
+  /** Departamentos bajo el puntero y elegido, resaltados en el relieve. */
+  private marcarTerreno() {
+    const k = (id: string | null) => (id ? DEPARTAMENTOS.findIndex((z) => z.id === id) : -1)
+    this.terreno.marcar(k(this.hover), k(this.sel))
     this.sucio = true
   }
 
   /**
-   * Modo «Vegetación»: cada departamento sube según su verdor medio (NDVI), la tapa muestra el
-   * NDVI por celda, crece el bosque de cada zona y encima van los 5 recuadros medidos.
+   * Modo «Vegetación»: las columnas bajan a la altitud media de su departamento y sube el relieve
+   * real del Perú pintado con el NDVI (costa, sierra y selva se ven solas), crece el bosque de cada
+   * zona y encima van los 5 recuadros medidos.
    */
   setVegetacion(on: boolean) {
     if (this.veg === on) return
     this.fundir()
     this.veg = on
+    this.fauna.mostrar(!on) // la vida del modo son las plantas; los personajes andan sobre las columnas
     this.ubicarCajasVeg()
     this.pintar()
     this.alturas(false)
@@ -1438,6 +1527,7 @@ export class EscenaPeru {
   seleccionar(id: string | null, volar: boolean) {
     const antes = this.sel
     this.sel = id
+    this.marcarTerreno()
     this.pintar()
     this.textosEtiquetas()
     if (id && volar && id !== antes) this.volarA(id)
@@ -1494,6 +1584,7 @@ export class EscenaPeru {
       green: texturaPunteada(this.color('--map-green')),
     }
     this.versionTema++ // las mallas se repintan con los colores nuevos al usarse
+    this.pintarTerreno()
     this.pintar()
     this.actualizarParticulas()
   }
@@ -1519,6 +1610,7 @@ export class EscenaPeru {
     if (antes) this.pintarContorno(antes)
     const m = id ? this.porId.get(id) : undefined
     if (m) this.pintarContorno(m)
+    this.marcarTerreno()
     this.llenarTarjeta()
     this.renderer.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
     this.sucio = true
@@ -1562,6 +1654,8 @@ export class EscenaPeru {
               this.ndvi.celdas[k],
               [veg.anio0, veg.anio0 + veg.anios - 1],
               this.idioma,
+              this.ndvi.altitud[k],
+              REGIONES.map((_, r) => this.ndvi!.regiones[k * 3 + r]),
             )
           : null
     T.raiz.classList.toggle('on', !!c)
@@ -1597,6 +1691,9 @@ export class EscenaPeru {
     if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
+    ETIQUETAS_REGION.forEach((e, i) => {
+      this.etiquetasRegion[i].el.textContent = idioma === 'en' ? e.en : e.es
+    })
     this.sucio = true
   }
 
@@ -1810,6 +1907,7 @@ export class EscenaPeru {
     this.texturas.forEach((t) => t.dispose())
     for (const c of [...this.texCalor.keys()]) this.soltarTexturas(c)
     this.bosque.destruir()
+    this.terreno.destruir()
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
     if (this.punteadas) Object.values(this.punteadas).forEach((t) => t.dispose())
     this.renderer.dispose()
@@ -1884,17 +1982,15 @@ export class EscenaPeru {
 
   private alturas(instantaneo: boolean) {
     const max = Math.max(...Object.values(this.zonas).map((d) => Math.abs(d.slope_per_decade))) || 1
-    // Modo Vegetación: la altura es el verdor medio (la selva arriba, el desierto de la costa abajo)
-    const ndvi = this.veg ? this.ndvi?.media : undefined
-    const maxNdvi = ndvi ? Math.max(...ndvi.filter(Number.isFinite)) || 1 : 1
+    // Modo Vegetación: cada columna baja a la altitud media de su departamento, donde la alcanza el
+    // relieve que sube (al terminar se esconde y queda el relieve; sigue sirviendo para el puntero)
+    const alt = this.veg ? this.ndvi?.altitud : undefined
     this.mallas.forEach((m, i) => {
       const d = this.zonas[m.userData.id]
-      if (!d && !ndvi) return
+      if (!d && !alt) return
       const valorAnio = this.anio?.valores[m.userData.id]
-      const h = ndvi
-        ? Number.isFinite(ndvi[i])
-          ? (Math.max(0, ndvi[i]) / maxNdvi) * ALTURA_MAX
-          : 0.05
+      const h = alt
+        ? MAR_VEG + (alt[i] / 6000) * RELIEVE_VEG // la columna termina en MAR_VEG + altitud
         : !d || d.status === 'pocos_datos' || this.veg
           ? 0.05
           : this.anio && valorAnio != null
@@ -2091,7 +2187,7 @@ export class EscenaPeru {
     }
     const kh = suave(this.anio || this.veg ? 0.07 : 0.12)
     const kz = suave(0.2)
-    this.mallas.forEach((m, i) => {
+    this.mallas.forEach((m) => {
       const id = m.userData.id
       const dh = m.userData.objetivo - m.userData.h
       const eleva = id === this.sel ? ELEVA_SEL : id === this.hover ? ELEVA_HOVER : 0
@@ -2112,7 +2208,6 @@ export class EscenaPeru {
         m.material.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
         moviendo = true
       }
-      this.topes[i] = m.position.z + m.scale.z
     })
     // Cambio de modo: el color de las tapas pasa del anterior al nuevo (curva suave)
     if (this.fundido < 1) {
@@ -2121,9 +2216,27 @@ export class EscenaPeru {
       this.tapa.uFundido.value = f * f * (3 - 2 * f)
       moviendo = true
     }
-    // El bosque crece (o se va) sobre la cara de cada departamento, que también se mueve
-    if (this.bosque.paso(dt, this.veg && this.modo === 'explorar', this.topes, quieto))
+    // Modo Vegetación: sube el relieve real (y el de los vecinos, para que no haya escalón)
+    const conRelieve = this.veg && this.modo === 'explorar' && !!this.ndvi
+    const metaR = conRelieve ? 1 : 0
+    if (this.relieveVeg !== metaR) {
+      this.relieveVeg = quieto
+        ? metaR
+        : metaR > this.relieveVeg
+          ? Math.min(1, this.relieveVeg + dt / 1.4)
+          : Math.max(0, this.relieveVeg - dt / 0.9)
+      const r = this.relieveVeg
+      this.altoVeg = r * r * (3 - 2 * r) * RELIEVE_VEG
+      this.terreno.alto = this.altoVeg
+      this.mar.material.uniforms.uRelieve.value =
+        RELIEVE + (RELIEVE_VEG - RELIEVE) * (this.altoVeg / RELIEVE_VEG)
       moviendo = true
+    }
+    // Con el relieve arriba las columnas se esconden (el puntero las sigue encontrando)
+    const columnas = !(conRelieve && this.relieveVeg >= 1)
+    for (const m of this.mallas) if (m.visible !== columnas) m.visible = columnas
+    // El bosque crece (o se va) sobre el relieve, que también se mueve
+    if (this.bosque.paso(dt, conRelieve, this.altoVeg, quieto)) moviendo = true
     this.moviendo = moviendo
     if (this.puntero) {
       const e = this.puntero
@@ -2185,7 +2298,11 @@ export class EscenaPeru {
     for (const c of this.cajasVeg) {
       const m = this.porId.get(c.lugar.departamento)
       c.caja.visible = c.borde.visible = conVeg && !!m
-      if (m) c.caja.position.y = c.borde.position.y = m.position.z + m.scale.z + 0.04
+      if (m)
+        c.caja.position.y = c.borde.position.y =
+          this.altoVeg > 0
+            ? this.alturaTerreno(c.lugar.lon, c.lugar.lat) + 0.06
+            : m.position.z + m.scale.z + 0.04
     }
   }
 
@@ -2226,7 +2343,21 @@ export class EscenaPeru {
     for (const mv of this.marcasVeg) {
       if (mv.el.hidden === conVeg) mv.el.hidden = !conVeg
       const m = malla(mv.departamento)
-      if (conVeg && m) this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z)
+      if (conVeg && m)
+        this.ubicarEtiqueta(
+          mv.el,
+          mv.x,
+          this.altoVeg > 0
+            ? this.alturaTerreno(mv.lon, mv.lat) + 0.25
+            : m.position.z + m.scale.z + 0.2,
+          mv.z,
+        )
+    }
+    // Nombres de las 3 regiones, sobre el relieve (solo con el relieve arriba)
+    const conRegiones = conVeg && this.altoVeg > RELIEVE_VEG * 0.5
+    for (const e of this.etiquetasRegion) {
+      if (e.el.hidden === conRegiones) e.el.hidden = !conRegiones
+      if (conRegiones) this.ubicarEtiqueta(e.el, e.x, this.alturaTerreno(e.lon, e.lat) + 0.9, e.z)
     }
     for (const p of this.etiquetasPais) {
       // En celular no se muestran los nombres de países (v12)

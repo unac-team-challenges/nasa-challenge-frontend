@@ -9,9 +9,9 @@
  * - Puna (sobre 3300 m): ichu, bosquecitos de queñua y unas pocas puyas de Raimondi.
  * - Selva baja: árboles altos de copa ancha, algunos gigantes emergentes y palmeras de aguaje.
  *
- * Costo: una malla instanciada por especie (10 draw calls, low-poly, color por vértice). Todo se
- * mueve en la GPU: crecer al entrar al modo (una ola de norte a sur), el viento y la altura de su
- * departamento (uTope). El CPU solo sube 25 alturas y 2 números por cuadro.
+ * Costo: una malla instanciada por especie (11 draw calls, low-poly, color por vértice). Todo se
+ * mueve en la GPU: crecer al entrar al modo (una ola de norte a sur), el viento y la altura del
+ * relieve, que sube con el terreno (uAlto). El CPU solo sube 3 números por cuadro.
  */
 import * as THREE from 'three'
 import { DEPARTAMENTOS } from '@/data/datos'
@@ -53,6 +53,20 @@ function divisoria(lat: number) {
     }
   }
   return DIVISORIA[0][1]
+}
+
+export type Region = 'costa' | 'sierra' | 'selva'
+export const REGIONES: Region[] = ['costa', 'sierra', 'selva']
+
+/**
+ * Región natural de un punto, con su altitud (m) y su NDVI: costa = vertiente del Pacífico bajo
+ * 800 m; selva = este de la divisoria bajo 1500 m, o bosque (NDVI ≥ 0,6) hasta 3000 m (ceja de
+ * selva); sierra = el resto (los Andes). Simplificación de las 3 regiones que se enseñan en el colegio.
+ */
+export function regionDe(lon: number, lat: number, elev: number, ndvi: number): Region {
+  if (elev >= 3000) return 'sierra'
+  if (lon < divisoria(lat)) return elev < 800 ? 'costa' : 'sierra'
+  return elev < 1500 || ndvi >= 0.6 ? 'selva' : 'sierra'
 }
 
 /** Puyas de Raimondi en sus rodales conocidos (aprox.): Pachacoto (Áncash), Titankayocc (Ayacucho), Lampa (Puno). */
@@ -122,7 +136,13 @@ const MEDIO = Math.PI / 2
 const hojas = (n: number, hex: string, y: number, largo: number, caida: number): Pieza[] =>
   Array.from({ length: n }, (_, i): Pieza => {
     const a = (i / n) * Math.PI * 2
-    return ['B', hex, [Math.cos(a) * largo * 0.5, y, -Math.sin(a) * largo * 0.5], [largo, 0.025, 0.09], [0, a, -caida]]
+    return [
+      'B',
+      hex,
+      [Math.cos(a) * largo * 0.5, y, -Math.sin(a) * largo * 0.5],
+      [largo, 0.025, 0.09],
+      [0, a, -caida],
+    ]
   })
 
 // Diseños low-poly: la base en y = 0, alto ≈ 1 (la instancia los escala con TAMANO)
@@ -252,34 +272,47 @@ function centroCelda(c: Calor, i: number) {
   const p = c.pix[i]
   const x = p % c.w
   const y = (p - x) / c.w
-  return [c.lonMin + (x + 0.5) * (c.spanLon / c.w), c.latMin + c.spanLat - (y + 0.5) * (c.spanLat / c.h)]
+  return [
+    c.lonMin + (x + 0.5) * (c.spanLon / c.w),
+    c.latMin + c.spanLat - (y + 0.5) * (c.spanLat / c.h),
+  ]
 }
 
 /**
- * NDVI medio de cada departamento: promedio de las celdas con centro dentro de él. Callao (y
- * cualquiera sin celda propia) toma la celda más cercana a su centro, como hace el backend.
+ * Resumen de cada departamento con las celdas de centro dentro de él: NDVI medio, altitud media
+ * (m) y cuántas celdas caen en costa, sierra y selva. Callao (y cualquiera sin celda propia) toma la
+ * celda más cercana a su centro, como hace el backend.
  */
-export function ndviPorDepto(c: Calor, deptoDe: (lon: number, lat: number) => number) {
-  const suma = new Float64Array(DEPARTAMENTOS.length)
-  const n = new Int32Array(DEPARTAMENTOS.length)
+export function resumenPorDepto(
+  c: Calor,
+  deptoDe: (lon: number, lat: number) => number,
+  elev: (lon: number, lat: number) => number,
+) {
+  const N = DEPARTAMENTOS.length
+  const suma = new Float64Array(N)
+  const sumaElev = new Float64Array(N)
+  const celdas = new Int32Array(N)
+  /** regiones[k * 3 + r]: celdas del departamento k en la región r (orden de REGIONES) */
+  const regiones = new Int32Array(N * 3)
+  const sumar = (k: number, i: number, lon: number, lat: number) => {
+    const e = elev(lon, lat)
+    suma[k] += c.media[i]
+    sumaElev[k] += Number.isFinite(e) ? e : 0
+    celdas[k]++
+    regiones[k * 3 + REGIONES.indexOf(regionDe(lon, lat, e, c.media[i]))]++
+  }
   for (let i = 0; i < c.pix.length; i++) {
     if (!Number.isFinite(c.media[i])) continue
     const [lon, lat] = centroCelda(c, i)
     const k = deptoDe(lon, lat)
-    if (k < 0) continue
-    suma[k] += c.media[i]
-    n[k]++
+    if (k >= 0) sumar(k, i, lon, lat)
   }
-  const media = new Float32Array(DEPARTAMENTOS.length)
-  DEPARTAMENTOS.forEach((z, k) => {
-    if (n[k]) {
-      media[k] = suma[k] / n[k]
-      return
-    }
-    const anillo = z.polys[0][0]
+  const sinCelda = DEPARTAMENTOS.map((_, k) => k).filter((k) => !celdas[k])
+  for (const k of sinCelda) {
+    const anillo = DEPARTAMENTOS[k].polys[0][0]
     const lon0 = anillo.reduce((a, p) => a + p[0], 0) / anillo.length
     const lat0 = anillo.reduce((a, p) => a + p[1], 0) / anillo.length
-    let mejor = NaN
+    let mejor = -1
     let dist = Infinity
     for (let i = 0; i < c.pix.length; i++) {
       if (!Number.isFinite(c.media[i])) continue
@@ -287,18 +320,28 @@ export function ndviPorDepto(c: Calor, deptoDe: (lon: number, lat: number) => nu
       const d = (lon - lon0) ** 2 + (lat - lat0) ** 2
       if (d < dist) {
         dist = d
-        mejor = c.media[i]
+        mejor = i
       }
     }
-    media[k] = mejor
-  })
-  return { media, celdas: n }
+    if (mejor >= 0) {
+      const [lon, lat] = centroCelda(c, mejor)
+      sumar(k, mejor, lon, lat)
+      celdas[k] = 0 // no es suya: la ficha dice «celda más cercana»
+    }
+  }
+  const media = new Float32Array(N)
+  const altitud = new Float32Array(N)
+  for (let k = 0; k < N; k++) {
+    const n = celdas[k] || 1
+    media[k] = suma[k] / n
+    altitud[k] = sumaElev[k] / n
+  }
+  return { media, altitud, celdas, regiones }
 }
 
 const VS_DECL = `#include <common>
-uniform float uTime, uCrece;
-uniform float uTope[${DEPARTAMENTOS.length}];
-attribute vec4 aPlanta; // departamento, retraso 0..1, fase, viento 0..1`
+uniform float uTime, uCrece, uBase, uAlto;
+attribute vec4 aPlanta; // altitud 0..1 (0..6000 m), retraso 0..1, fase, viento 0..1`
 
 export class Bosque {
   private grupo = new THREE.Group()
@@ -307,7 +350,8 @@ export class Bosque {
   private uniforms = {
     uTime: { value: 0 },
     uCrece: { value: 0 },
-    uTope: { value: new Float32Array(DEPARTAMENTOS.length) },
+    uBase: { value: 0 },
+    uAlto: { value: 0 },
   }
   /** 0 = sin plantas, 1 = bosque entero; avanza hacia `objetivo` en paso(). */
   private crece = 0
@@ -332,7 +376,7 @@ export class Bosque {
         .replace(
           '#include <project_vertex>',
           `vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
-  mvPosition.y += uTope[int(aPlanta.x + 0.5)]; // sobre la cara de su departamento (sube y baja con el dato)
+  mvPosition.y += uBase + aPlanta.x * uAlto - 0.02; // sobre el relieve, que sube y baja con el modo
   mvPosition = modelViewMatrix * mvPosition;
   gl_Position = projectionMatrix * mvPosition;`,
         )
@@ -344,7 +388,7 @@ export class Bosque {
 
   /**
    * Planta el bosque con la malla de vegetación (una vez por malla). elev(lon, lat) da la altitud
-   * en metros (NaN si todavía no se sabe); deptoDe ubica cada planta en su departamento.
+   * en metros; deptoDe descarta lo que cae fuera del Perú. base = nivel del mar en la escena.
    */
   plantar(
     c: Calor,
@@ -352,7 +396,9 @@ export class Bosque {
     deptoDe: (lon: number, lat: number) => number,
     aEscena: (lon: number, lat: number) => number[],
     pocas: boolean,
+    base: number,
   ) {
+    this.uniforms.uBase.value = base
     if (c === this.plantado) return
     this.plantado = c
     this.vaciar()
@@ -367,7 +413,16 @@ export class Bosque {
       const [x, z] = aEscena(lon, lat)
       const retraso = 0.8 * ((latN - lat) / c.spanLat) + 0.2 * rnd()
       const lista = porEspecie.get(e) ?? []
-      lista.push(x, z, rnd() * Math.PI * 2, TAMANO[e][0] * escala * (0.8 + 0.4 * rnd()), k, retraso, rnd() * 6.28)
+      const alt = Math.max(0, elev(lon, lat)) / 6000
+      lista.push(
+        x,
+        z,
+        rnd() * Math.PI * 2,
+        TAMANO[e][0] * escala * (0.8 + 0.4 * rnd()),
+        alt,
+        retraso,
+        rnd() * 6.28,
+      )
       porEspecie.set(e, lista)
     }
     for (let i = 0; i < c.pix.length; i++) {
@@ -389,7 +444,8 @@ export class Bosque {
       }
     }
     for (const [lon, lat] of PUYAS)
-      for (let j = 0; j < 3; j++) poner('puya', lon + (rnd() - 0.5) * 0.12, lat + (rnd() - 0.5) * 0.12)
+      for (let j = 0; j < 3; j++)
+        poner('puya', lon + (rnd() - 0.5) * 0.12, lat + (rnd() - 0.5) * 0.12)
 
     const d = new THREE.Object3D()
     for (const [e, v] of porEspecie) {
@@ -398,13 +454,13 @@ export class Bosque {
       const aPlanta = new Float32Array(n * 4)
       const malla = new THREE.InstancedMesh(geo, this.material, n)
       for (let i = 0; i < n; i++) {
-        const [x, z, giro, s, k, retraso, fase] = v.slice(i * 7, i * 7 + 7)
+        const [x, z, giro, s, alt, retraso, fase] = v.slice(i * 7, i * 7 + 7)
         d.position.set(x, 0, z)
         d.rotation.set(0, giro, 0)
         d.scale.setScalar(s)
         d.updateMatrix()
         malla.setMatrixAt(i, d.matrix)
-        aPlanta.set([k, retraso, fase, TAMANO[e][1]], i * 4)
+        aPlanta.set([alt, retraso, fase, TAMANO[e][1]], i * 4)
       }
       geo.setAttribute('aPlanta', new THREE.InstancedBufferAttribute(aPlanta, 4))
       malla.frustumCulled = false // la altura la pone el shader
@@ -414,10 +470,10 @@ export class Bosque {
   }
 
   /**
-   * Por cuadro: crece hacia `on` (1,8 s al entrar, 0,6 s al salir), el viento y la altura de cada
-   * departamento. Devuelve true mientras crece o se va (para seguir dibujando a pleno ritmo).
+   * Por cuadro: crece hacia `on` (1,8 s al entrar, 0,6 s al salir), el viento y la altura del
+   * relieve. Devuelve true mientras crece o se va (para seguir dibujando a pleno ritmo).
    */
-  paso(dt: number, on: boolean, topes: ArrayLike<number>, quieto: boolean) {
+  paso(dt: number, on: boolean, alto: number, quieto: boolean) {
     const meta = on && this.mallas.length ? 1 : 0
     const antes = this.crece
     if (quieto) this.crece = meta
@@ -428,7 +484,7 @@ export class Bosque {
     const U = this.uniforms
     U.uCrece.value = this.crece
     if (!quieto) U.uTime.value += dt
-    U.uTope.value.set(topes)
+    U.uAlto.value = alto
     return this.crece !== antes
   }
 

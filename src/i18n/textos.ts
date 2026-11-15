@@ -118,7 +118,9 @@ const es = {
   vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
   vegOtros: 'Otros lugares con vegetación medida',
   // Relieve, bosque y ficha del modo Vegetación
-  vegAltura: 'Altura: verdor medio de cada departamento (más alto, más verde)',
+  vegAltura:
+    'Relieve real sobre el nivel del mar (SRTM, ×25): la costa es la franja baja y seca, la sierra son los Andes y la selva el llano verde del este.',
+  legRegiones: 'Relieve y regiones',
   vegPlantas:
     'Las plantas son las de cada zona, según el verdor y la altitud: cactus y algarrobos en la costa, cultivos en los valles regados, molles, ichu y queñuas en los Andes, y selva con aguajes en la Amazonía.',
   ndviMedio: 'NDVI medio',
@@ -131,6 +133,8 @@ const es = {
   ],
   vegTarjetaMeta: (a: number, b: number, n: number) =>
     n ? `MODIS ${a}–${b} · ${n} celdas de ~27 km` : `MODIS ${a}–${b} · celda más cercana`,
+  regionNombre: ['Costa', 'Sierra', 'Selva'],
+  altitudMedia: (m: number) => `altitud media ${String(m).replace(/\B(?=(\d{3})+$)/g, ' ')} m`,
   varDef: {
     lluvia: (fuente: string) =>
       `Lluvia: milímetros al año, promedio de las celdas del departamento (${fuente}).`,
@@ -605,13 +609,23 @@ const en: Textos = {
   ],
   vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
   vegOtros: 'Other places with measured vegetation',
-  vegAltura: 'Height: mean greenness of each department (taller, greener)',
+  vegAltura:
+    'Real relief above sea level (SRTM, ×25): the coast is the low, dry strip, the Andes the mountains and the rainforest the green plain to the east.',
+  legRegiones: 'Relief and regions',
   vegPlantas:
     'Plants are those of each zone, by greenness and altitude: cacti and carob trees on the coast, crops in irrigated valleys, molle trees, ichu grass and queñuas in the Andes, and rainforest with aguaje palms in the Amazon.',
   ndviMedio: 'mean NDVI',
-  ndviNivel: ['Desert or bare soil', 'Sparse vegetation', 'Moderate vegetation', 'Dense vegetation', 'Dense forest'],
+  ndviNivel: [
+    'Desert or bare soil',
+    'Sparse vegetation',
+    'Moderate vegetation',
+    'Dense vegetation',
+    'Dense forest',
+  ],
   vegTarjetaMeta: (a, b, n) =>
     n ? `MODIS ${a}–${b} · ${n} cells of ~27 km` : `MODIS ${a}–${b} · nearest cell`,
+  regionNombre: ['Coast', 'Andes', 'Rainforest'],
+  altitudMedia: (m) => `mean altitude ${m.toLocaleString('en-US')} m`,
   varDef: {
     lluvia: (fuente) =>
       `Rainfall: millimetres per year, average of the department cells (${fuente}).`,

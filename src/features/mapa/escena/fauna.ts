@@ -412,6 +412,12 @@ export class Fauna {
     this.sombras.instanceMatrix.needsUpdate = true
   }
 
+  /** Muestra u oculta a todos (el modo Vegetación los esconde: andan sobre las columnas). */
+  mostrar(v: boolean) {
+    for (const m of this.mallas) m.visible = v
+    this.sombras.visible = v
+  }
+
   /** Selección indulgente: distancia del rayo a cada personaje (son chiquitos). */
   elegir(rayo: THREE.Ray): Animal | null {
     let mejor: Animal | null = null

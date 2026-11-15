@@ -38,7 +38,9 @@ export function PantallaError({ reset }: ErrorComponentProps) {
           {t.reintentar}
         </Button>
         <Button asChild>
-          <Link to="/">{t.alInicio}</Link>
+          <Link to="/" search={(p) => ({ lang: p.lang })}>
+            {t.alInicio}
+          </Link>
         </Button>
       </Aviso>
     </div>
@@ -52,7 +54,9 @@ export function NoEncontrada() {
     <div className={centrada}>
       <Aviso titulo={t.noEncontradaH} texto={t.noEncontradaP}>
         <Button asChild>
-          <Link to="/">{t.alInicio}</Link>
+          <Link to="/" search={(p) => ({ lang: p.lang })}>
+            {t.alInicio}
+          </Link>
         </Button>
       </Aviso>
     </div>

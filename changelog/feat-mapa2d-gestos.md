@@ -17,6 +17,5 @@ Segunda parte de la mejora 8 (mapa 2D en celular): pellizcar para acercar y arra
 - `mapa2d-gestos.spec.ts` (390 × 844) emite eventos de puntero táctil porque Playwright no trae pellizco. Comprueba: el pellizco acerca a 3× y no baja de 1×; el arrastre mueve 40 px, no se sale de los bordes y no elige zona; un toque simple sigue eligiendo; recentrar deshace el zoom; con ratón no hay gestos. Tres de los cuatro fallan sin el cambio; el cuarto es el control del ratón.
 
 ## Pendiente
-- Depende de #43 (8a): sin él, la ficha flotante del puntero aparece mientras se arrastra. Mergear #43 primero.
-- Probar pellizco y arrastre con dedos reales en un celular.
+- Verificar en un celular real: el pellizco, el arrastre y que `touch-action: none` no estorbe al deslizar la página fuera del mapa.
 - 8c: encuadre que respete los paneles, después de que se mergeen las demás PRs de celular.

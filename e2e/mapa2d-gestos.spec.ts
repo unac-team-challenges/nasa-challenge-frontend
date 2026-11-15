@@ -38,7 +38,8 @@ test('dos dedos separándose acercan el mapa; juntándose lo alejan, sin pasar d
   page,
 }) => {
   const c = (await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).boundingBox())!
-  const [cx, cy] = [c.x + c.width / 2, c.y + c.height / 2]
+  // bajo el centro: el aviso «sin 3D» y la leyenda tapan el mapa en otras alturas y los eventos no llegan
+  const [cx, cy] = [c.x + c.width / 2, c.y + c.height * 0.7]
   expect((await vista(page)).k).toBeCloseTo(1, 2)
 
   await toque(page, 'pointerdown', 1, cx - 30, cy)
@@ -63,7 +64,8 @@ test('con el mapa acercado un dedo lo arrastra, sin salirse de los bordes ni ele
   page,
 }) => {
   const c = (await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).boundingBox())!
-  const [cx, cy] = [c.x + c.width / 2, c.y + c.height / 2]
+  // bajo el centro: el aviso «sin 3D» y la leyenda tapan el mapa en otras alturas y los eventos no llegan
+  const [cx, cy] = [c.x + c.width / 2, c.y + c.height * 0.7]
   await toque(page, 'pointerdown', 1, cx - 30, cy)
   await toque(page, 'pointerdown', 2, cx + 30, cy)
   await toque(page, 'pointermove', 1, cx - 90, cy)
@@ -106,7 +108,8 @@ test('un toque simple sigue eligiendo la zona, y el botón de recentrar deshace 
   page,
 }) => {
   const c = (await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).boundingBox())!
-  const [cx, cy] = [c.x + c.width / 2, c.y + c.height / 2]
+  // bajo el centro: el aviso «sin 3D» y la leyenda tapan el mapa en otras alturas y los eventos no llegan
+  const [cx, cy] = [c.x + c.width / 2, c.y + c.height * 0.7]
   await toque(page, 'pointerdown', 1, cx - 30, cy)
   await toque(page, 'pointerdown', 2, cx + 30, cy)
   await toque(page, 'pointermove', 1, cx - 90, cy)
@@ -126,7 +129,8 @@ test('un toque simple sigue eligiendo la zona, y el botón de recentrar deshace 
 
 test('con ratón no hay gestos: arrastrar no mueve el mapa', async ({ page }) => {
   const c = (await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).boundingBox())!
-  const [cx, cy] = [c.x + c.width / 2, c.y + c.height / 2]
+  // bajo el centro: el aviso «sin 3D» y la leyenda tapan el mapa en otras alturas y los eventos no llegan
+  const [cx, cy] = [c.x + c.width / 2, c.y + c.height * 0.7]
   await toque(page, 'pointerdown', 1, cx, cy, 'mouse')
   await toque(page, 'pointermove', 1, cx - 80, cy, 'mouse')
   await toque(page, 'pointerup', 1, cx - 80, cy, 'mouse')

@@ -34,12 +34,13 @@ La cabecera se veía vacía y genérica, y tenía fallos de uso:
   queda marcado y cada sección del menú tiene su ancla en la página.
 
 ## Integración con #37 y `developer`
-- Trae `developer` al día (#34, #35 y #40) y la rama de #37 (`fix/boton-idioma`), según el orden que pidió
-  Leandro. Cuando #37 entre a `developer`, esta PR queda sin conflictos.
+- Al día con `developer`, que ya incluye #34, #35, #37 (`fix/boton-idioma`) y #40. Va después de #37, según
+  el orden que pidió Leandro.
 - El selector `ES | EN` llama a `setIdioma` de `useBusqueda` (#37): el idioma queda en la URL (`?lang=en`).
 - El logo y los enlaces del menú de Metodología conservan `lang`.
 - Se resolvió el conflicto en `lib/busqueda.ts`: quedan `setIdioma` (#37) y `seleccionar(zona, desdeMapa)` (#35).
-- El e2e de `?lang=en` (#37) usa el selector segmentado (`Español` / `English`).
+- Los e2e de #37 (`?lang=en` y «el idioma sobrevive al ir a la metodología») usan el selector segmentado
+  (`Español` / `English`) y el menú de Metodología.
 - A 320 px la cabecera ya no cae a una tercera fila: bajo 360 px queda solo el logo (el nombre sigue en
   el `aria-label`). Medido: 117 px de alto a 320, 360 y 390 px, y 71 px a 1440 px.
 

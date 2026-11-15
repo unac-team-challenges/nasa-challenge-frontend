@@ -62,7 +62,7 @@ Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` 
 
 ## Metadatos
 
-`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/lib/meta.ts` las actualiza según pantalla, idioma y tema, y `public/favicon.svg` cambia de color con el tema del sistema. **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
+`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/lib/meta.ts` las actualiza según pantalla, idioma y tema. El favicon es `public/favicon.ico` (logo del equipo). **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
 
 ## Datos y periodo
 

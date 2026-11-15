@@ -42,6 +42,10 @@ interface EstadoApp {
   sinNino: boolean
   /** El informe empieza minimizado y se abre al tocar una zona (v10) */
   informeMin: boolean
+  /** La última zona elegida salió de un toque en el mapa (y no de la Pista o de la URL) */
+  zonaDesdeMapa: boolean
+  /** Sube cada vez que se pide volver a la vista inicial: el mapa 2D deshace su zoom manual */
+  reinicio2d: number
   /** null = sigue al sistema */
   tema: Tema | null
   /** El navegador puede dibujar 3D (WebGL) */
@@ -69,6 +73,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   setReproduciendo: (reproduciendo) => set({ reproduciendo }),
   sinNino: false,
   informeMin: !zonaEnUrl(),
+  zonaDesdeMapa: false,
+  reinicio2d: 0,
   tema: null,
   conWebgl: GL,
   modoMapa: GL ? '3d' : '2d',

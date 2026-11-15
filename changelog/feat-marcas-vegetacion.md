@@ -1,12 +1,12 @@
 # feat/marcas-vegetacion
 
-Montado sobre `feat/olmos-y-selva` (#42). Decisión de Favio (15 nov): la vegetación entra al mapa como un **modo «Vegetación»** (opción A). Reemplaza la primera versión de este PR, que solo marcaba los lugares con puntos.
+Sobre `developer` (ya con #42 y el rediseño del equipo: cabecera, leyenda minimizable, línea de tiempo horizontal, gestos del 2D y mapa de calor). Decisión de Favio (15 nov): la vegetación entra al mapa como un **modo «Vegetación»** (opción A). Reemplaza la primera versión de este PR, que solo marcaba los lugares con puntos.
 
 ## Por qué así
 Solo hay datos de vegetación de **5 recuadros** (3 valles y 2 zonas de selva), no de los 25 departamentos. Por eso no es una variable más: el modo atenúa los departamentos y muestra los 5 recuadros reales con el color de su tendencia.
 
 ## Qué cambia
-- **Botón «Vegetación»** en el mismo grupo que Lluvia y Temperatura (`Cabecera.tsx`).
+- **Botón «Vegetación»** (con ícono de hoja) en el mismo grupo que Lluvia y Temperatura (`Cabecera.tsx`).
   - Va en la URL como `?capa=vegetacion` (`lib/busqueda.ts`) y no cambia el tipo `Variable`: lluvia y temperatura siguen igual.
   - Al entrar se apaga la máquina del tiempo; desde la portada lleva al explorador. Lluvia o Temperatura sacan del modo.
 - **Mapa 3D** (`escena.ts`, `setVegetacion`):
@@ -19,7 +19,8 @@ Solo hay datos de vegetación de **5 recuadros** (3 valles y 2 zonas de selva), 
   - verde: más vegetación (Chavimochic, Ica y Olmos);
   - ocre: menos árboles (La Pampa);
   - color del texto: sin cambio claro (Iquitos).
-- **Leyenda** propia del modo: los 3 colores y «cada cuadro es el área medida, no el departamento».
+- **Leyenda:** la misma leyenda minimizable del equipo; en el modo cambia el contenido (los 3 colores y «cada cuadro es el área medida, no el departamento»).
+- **Sin mapa de calor ni ayuda de modo** en este modo (`useCalor` devuelve null; `AyudaModo` se oculta).
 - **Título del mapa** «Vegetación medida con satélite · MODIS, 2001–2024 · 5 lugares». Sin barra de tiempo.
 - **Informe** (`app/rutas/PanelVegetacion.tsx`), en vez de la ficha de lluvia:
   - con un lugar elegido: su antes y después (Caso 2 o árboles de la selva, con su aviso) y la lista de los otros 4;

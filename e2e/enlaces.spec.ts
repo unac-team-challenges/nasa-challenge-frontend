@@ -12,6 +12,29 @@ test('un enlace compartido abre la misma zona, variable y año', async ({ page }
   ).toHaveAttribute('aria-valuetext', '2010')
 })
 
+test('un enlace con ?lang=en se abre en inglés y el cambio de idioma queda en la URL', async ({
+  page,
+}) => {
+  await page.goto('/explorar?sinwebgl&lang=en')
+  await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /English/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('button', { name: /Español/ }).click()
+  await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
+  await expect(page).not.toHaveURL(/lang=/)
+  await page.getByRole('button', { name: /English/ }).click()
+  await expect(page).toHaveURL(/lang=en/)
+})
+
+test('el idioma de la URL sobrevive al ir a la metodología', async ({ page }) => {
+  await page.goto('/explorar?sinwebgl&lang=en')
+  await page.getByRole('button', { name: 'Methodology' }).click()
+  await page.getByRole('menuitem', { name: /Read the full methodology/ }).click()
+  await expect(page).toHaveURL(/metodologia.*lang=en/)
+})
+
 test('elegir una zona actualiza la URL y se puede recargar', async ({ page }) => {
   await page.goto('/explorar?sinwebgl')
   await page
@@ -27,7 +50,8 @@ test('metodología desde la cabecera y ruta inexistente', async ({ page }) => {
   const errores: string[] = []
   page.on('pageerror', (e) => errores.push(e.message))
   await page.goto('/')
-  await page.getByRole('link', { name: 'Metodología' }).first().click()
+  await page.getByRole('button', { name: 'Metodología' }).click()
+  await page.getByRole('menuitem', { name: /Ver la metodología completa/ }).click()
   await expect(page).toHaveURL(/\/metodologia$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Metodología')
   await expect(page).toHaveTitle(/Metodología/)

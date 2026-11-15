@@ -256,7 +256,9 @@ export function Ficha() {
             {d.motivo && (
               <>
                 <dt className="text-muted">{t.howMotivo}</dt>
-                <dd className="m-0">{(api && t.avisoFijo?.(variable, d.lag1)) || d.motivo}</dd>
+                <dd className="m-0">
+                  {(api && t.avisoFijo?.(variable, d.lag1, d.motivo)) || d.motivo}
+                </dd>
               </>
             )}
             <dt className="text-muted">{t.howN}</dt>

@@ -12,8 +12,10 @@ import { Button } from '@/components/ui/button'
 const PASO_MS = 850
 
 /**
- * Máquina del tiempo (v4–v9 del prototipo): barra vertical pegada al borde derecho del mapa,
- * con el último año arriba, las franjas del Perú como riel, un deslizador y Play.
+ * Máquina del tiempo (v4–v9 del prototipo). En escritorio: barra vertical pegada al borde derecho
+ * del mapa, con el último año arriba. En celular (< 900 px): la misma barra acostada, pegada al
+ * borde de abajo, con el año más antiguo a la izquierda (el dedo se mueve de lado, no choca con
+ * el desplazamiento de la página). Las franjas del Perú son el riel; encima va el deslizador.
  */
 export function BarraTiempo() {
   const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
@@ -54,98 +56,128 @@ export function BarraTiempo() {
       setReproduciendo(false)
       return
     }
-    // Si está en la tendencia o en el último año, empieza desde el principio
+    // Si está en el último año, empieza desde el principio
     if (anio == null || anio >= b) setAnio(a)
     setReproduciendo(true)
   }
+
+  const porAnio = anio != null
 
   return (
     <div
       role="group"
       aria-label={t.timeAria}
-      className="absolute top-3.5 right-4 bottom-[70px] z-[3] flex w-[68px] flex-col items-center gap-2 rounded-m border border-line bg-panel/94 px-1 py-2 min-[901px]:w-24 min-[901px]:px-2 min-[901px]:py-2.5"
+      className={`absolute inset-x-4 bottom-3.5 z-[3] flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-m border border-line bg-panel/94 px-2 py-1 min-[901px]:inset-x-auto min-[901px]:top-3.5 min-[901px]:right-4 min-[901px]:w-24 min-[901px]:flex-col min-[901px]:flex-nowrap min-[901px]:gap-2 min-[901px]:px-2 min-[901px]:py-2.5 ${
+        porAnio ? 'min-[901px]:bottom-[70px]' : 'min-[901px]:bottom-auto'
+      }`}
     >
-      <Button
-        size="sm"
-        aria-pressed={anio == null}
-        onClick={() => setAnio(null)}
-        title={t.timeBackTrend}
-        className="min-h-[34px] w-full px-1 text-xs aria-pressed:border-fg aria-pressed:bg-fg aria-pressed:font-semibold aria-pressed:text-bg"
+      {/* Dos modos: la tendencia de todo el periodo o un año suelto. Celular: lado a lado; escritorio: apilados. */}
+      <div
+        role="group"
+        aria-label={t.timeModeAria}
+        className="order-1 flex flex-none overflow-hidden rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
       >
-        {t.timeTrend}
-      </Button>
+        <Button
+          variant="toggle"
+          size="sm"
+          aria-pressed={!porAnio}
+          onClick={() => setAnio(null)}
+          title={t.timeTrendTitle(a, b)}
+          className="min-h-8 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:px-1"
+        >
+          {t.timeTrend}
+        </Button>
+        <Button
+          variant="toggle"
+          size="sm"
+          aria-pressed={porAnio}
+          onClick={() => setAnio(b)}
+          title={t.timeByYearTitle}
+          className="min-h-8 border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
+        >
+          {t.timeByYear}
+        </Button>
+      </div>
 
       <span
-        className={`text-center font-display leading-[1.1] font-bold tracking-display ${
-          anio == null ? 'text-xs min-[901px]:text-[15px]' : 'text-lg min-[901px]:text-[22px]'
+        className={`order-2 flex-1 font-display leading-[1.1] font-bold tracking-display min-[901px]:flex-none min-[901px]:text-center ${
+          porAnio ? 'text-lg min-[901px]:text-[22px]' : 'text-sm min-[901px]:text-[15px]'
         }`}
         aria-live="polite"
       >
         {anio ?? `${a}–${b}`}
       </span>
 
-      <span className="text-xs text-muted">{b}</span>
-      <div className="flex min-h-20 flex-1 justify-center gap-1.5">
-        {/* Riel: una franja por año (el más reciente arriba); cada una lleva a su año */}
-        <div className="flex w-3 flex-none flex-col-reverse gap-px overflow-hidden rounded-[4px] min-[901px]:w-4">
-          {filas.map((fila) => {
-            const etiqueta = t.tipTime('Perú', fmtAnomalia(fila.a, variable, idioma), fila.y)
-            return (
-              <button
-                key={fila.y}
-                type="button"
-                className="min-h-0 flex-1 cursor-pointer border-0 p-0"
-                style={{
-                  background: colorAnomalia(fila.a, max, variable),
-                  boxShadow: anio === fila.y ? 'inset 0 0 0 2px var(--fg)' : undefined,
-                }}
-                title={etiqueta}
-                aria-label={etiqueta}
-                aria-current={anio === fila.y}
-                tabIndex={-1}
-                onClick={() => {
+      {porAnio && (
+        <>
+          {/* Celular: una fila de abajo (año más antiguo a la izquierda). Escritorio: columna (el último año arriba). */}
+          <div className="order-4 flex basis-full items-center gap-2 min-[901px]:order-3 min-[901px]:min-h-20 min-[901px]:flex-1 min-[901px]:basis-auto min-[901px]:flex-col">
+            <span className="order-1 text-xs text-muted min-[901px]:order-3">{a}</span>
+            <div className="relative order-2 flex min-h-5 flex-1 items-center min-[901px]:w-full min-[901px]:justify-center min-[901px]:gap-1.5">
+              {/* Riel: una franja por año; cada una lleva a su año */}
+              <div className="flex h-3 flex-1 flex-row gap-px overflow-hidden rounded-[4px] min-[901px]:h-auto min-[901px]:w-4 min-[901px]:flex-none min-[901px]:flex-col-reverse min-[901px]:self-stretch">
+                {filas.map((fila) => {
+                  const etiqueta = t.tipTime('Perú', fmtAnomalia(fila.a, variable, idioma), fila.y)
+                  return (
+                    <button
+                      key={fila.y}
+                      type="button"
+                      className="min-h-0 min-w-0 flex-1 cursor-pointer border-0 p-0"
+                      style={{
+                        background: colorAnomalia(fila.a, max, variable),
+                        boxShadow: anio === fila.y ? 'inset 0 0 0 2px var(--fg)' : undefined,
+                      }}
+                      title={etiqueta}
+                      aria-label={etiqueta}
+                      aria-current={anio === fila.y}
+                      tabIndex={-1}
+                      onClick={() => {
+                        setReproduciendo(false)
+                        setAnio(fila.y)
+                      }}
+                    />
+                  )
+                })}
+              </div>
+              {/* Celular: horizontal, encima del riel. Escritorio: vertical, al lado. */}
+              <input
+                type="range"
+                min={a}
+                max={b}
+                step={1}
+                value={anio}
+                aria-label={t.timeYear}
+                aria-valuetext={String(anio)}
+                onChange={(e) => {
                   setReproduciendo(false)
-                  setAnio(fila.y)
+                  setAnio(Number(e.target.value))
                 }}
+                className="deslizador-riel absolute inset-0 m-0 size-full cursor-pointer min-[901px]:static min-[901px]:h-auto min-[901px]:w-5 min-[901px]:accent-accent min-[901px]:[direction:rtl] min-[901px]:[writing-mode:vertical-lr]"
               />
-            )
-          })}
-        </div>
-        <input
-          type="range"
-          min={a}
-          max={b}
-          step={1}
-          value={anio ?? b}
-          aria-label={t.timeYear}
-          aria-valuetext={anio == null ? t.timeTrend : String(anio)}
-          onChange={(e) => {
-            setReproduciendo(false)
-            setAnio(Number(e.target.value))
-          }}
-          className="m-0 h-auto w-5 cursor-pointer accent-accent [direction:rtl] [writing-mode:vertical-lr]"
-        />
-      </div>
-      <span className="text-xs text-muted">{a}</span>
+            </div>
+            <span className="order-3 text-xs text-muted min-[901px]:order-1">{b}</span>
+          </div>
 
-      <Button
-        size="icon"
-        className="size-[34px]"
-        onClick={alternarPlay}
-        aria-label={reproduciendo ? t.timePause : t.timePlay(a, b)}
-        title={reproduciendo ? t.timePause : t.timePlay(a, b)}
-      >
-        {reproduciendo ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
-            <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
-          </svg>
-        ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 5l12 7-12 7z" fill="currentColor" />
-          </svg>
-        )}
-      </Button>
+          <Button
+            size="icon"
+            className="order-3 size-8 min-[901px]:order-4 min-[901px]:size-[34px]"
+            onClick={alternarPlay}
+            aria-label={reproduciendo ? t.timePause : t.timePlay(a, b)}
+            title={reproduciendo ? t.timePause : t.timePlay(a, b)}
+          >
+            {reproduciendo ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
+                <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 5l12 7-12 7z" fill="currentColor" />
+              </svg>
+            )}
+          </Button>
+        </>
+      )}
     </div>
   )
 }

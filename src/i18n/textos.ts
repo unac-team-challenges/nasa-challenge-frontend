@@ -1,5 +1,6 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
 import type { Estado, Region, Variable } from '@/data/datos'
+import { avisoZonaEn } from '@/i18n/avisoZona'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -9,6 +10,7 @@ type PorVariable<T> = Record<Variable, T>
 const es = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
+  lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
   variableLbl: 'Variable',
@@ -33,8 +35,13 @@ const es = {
   // Explorador
   explorador: 'Explorador',
   mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
-  mapSub: (a: number, b: number) => `Cambio por década, ${a}–${b}`,
+  mapSub: 'Cambio por década',
+  mapSubAnio: 'Cada departamento frente a su propio promedio',
+  /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
+  mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
+  mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
+  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -51,6 +58,10 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
+  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
+  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
+  calorNota:
+    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   // Modo «Vegetación» del mapa: los 5 recuadros medidos (no hay datos de los 25 departamentos)
   vegetacionBtn: 'Vegetación',
   mapHVeg: 'Vegetación medida con satélite',
@@ -89,7 +100,7 @@ const es = {
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
-  avisoFijo: null as ((variable: Variable, lag1: number | null) => string) | null,
+  avisoFijo: null as ((variable: Variable, lag1: number | null, motivo: string) => string) | null,
   status: {
     real: 'Cambio real',
     posible_casualidad: 'Posible casualidad',
@@ -168,8 +179,14 @@ const es = {
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
+  timeModeAria: 'Qué ver en el mapa',
   timeTrend: 'Tendencia',
-  timeBackTrend: 'Ver la tendencia',
+  timeTrendTitle: (a: number, b: number) => `Tendencia ${a}–${b}: cuánto cambió en esos años`,
+  timeByYear: 'Año a año',
+  timeByYearTitle: 'Año a año: cómo fue cada año frente a su promedio',
+  timeHelp: (n: number) =>
+    `Tendencia: cuánto cambió en ${n} años. Año a año: cómo fue ese año frente a su promedio.`,
+  timeHelpClose: 'Cerrar la ayuda',
   timePlay: (a: number, b: number) => `Reproducir ${a}–${b}`,
   timePause: 'Pausar',
   timeYear: 'Año',
@@ -210,6 +227,7 @@ const es = {
     'Cifras de un recuadro de unos 25 km de lado en la selva; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
+  mapaControles: 'Controles del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
   noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
   tipVal: (nombre: string, v: string, u: string, estado: string) =>
@@ -227,6 +245,8 @@ const es = {
   // Metodología
   metodologia: 'Metodología y fuentes',
   metodologiaCorto: 'Metodología',
+  metodologiaTodo: 'Ver la metodología completa',
+  paginaActual: '(página actual)',
   metodologiaEnlace: 'Cómo lo calculamos y de dónde salen los datos',
   irAlMapa: 'Explorar el mapa',
 }
@@ -236,6 +256,7 @@ type Textos = typeof es
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
+  lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',
   cambiarTema: 'Change theme',
   variableLbl: 'Variable',
@@ -257,8 +278,12 @@ const en: Textos = {
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
   mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
-  mapSub: (a, b) => `Change per decade, ${a}–${b}`,
+  mapSub: 'Change per decade',
+  mapSubAnio: 'Each department vs its own average',
+  mapModoTendencia: (a, b) => `trend ${a}–${b}`,
+  mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
+  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],
@@ -275,6 +300,10 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
+  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
+  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
+  calorNota:
+    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
   vegetacionBtn: 'Vegetation',
   mapHVeg: 'Vegetation measured by satellite',
   mapSubVeg: 'MODIS, 2001–2024 · 5 places',
@@ -309,8 +338,9 @@ const en: Textos = {
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
-  avisoFijo: (_variable, lag1) =>
+  avisoFijo: (_variable, lag1, motivo) =>
     [
+      avisoZonaEn(motivo),
       lag1 != null &&
         lag1 > 0.5 &&
         'Years very similar to each other (high lag1): the trend may look more certain than it is.',
@@ -392,8 +422,14 @@ const en: Textos = {
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
   },
+  timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
-  timeBackTrend: 'Back to the trend',
+  timeTrendTitle: (a, b) => `Trend ${a}–${b}: how much changed over those years`,
+  timeByYear: 'By year',
+  timeByYearTitle: 'By year: how each year compared with its average',
+  timeHelp: (n) =>
+    `Trend: how much changed over ${n} years. By year: how that year compared with its average.`,
+  timeHelpClose: 'Close the help',
   timePlay: (a, b) => `Play ${a}–${b}`,
   timePause: 'Pause',
   timeYear: 'Year',
@@ -428,6 +464,7 @@ const en: Textos = {
     'Tree cover from MODIS MOD44B (NASA), 250 m pixels. Forest: pixels with 30 % or more trees.',
   selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
+  mapaControles: 'Map controls',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
   tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,
@@ -444,6 +481,8 @@ const en: Textos = {
   // Methodology
   metodologia: 'Methodology and sources',
   metodologiaCorto: 'Methodology',
+  metodologiaTodo: 'Read the full methodology',
+  paginaActual: '(current page)',
   metodologiaEnlace: 'How we calculate it and where the data comes from',
   irAlMapa: 'Explore the map',
 }
@@ -673,6 +712,16 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
 
 type Enlace = [texto: string, url: string]
 
+/** Secciones de /metodologia: el id del título es `m-<sección>` (el menú de la cabecera salta a ellas). */
+export const SECCIONES_METODOLOGIA = [
+  'fuentes',
+  'calculo',
+  'semaforo',
+  'limites',
+  'creditos',
+] as const
+export type SeccionMetodologia = (typeof SECCIONES_METODOLOGIA)[number]
+
 interface Metodologia {
   titulo: string
   intro: string
@@ -699,6 +748,8 @@ interface Metodologia {
   creditosCodigo: string
   repos: Enlace[]
   creditosNasa: string
+  /** Una línea por sección para el menú de la cabecera */
+  menuD: Record<SeccionMetodologia, string>
 }
 
 const REPOS: Enlace[] = [
@@ -842,6 +893,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       'Hecho con React, Vite, three.js, TanStack, Recharts, Tailwind CSS y shadcn/ui. Tipografías: Newsreader y Public Sans. Código abierto:',
     repos: REPOS,
     creditosNasa: 'Este proyecto no es un producto oficial de la NASA ni cuenta con su respaldo.',
+    menuD: {
+      fuentes: 'Satélites y bases de datos de la NASA',
+      calculo: 'De la serie de años a la tendencia',
+      semaforo: 'Qué significa cada color',
+      limites: 'Hasta dónde llegan los datos',
+      creditos: 'Equipo, datos y código abierto',
+    },
   },
   en: {
     titulo: 'Methodology, sources and credits',
@@ -978,5 +1036,12 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       'Built with React, Vite, three.js, TanStack, Recharts, Tailwind CSS and shadcn/ui. Typefaces: Newsreader and Public Sans. Open source:',
     repos: REPOS,
     creditosNasa: 'This project is not an official NASA product and is not endorsed by NASA.',
+    menuD: {
+      fuentes: 'NASA satellites and datasets',
+      calculo: 'From yearly series to trend',
+      semaforo: 'What each colour means',
+      limites: 'How far the data goes',
+      creditos: 'Team, data and open source',
+    },
   },
 }

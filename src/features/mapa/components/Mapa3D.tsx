@@ -6,6 +6,7 @@ import { esUbigeo, useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
+import { useCalor } from '@/features/mapa/hooks/useCalor'
 
 interface Props {
   modo: ModoMapa
@@ -32,6 +33,7 @@ export function Mapa3D({ modo }: Props) {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const rango = useRango()
+  const calor = useCalor()
   const modoInicial = useRef(modo)
 
   // Crear y destruir la escena (solo al montar)
@@ -40,7 +42,7 @@ export function Mapa3D({ modo }: Props) {
     const e = new EscenaPeru(contenedor.current, capa.current, {
       oceano: TEXTOS[useApp.getState().idioma].ocean,
       modo: modoInicial.current,
-      alElegir: (id) => busquedaRef.current.seleccionar(id),
+      alElegir: (id) => busquedaRef.current.seleccionar(id, true),
       alGirar: (g) => useApp.getState().setGirando(g),
     })
     escena.current = e
@@ -50,6 +52,7 @@ export function Mapa3D({ modo }: Props) {
     const { variable: v, sel: s0 } = busquedaRef.current
     const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
+    e.setCalor(calor)
     e.setVegetacion(busquedaRef.current.vegetacion)
     if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
     useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
@@ -62,7 +65,7 @@ export function Mapa3D({ modo }: Props) {
       escena.current = null
       if (escenaActiva.current === e) escenaActiva.current = null
     }
-    // zonas se lee solo al crear; los cambios llegan por los efectos de abajo
+    // zonas y calor se leen solo al crear; los cambios llegan por los efectos de abajo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conWebgl])
 
@@ -79,6 +82,10 @@ export function Mapa3D({ modo }: Props) {
   useEffect(() => {
     escena.current?.setVegetacion(vegetacion)
   }, [vegetacion])
+
+  useEffect(() => {
+    escena.current?.setCalor(calor)
+  }, [calor])
 
   useEffect(() => {
     if (modo === 'explorar') escena.current?.seleccionar(sel && esUbigeo(sel) ? sel : null, true)
@@ -98,7 +105,7 @@ export function Mapa3D({ modo }: Props) {
     const valores: Record<string, number> = {}
     for (const [id, porAnio] of Object.entries(an.porId))
       if (porAnio[anio] != null) valores[id] = porAnio[anio]
-    escena.current?.setAnio({ valores, max: an.max })
+    escena.current?.setAnio({ valores, max: an.max }, anio)
     // tema: los colores del año se releen del tema
   }, [anio, variable, periodo, rango, tema])
 

@@ -6,6 +6,31 @@ import { useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
+import { useCalor } from '@/features/mapa/hooks/useCalor'
+import { PARADAS_CALOR, tieneAnio } from '@/features/mapa/utils/calor'
+
+/** Frío → calor, los mismos tokens que pinta el mapa de calor (PARADAS_CALOR). */
+const RAMPA = `linear-gradient(to right, ${PARADAS_CALOR.map((v) => `var(${v})`).join(', ')})`
+
+const CLAVE = 'leyenda-abierta'
+
+/** La última elección del usuario ('1' abierta, '0' cerrada), o null si nunca eligió. */
+function eleccionGuardada(): boolean | null {
+  try {
+    const v = localStorage.getItem(CLAVE)
+    return v === null ? null : v === '1'
+  } catch {
+    return null
+  }
+}
+
+function guardarEleccion(abierta: boolean) {
+  try {
+    localStorage.setItem(CLAVE, abierta ? '1' : '0')
+  } catch {
+    /* sin almacenamiento (modo privado): vuelve al valor por defecto */
+  }
+}
 import { COLOR_TENDENCIA, type TendenciaVegetacion } from '@/features/mapa/utils/vegetacion'
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
@@ -15,12 +40,23 @@ export function Leyenda() {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { rango, fuente } = useVista()
-  // Abierta en escritorio; en celular empieza cerrada para no tapar el mapa
-  const [abierta, setAbierta] = useState(() => !matchMedia('(max-width: 900px)').matches)
+  // Lo que el usuario dejó la última vez; si nunca eligió, abierta en escritorio y cerrada en
+  // celular para no tapar el mapa
+  const [abierta, setAbierta] = useState(
+    () => eleccionGuardada() ?? !matchMedia('(max-width: 900px)').matches,
+  )
+  const elegir = (abre: boolean) => {
+    setAbierta(abre)
+    guardarEleccion(abre)
+  }
   // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
   const sube = `var(--map-${claveMapa(1, variable)})`
   const baja = `var(--map-${claveMapa(-1, variable)})`
   const cols = anio == null ? t.legCols[variable] : t.legColsT
+  const calor = useCalor()
+  const conCalor = !!calor && tieneAnio(calor, anio)
+  // Con el mapa de calor, el color es la temperatura: las muestras de estado la llevan debajo
+  const lleno = conCalor ? RAMPA : sube
   const maxima = Math.max(
     ...Object.values(zonas)
       .filter((d) => d.status !== 'pocos_datos')
@@ -63,110 +99,216 @@ export function Leyenda() {
     </>
   )
   const muestra = 'h-3.5 w-[18px] flex-none rounded-[3px] box-border'
-  const caja =
-    'absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]'
-
   // Modo Vegetación: los colores de los 5 recuadros y qué es un recuadro (no el departamento)
-  if (vegetacion) {
-    const tendencias: [TendenciaVegetacion, string][] = [
-      ['sube', t.vegSube],
-      ['baja', t.vegBaja],
-      ['igual', t.vegIgual],
-    ]
-    return (
-      <div className={caja}>
-        <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
-          <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
-            {t.legSum}
-          </summary>
-          <div className="mt-1.5 grid grid-cols-3 gap-x-2.5 text-xs">
-            {tendencias.map(([k, texto]) => (
-              <span key={k} className="flex items-center gap-1.5">
-                <span
-                  className={`${muestra} border border-fg`}
-                  style={{ background: `var(${COLOR_TENDENCIA[k]})` }}
-                />
-                {texto}
-              </span>
-            ))}
-          </div>
-          <p className="m-0 mt-1.5 text-xs text-muted">{t.legVegNota}</p>
-        </details>
+  const tendencias: [TendenciaVegetacion, string][] = [
+    ['sube', t.vegSube],
+    ['baja', t.vegBaja],
+    ['igual', t.vegIgual],
+  ]
+  const contenidoVegetacion = (
+    <>
+      <div className="mt-1.5 grid grid-cols-3 gap-x-2.5 text-xs">
+        {tendencias.map(([k, texto]) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span
+              className={`${muestra} border border-fg`}
+              style={{ background: `var(${COLOR_TENDENCIA[k]})` }}
+            />
+            {texto}
+          </span>
+        ))}
       </div>
-    )
-  }
+      <p className="m-0 mt-1.5 text-xs text-muted">{t.legVegNota}</p>
+    </>
+  )
+
+  // En celular, abierta es una hoja pegada al borde de abajo del mapa; tocar el mapa la cierra
+  const hoja = abierta
+    ? 'max-[900px]:inset-x-0 max-[900px]:bottom-0 max-[900px]:z-[5] max-[900px]:max-h-[70%] max-[900px]:max-w-none max-[900px]:overflow-y-auto max-[900px]:rounded-b-none max-[900px]:border-x-0 max-[900px]:border-b-0 max-[900px]:px-4 max-[900px]:pb-4'
+    : ''
 
   return (
-    <div className={caja}>
-      <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
-        <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
-          {t.legSum}
-        </summary>
-        <svg
-          viewBox="0 0 330 118"
-          className="mt-1.5 block h-auto w-full max-w-[250px]"
-          role="img"
-          aria-label={cols.map((c) => c.join(': ')).join('. ')}
+    <>
+      {abierta && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => elegir(false)}
+          className="absolute inset-0 z-[4] cursor-default border-0 bg-fg/10 min-[901px]:hidden"
+        />
+      )}
+      <div
+        className={`absolute left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))] ${
+          anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
+        } ${hoja}`}
+      >
+        <details
+          className="group"
+          open={abierta}
+          // Al montar, el navegador avisa con el mismo valor: solo cuenta si cambió
+          onToggle={(e) => e.currentTarget.open !== abierta && elegir(e.currentTarget.open)}
         >
-          <line
-            x1={4}
-            y1={56}
-            x2={326}
-            y2={56}
-            style={{ stroke: 'var(--muted)' }}
-            strokeDasharray="4 4"
-          />
-          {columna(36, 16, 56, sube)}
-          {columna(146, 52, 56, 'var(--muted)')}
-          {columna(256, 70, 84, baja)}
-          <text x={322} y={51} textAnchor="end" fontSize={9.5} style={{ fill: 'var(--muted)' }}>
-            {t.noChange}
-          </text>
-          {rotulo(60, cols[0])}
-          {rotulo(170, cols[1])}
-          {rotulo(280, cols[2])}
-        </svg>
-        <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
-          {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
-          {anio == null && (
+          <summary className="flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="flex-none"
+            >
+              <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8M12 16.6v.1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            {t.legSum}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="flex-none transition-transform group-open:rotate-180"
+            >
+              <path
+                d="M6 9l6 6 6-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </summary>
+          {vegetacion ? (
+            contenidoVegetacion
+          ) : (
             <>
-              <span className="flex items-center gap-1.5">
-                <span className={muestra} style={{ background: sube }} />
-                {t.texReal}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span
-                  className={muestra}
-                  style={{
-                    background: `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
-                    border: `1px solid ${sube}`,
-                    opacity: 0.85,
-                  }}
+              {/* En celular el título del mapa va en una línea; lo que se pinta se explica aquí */}
+              <p className="m-0 mt-1 text-xs font-semibold text-fg min-[901px]:hidden">
+                {anio == null ? t.mapSub : t.mapSubAnio}
+              </p>
+              <p className="m-0 text-xs text-muted min-[901px]:hidden">
+                {t.timeHelp(rango.year_end - rango.year_start + 1)}
+              </p>
+              <svg
+                viewBox="0 0 330 118"
+                className="mt-1.5 block h-auto w-full max-w-[250px]"
+                role="img"
+                aria-label={cols.map((c) => c.join(': ')).join('. ')}
+              >
+                <line
+                  x1={4}
+                  y1={56}
+                  x2={326}
+                  y2={56}
+                  style={{ stroke: 'var(--muted)' }}
+                  strokeDasharray="4 4"
                 />
-                {t.texCas}
-              </span>
+                {columna(36, 16, 56, sube)}
+                {columna(146, 52, 56, 'var(--muted)')}
+                {columna(256, 70, 84, baja)}
+                <text
+                  x={322}
+                  y={51}
+                  textAnchor="end"
+                  fontSize={9.5}
+                  style={{ fill: 'var(--muted)' }}
+                >
+                  {t.noChange}
+                </text>
+                {rotulo(60, cols[0])}
+                {rotulo(170, cols[1])}
+                {rotulo(280, cols[2])}
+              </svg>
+              <div className="mt-1 grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
+                {/* En modo año el color es la anomalía: pleno y rayado no aplican (como el prototipo) */}
+                {anio == null && (
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <span className={muestra} style={{ background: lleno }} />
+                      {t.texReal}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={muestra}
+                        style={{
+                          background: conCalor
+                            ? `repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 45%, transparent) 3px 6px), ${RAMPA}`
+                            : `repeating-linear-gradient(135deg, ${sube} 0 3px, transparent 3px 6px)`,
+                          border: `1px solid ${conCalor ? 'var(--line)' : sube}`,
+                          opacity: 0.85,
+                        }}
+                      />
+                      {t.texCas}
+                    </span>
+                  </>
+                )}
+                <span className="flex items-center gap-1.5">
+                  <span className={`${muestra} border-2 border-dashed border-muted`} />
+                  {t.texFew}
+                </span>
+              </div>
+              {calor && conCalor && (
+                <div className="mt-1.5 grid gap-0.5 text-xs">
+                  <span className="text-fg">
+                    {anio == null
+                      ? t.calorMedia(calor.anio0, calor.anio0 + calor.anios - 1)
+                      : t.calorAnio(anio)}
+                  </span>
+                  <span
+                    className="h-2.5 rounded-[3px] border border-line"
+                    style={{ background: RAMPA }}
+                    aria-hidden
+                  />
+                  <span className="flex justify-between text-muted">
+                    <span>{Math.round(calor.min)} °C</span>
+                    <span>{Math.round(calor.max)} °C</span>
+                  </span>
+                  <span className="text-muted">{t.calorNota}</span>
+                </div>
+              )}
+              <p className="m-0 mt-1 text-xs text-fg">
+                {anio == null
+                  ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
+                  : t.scaleTime(
+                      fmtAnomalia(
+                        anomaliasAnio(variable, periodo, rango).max,
+                        variable,
+                        idioma,
+                      ).replace('+', ''),
+                    )}
+              </p>
+              <p className="m-0 text-xs text-muted">
+                {/* La máquina del tiempo usa la copia local */}
+                {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+              </p>
             </>
           )}
-          <span className="flex items-center gap-1.5">
-            <span className={`${muestra} border-2 border-dashed border-muted`} />
-            {t.texFew}
-          </span>
-        </div>
-        <p className="m-0 mt-1 text-xs text-fg">
-          {anio == null
-            ? t.scaleTrend(fmtValor(maxima, variable, idioma).replace('+', ''))
-            : t.scaleTime(
-                fmtAnomalia(anomaliasAnio(variable, periodo, rango).max, variable, idioma).replace(
-                  '+',
-                  '',
-                ),
-              )}
-        </p>
-        <p className="m-0 text-xs text-muted">
-          {/* La máquina del tiempo usa la copia local */}
-          {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
-        </p>
-      </details>
-    </div>
+        </details>
+        {abierta && (
+          <button
+            type="button"
+            aria-label={t.legMin}
+            title={t.legMin}
+            onClick={() => elegir(false)}
+            className="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 5l14 14M19 5L5 19"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </>
   )
 }

@@ -55,8 +55,9 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.locator('#informe')).toBeVisible()
 
   // Idioma y tema
-  await page.getByRole('button', { name: 'Cambiar idioma' }).click()
+  await page.getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
+  await expect(page).toHaveURL(/lang=en/)
   await page.getByRole('button', { name: /Change theme/ }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', /dark|light/)
 

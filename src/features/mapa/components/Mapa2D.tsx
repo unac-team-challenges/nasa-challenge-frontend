@@ -1,9 +1,11 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
 } from 'react'
 import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '@/data/datos'
@@ -16,6 +18,8 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
+import { dibujarCalor, tieneAnio } from '@/features/mapa/utils/calor'
+import { useCalor } from '@/features/mapa/hooks/useCalor'
 import { COLOR_TENDENCIA, LUGARES_VEGETACION, lugarDe } from '@/features/mapa/utils/vegetacion'
 
 const LON0 = -75.0
@@ -134,6 +138,31 @@ function zoomA(id: string | null, oX: number, oY: number, s: number) {
   return { k, tx: oX * (1 - k) + (cx - VX + k * VX) * s, ty: oY * (1 - k) + (cy - VY + k * VY) * s }
 }
 
+/** Zoom máximo con los dedos (veces el tamaño inicial) y desplazamiento mínimo para que un toque cuente como arrastre (px). */
+const K_MAX = 6
+const UMBRAL_ARRASTRE = 8
+
+interface Vista {
+  k: number
+  tx: number
+  ty: number
+}
+
+/** Mantiene el mapa cubriendo la caja: ni se pasa del zoom máximo ni deja huecos en los bordes. */
+function limitar(v: Vista, w: number, h: number): Vista {
+  const k = Math.min(K_MAX, Math.max(1, v.k))
+  return {
+    k,
+    tx: Math.min(0, Math.max(w * (1 - k), v.tx)),
+    ty: Math.min(0, Math.max(h * (1 - k), v.ty)),
+  }
+}
+
+/** Lado mínimo de un objetivo táctil (px): por debajo, la zona recibe un borde invisible que se toca. */
+const TOQUE_MIN = 44
+/** Cuánto puede crecer ese borde (px de trazo): Callao es de ~11 km y a veces mide 3 px. */
+const TOQUE_MAX = 40
+
 /** Dónde va la imagen del suelo, en las mismas coordenadas que los departamentos. */
 const SUELO = (() => {
   const [x, y] = proyectar([CAJA_SUELO.lon0, CAJA_SUELO.lat1])
@@ -186,6 +215,14 @@ export function Mapa2D({ interactivo = true }: Props) {
   const lienzo = useRef<HTMLCanvasElement>(null)
   const caja = useRef<HTMLDivElement>(null)
   const [tam, setTam] = useState({ w: 0, h: 0 })
+  const calor = useCalor()
+  // Zoom y desplazamiento hechos con los dedos; null = sigue el zoom automático a la zona elegida
+  const [manual, setManual] = useState<Vista | null>(null)
+  const [gestando, setGestando] = useState(false)
+  const dedos = useRef(new Map<number, { x: number; y: number }>())
+  const inicio = useRef<{ v: Vista; mx: number; my: number; d: number } | null>(null)
+  const arrastrado = useRef(false)
+  const reinicio2d = useApp((x) => x.reinicio2d)
 
   // El suelo se pinta una vez por tema (también si cambia el tema del sistema)
   const [esquema, setEsquema] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches)
@@ -212,18 +249,112 @@ export function Mapa2D({ interactivo = true }: Props) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  // Mapa de calor (temperatura): la malla como imagen de 1 px por celda; el navegador la suaviza
+  const conCalor = !!calor && tieneAnio(calor, anio)
+  const urlCalor = useMemo(() => {
+    if (!calor || !conCalor) return null
+    const cv = document.createElement('canvas')
+    dibujarCalor(cv, calor, anio ?? null)
+    return cv.toDataURL()
+    // tema y esquema: los colores se leen del tema
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calor, conCalor, anio, tema, esquema])
+
   const s = Math.min(tam.w / VB.w, tam.h / VB.h) || 0
   const oX = (tam.w - VB.w * s) / 2
   const oY = (tam.h - VB.h * s) / 2
   // Una zona que no existe (p. ej. /zona/99) no se marca ni se acerca
   const marcada = interactivo && sel && sel in CAJAS ? sel : null
-  const zm = zoomA(marcada, oX, oY, s)
+  // Elegir otra zona o pedir la vista inicial deshace el zoom manual (patrón «ajustar estado al renderizar»)
+  const [previa, setPrevia] = useState({ marcada, reinicio2d })
+  if (previa.marcada !== marcada || previa.reinicio2d !== reinicio2d) {
+    setPrevia({ marcada, reinicio2d })
+    setManual(null)
+  }
+  const zm = manual ?? zoomA(marcada, oX, oY, s)
   // Posición en pantalla ya con el zoom: las etiquetas se mueven con el mapa sin agrandarse
   const aPantalla = ([x, y]: [number, number]) => [
     zm.k * (oX + (x - VB.x) * s) + zm.tx,
     zm.k * (oY + (y - VB.y) * s) + zm.ty,
   ]
   const celular = tam.w > 0 && tam.w < 600
+  // Zonas demasiado pequeñas para el dedo (Callao, Tumbes…): su área de toque crece con un borde invisible
+  const aToque =
+    celular && interactivo
+      ? RUTAS.map(({ id, d }) => {
+          const [x0, y0, x1, y1] = CAJAS[id]
+          const lado = Math.min((x1 - x0) * s * zm.k, (y1 - y0) * s * zm.k)
+          return { id, d, trazo: Math.min(TOQUE_MAX, Math.round(TOQUE_MIN - lado)) }
+        }).filter((z) => z.trazo > 0)
+      : []
+
+  // Gestos táctiles: un dedo arrastra, dos dedos pellizcan. El centro de los dedos es el ancla:
+  // el punto del mapa que estaba bajo ellos sigue bajo ellos. Con ratón no cambia nada.
+  const anclar = () => {
+    const ps = [...dedos.current.values()]
+    if (!ps.length) return (inicio.current = null)
+    const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length
+    const my = ps.reduce((a, p) => a + p.y, 0) / ps.length
+    const d = ps.length > 1 ? Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) : 0
+    inicio.current = { v: manual ?? zm, mx, my, d }
+  }
+  const aCaja = (e: PointerEvent) => {
+    const r = caja.current!.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+  const terminarDedo = (e: PointerEvent) => {
+    if (!dedos.current.delete(e.pointerId)) return
+    anclar()
+    if (!dedos.current.size && gestando) setGestando(false)
+  }
+  const gestos = interactivo
+    ? {
+        onPointerDown: (e: PointerEvent) => {
+          if (e.pointerType !== 'touch') return
+          if (!dedos.current.size) arrastrado.current = false
+          dedos.current.set(e.pointerId, aCaja(e))
+          if (dedos.current.size > 1) arrastrado.current = true
+          anclar()
+        },
+        onPointerMove: (e: PointerEvent) => {
+          if (!dedos.current.has(e.pointerId) || !inicio.current) return
+          dedos.current.set(e.pointerId, aCaja(e))
+          const ps = [...dedos.current.values()]
+          const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length
+          const my = ps.reduce((a, p) => a + p.y, 0) / ps.length
+          const i = inicio.current
+          if (!arrastrado.current && Math.hypot(mx - i.mx, my - i.my) < UMBRAL_ARRASTRE) return
+          arrastrado.current = true
+          setGestando(true)
+          const d = ps.length > 1 ? Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) : 0
+          const k = i.d && d ? i.v.k * (d / i.d) : i.v.k
+          const kk = Math.min(K_MAX, Math.max(1, k))
+          // el punto del mapa que estaba bajo el ancla sigue bajo el ancla
+          setManual(
+            limitar(
+              {
+                k: kk,
+                tx: mx - (kk * (i.mx - i.v.tx)) / i.v.k,
+                ty: my - (kk * (i.my - i.v.ty)) / i.v.k,
+              },
+              tam.w,
+              tam.h,
+            ),
+          )
+        },
+        // Solo los dedos del gesto hacen algo aquí: un toque suelto o el ratón no cambian ningún
+        // estado, así un render no reordena la zona entre «pointerdown» y el «click».
+        onPointerUp: (e: PointerEvent) => terminarDedo(e),
+        onPointerCancel: (e: PointerEvent) => terminarDedo(e),
+        // Si el dedo arrastró, el toque que sigue no elige zona
+        onClickCapture: (e: MouseEvent) => {
+          if (!arrastrado.current) return
+          e.stopPropagation()
+          e.preventDefault()
+          arrastrado.current = false
+        },
+      }
+    : {}
 
   const valor = (id: string) => {
     const d = zonas[id]
@@ -260,10 +391,16 @@ export function Mapa2D({ interactivo = true }: Props) {
   if (marcada && !CLAVE.includes(marcada)) conEtiqueta.push(marcada)
 
   return (
-    <div ref={caja} className="absolute inset-0 overflow-hidden">
+    <div
+      ref={caja}
+      className="absolute inset-0 overflow-hidden"
+      // touch-action: none solo dentro del mapa interactivo: los gestos son del mapa, no de la página
+      style={interactivo ? { touchAction: 'none' } : undefined}
+      {...gestos}
+    >
       {/* Suelo real: mar con profundidad y espuma, relieve, ríos, fronteras y sombra del Perú */}
       <div
-        className="zoom2d absolute inset-0"
+        className={`zoom2d absolute inset-0 ${gestando ? 'gestando' : ''}`}
         style={{
           transform: `translate(${zm.tx}px, ${zm.ty}px) scale(${zm.k})`,
           transformOrigin: '0 0',
@@ -303,6 +440,25 @@ export function Mapa2D({ interactivo = true }: Props) {
                 <rect width={0.12} height={0.24} style={{ fill: `var(--map-${k})` }} />
               </pattern>
             ))}
+            {/* Sobre el calor: rayas del fondo, translúcidas, para «posible casualidad» */}
+            <pattern
+              id="rayado-calor"
+              width={0.24}
+              height={0.24}
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect
+                width={0.12}
+                height={0.24}
+                style={{ fill: 'var(--panel)', fillOpacity: 0.45 }}
+              />
+            </pattern>
+            <clipPath id="silueta-peru">
+              {RUTAS.map(({ id, d }) => (
+                <path key={id} d={d} clipRule="evenodd" />
+              ))}
+            </clipPath>
           </defs>
 
           {/* Retícula cada 5° */}
@@ -344,6 +500,19 @@ export function Mapa2D({ interactivo = true }: Props) {
             ))}
           </g>
 
+          {calor && urlCalor && (
+            <image
+              href={urlCalor}
+              x={(calor.lonMin - LON0) * COSLAT}
+              y={-(calor.latMin + calor.spanLat - LAT0)}
+              width={calor.spanLon * COSLAT}
+              height={calor.spanLat}
+              preserveAspectRatio="none"
+              clipPath="url(#silueta-peru)"
+              aria-hidden
+            />
+          )}
+
           {orden.map(({ id, d: ruta }) => {
             const d = zonas[id]
             const clave = claveMapa(d.slope_per_decade, variable)
@@ -353,7 +522,9 @@ export function Mapa2D({ interactivo = true }: Props) {
             let guiones = ''
             let opacidadTrazo = 0.7
             const valorAnio = an?.porId[id]?.[anio ?? 0]
-            if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
+            if (urlCalor)
+              relleno = d.status === 'posible_casualidad' ? 'url(#rayado-calor)' : 'transparent'
+            else if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
             else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
             if (vegetacion) {
               // Modo Vegetación: los departamentos quedan de fondo, sin dato
@@ -403,16 +574,19 @@ export function Mapa2D({ interactivo = true }: Props) {
                       tabIndex: 0,
                       'aria-label': etiqueta(id),
                       'aria-pressed': id === sel,
-                      onClick: () => seleccionar(id),
+                      onClick: () => seleccionar(id, true),
                       onKeyDown: (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          seleccionar(id)
+                          seleccionar(id, true)
                         }
                       },
-                      onPointerEnter: () => setEncima(id),
+                      // Con el dedo no hay «pasar por encima»: la ficha flotante tapaba el mapa y
+                      // desaparecía al soltar. El resumen sale en el informe, que se abre al tocar.
+                      onPointerEnter: (e: PointerEvent) =>
+                        e.pointerType !== 'touch' && setEncima(id),
                       onPointerMove: (e: PointerEvent) =>
-                        setTip({ id, x: e.clientX, y: e.clientY }),
+                        e.pointerType !== 'touch' && setTip({ id, x: e.clientX, y: e.clientY }),
                       onPointerLeave: () => {
                         setTip(null)
                         setEncima((x) => (x === id ? null : x))
@@ -422,6 +596,25 @@ export function Mapa2D({ interactivo = true }: Props) {
               />
             )
           })}
+
+          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de arriba. */}
+          {aToque.map(({ id, d: ruta, trazo }) => (
+            <path
+              key={id}
+              d={ruta}
+              aria-hidden
+              data-toque={id}
+              vectorEffect="non-scaling-stroke"
+              style={{
+                fill: 'none',
+                stroke: 'transparent',
+                strokeWidth: trazo,
+                strokeLinejoin: 'round',
+                pointerEvents: 'stroke',
+              }}
+              onClick={() => seleccionar(id, true)}
+            />
+          ))}
           {/* Modo Vegetación: los 5 recuadros medidos, a tamaño real, con el color de su tendencia */}
           {vegetacion && (
             <g aria-hidden style={{ pointerEvents: 'none' }}>
@@ -510,7 +703,9 @@ export function Mapa2D({ interactivo = true }: Props) {
                 return (
                   <span
                     key={id}
-                    className={'lbl3d lbl2d' + (id === marcada ? ' sel' : '')}
+                    className={
+                      'lbl3d lbl2d' + (id === marcada ? ' sel' : '') + (gestando ? ' gestando' : '')
+                    }
                     style={{
                       transform: `translate(${x + dx}px, ${y + dy}px) translate(-50%, -50%)`,
                     }}

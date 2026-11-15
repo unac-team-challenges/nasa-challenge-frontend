@@ -20,6 +20,10 @@ describe('validarBusqueda (lo que va en la URL)', () => {
     )
     expect(stringifySearch({})).toBe('')
   })
+  it('lee el idioma de la URL y ignora lo inválido', () => {
+    expect(validarBusqueda({ lang: 'en' })).toEqual({ lang: 'en' })
+    expect(validarBusqueda({ lang: 'fr' })).toEqual({})
+  })
   it('sin parámetros no inventa nada (los valores por defecto los pone el hook)', () => {
     expect(validarBusqueda({})).toEqual({})
   })

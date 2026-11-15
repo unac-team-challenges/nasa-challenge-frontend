@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
@@ -9,9 +9,11 @@ import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
+import { AyudaModo } from '@/features/tiempo/components/AyudaModo'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
+import { Popover } from 'radix-ui'
 import { Button } from '@/components/ui/button'
 import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 
@@ -33,7 +35,7 @@ const RETRASO_INFO_S = 1.3
  * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
-  const { idioma, sinNino, informeMin, setInformeMin } = useApp()
+  const { idioma, sinNino, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
   const { variable, sel, anio, seleccionar, vegetacion } = useBusqueda()
   const en3d = modoMapa === '3d'
@@ -53,7 +55,7 @@ export function Explorador() {
   if (sel !== previa.sel || informeMin !== previa.informeMin) {
     setPrevia({ sel, informeMin })
     if (sel !== previa.sel) {
-      const animar = !!sel && !reducido()
+      const animar = !!sel && zonaDesdeMapa && !reducido()
       setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
       // si el informe estaba cerrado, se abre cuando la presentación termina
       setAbrirTarde(animar && previa.informeMin)
@@ -64,6 +66,18 @@ export function Explorador() {
     const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
     return () => clearTimeout(fin)
   }, [intro])
+
+  // Si el informe nuevo es más corto, el navegador baja la página sin avisar: se lleva la vista
+  // al principio del informe (nunca al mapa). Si cabe, la posición no se toca.
+  const ultimoY = useRef(0)
+  useEffect(() => {
+    const guardar = () => (ultimoY.current = window.scrollY)
+    window.addEventListener('scroll', guardar, { passive: true })
+    return () => window.removeEventListener('scroll', guardar)
+  }, [])
+  useLayoutEffect(() => {
+    if (window.scrollY < ultimoY.current - 1) informe.current?.scrollIntoView({ block: 'start' })
+  }, [sel])
 
   // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
   useEffect(() => {
@@ -81,6 +95,7 @@ export function Explorador() {
     seleccionar(null)
     setInformeMin(true)
     escenaActiva.current?.recentrar()
+    useApp.setState((s) => ({ reinicio2d: s.reinicio2d + 1 }))
   }
   // El informe y la zona del mapa se mueven juntos, cuando la presentación ya se va
   const demoraPanel = !informeMin && abrirTarde ? `${RETRASO_INFO_S - 0.2}s` : '0s'
@@ -88,6 +103,68 @@ export function Explorador() {
     '--ancho-informe': ANCHO_INFORME,
     '--tapa': informeMin ? `${FRANJA}px` : 'var(--ancho-informe)',
   } as CSSProperties
+
+  // Los controles del mapa, en un solo lugar: en escritorio van a la vista y en celular, en el menú «⋯»
+  const controles = (
+    <>
+      {conWebgl && (
+        <div
+          className="inline-flex overflow-hidden rounded-s border border-line-2 bg-panel/92"
+          role="group"
+          aria-label={t.vistaMapa}
+        >
+          {(['3d', '2d'] as const).map((m) => (
+            <Button
+              key={m}
+              variant="toggle"
+              size="sm"
+              aria-pressed={modoMapa === m}
+              onClick={() => setModoMapa(m)}
+            >
+              {m.toUpperCase()}
+            </Button>
+          ))}
+        </div>
+      )}
+      <Button
+        size="icon"
+        className={boton}
+        disabled={!en3d}
+        aria-pressed={girando}
+        aria-label={girando ? t.spinOn : t.spinOff}
+        title={girando ? t.spinOn : t.spinOff}
+        onClick={() => escenaActiva.current?.alternarGiro()}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Button>
+      <Button
+        size="icon"
+        className={boton}
+        aria-label={t.recenter}
+        title={t.recenter}
+        onClick={volverAlInicio}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+          <path
+            d="M12 2v4M12 18v4M2 12h4M18 12h4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </Button>
+    </>
+  )
 
   return (
     <section
@@ -118,19 +195,25 @@ export function Explorador() {
           </div>
         )}
         <div className="entrada-suave">
-          <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
+          <div className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
-              <h2 className="m-0 font-display text-xl font-[650] tracking-display">
-                {vegetacion ? t.mapHVeg : t.mapH[variable]}
+              <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
+                {vegetacion ? (
+                  t.mapHVeg
+                ) : (
+                  <>
+                    {t.mapH[variable]} ·{' '}
+                    {anio == null
+                      ? t.mapModoTendencia(rango.year_start, rango.year_end)
+                      : t.mapModoAnio(anio)}
+                  </>
+                )}
               </h2>
-              <span className="text-[13px] text-muted">
-                {vegetacion
-                  ? t.mapSubVeg
-                  : anio == null
-                    ? t.mapSub(rango.year_start, rango.year_end)
-                    : t.legTimeNote(anio)}
+              <span className="hidden text-[13px] text-muted min-[901px]:inline">
+                {vegetacion ? t.mapSubVeg : anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
+            {!vegetacion && <AyudaModo />}
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}
@@ -147,64 +230,40 @@ export function Explorador() {
             {/* La vegetación no tiene máquina del tiempo (solo 5 lugares, 2001 frente a 2024) */}
             {!vegetacion && <BarraTiempo />}
           </div>
-          <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] flex gap-1.5">
-            {conWebgl && (
-              <div
-                className="inline-flex overflow-hidden rounded-s border border-line-2 bg-panel/92"
-                role="group"
-                aria-label={t.vistaMapa}
-              >
-                {(['3d', '2d'] as const).map((m) => (
-                  <Button
-                    key={m}
-                    variant="toggle"
-                    size="sm"
-                    aria-pressed={modoMapa === m}
-                    onClick={() => setModoMapa(m)}
-                  >
-                    {m.toUpperCase()}
-                  </Button>
-                ))}
-              </div>
-            )}
-            <Button
-              size="icon"
-              className={boton}
-              disabled={!en3d}
-              aria-pressed={girando}
-              aria-label={girando ? t.spinOn : t.spinOff}
-              title={girando ? t.spinOn : t.spinOff}
-              onClick={() => escenaActiva.current?.alternarGiro()}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Button>
-            <Button
-              size="icon"
-              className={boton}
-              aria-label={t.recenter}
-              title={t.recenter}
-              onClick={volverAlInicio}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" fill="currentColor" />
-                <path
-                  d="M12 2v4M12 18v4M2 12h4M18 12h4"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </Button>
+          {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
+          <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex">
+            {controles}
           </div>
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <Button
+                size="icon"
+                className={`${boton} pointer-events-auto absolute right-4 z-[3] min-[901px]:hidden ${
+                  anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
+                }`}
+                aria-label={t.mapaControles}
+                title={t.mapaControles}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="5" cy="12" r="1.8" fill="currentColor" />
+                  <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+                  <circle cx="19" cy="12" r="1.8" fill="currentColor" />
+                </svg>
+              </Button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                side="top"
+                align="end"
+                sideOffset={8}
+                collisionPadding={16}
+                aria-label={t.mapaControles}
+                className="z-[60] flex gap-1.5 rounded-m border border-line bg-panel p-1.5 shadow-[0_8px_24px_var(--shadow)]"
+              >
+                {controles}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
         </div>
       </div>
 
@@ -264,7 +323,6 @@ export function Explorador() {
           >
             {/* La información entra suave cuando termina la presentación del departamento */}
             <div
-              key={sel ?? 'ninguna'}
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >

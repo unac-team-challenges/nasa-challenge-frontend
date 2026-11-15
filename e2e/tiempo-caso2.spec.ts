@@ -17,13 +17,25 @@ test('temperatura y máquina del tiempo: año, Play, Pausa y vuelta a la tendenc
 
   const tiempo = page.getByRole('group', { name: 'Máquina del tiempo' })
   const tendencia = tiempo.getByRole('button', { name: 'Tendencia', exact: true })
+  const porAnio = tiempo.getByRole('button', { name: 'Año a año', exact: true })
   const anio = tiempo.getByRole('slider', { name: 'Año' })
+  const titulo = page.getByRole('heading', { level: 2, name: /Temperatura media/ })
   await expect(tendencia).toHaveAttribute('aria-pressed', 'true')
+  await expect(titulo).toContainText('tendencia')
+  // En el modo Tendencia no hay deslizador ni Play
+  await expect(anio).toHaveCount(0)
+  await expect(tiempo.getByRole('button', { name: /^Reproducir/ })).toHaveCount(0)
 
-  // Elegir un año con el teclado sale de la vista de tendencia
+  // Año a año muestra el deslizador; el título dice el año
+  await porAnio.click()
+  await expect(porAnio).toHaveAttribute('aria-pressed', 'true')
+  await expect(tendencia).toHaveAttribute('aria-pressed', 'false')
+  await expect(titulo).toContainText('solo')
+
+  // Elegir otro año con el teclado sigue en Año a año
   await anio.focus()
   await anio.press('Home')
-  await expect(tendencia).toHaveAttribute('aria-pressed', 'false')
+  await expect(porAnio).toHaveAttribute('aria-pressed', 'true')
   const primero = await anio.getAttribute('aria-valuetext')
   expect(primero).toMatch(/^\d{4}$/)
 

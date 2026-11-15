@@ -131,7 +131,7 @@ export function Ficha() {
         : 'border border-fg [background-image:repeating-linear-gradient(135deg,var(--line)_0_3px,transparent_3px_7px)]'
 
   return (
-    <div ref={raiz} className="flex flex-col gap-4.5">
+    <div ref={raiz} className="aparece-hijos flex flex-col gap-4.5">
       <div className="mr-11 flex flex-col gap-0.5">
         <span className="text-[13px] text-muted">{t.kind(REGION[sel])}</span>
         <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
@@ -256,7 +256,9 @@ export function Ficha() {
             {d.motivo && (
               <>
                 <dt className="text-muted">{t.howMotivo}</dt>
-                <dd className="m-0">{(api && t.avisoFijo?.(variable, d.lag1)) || d.motivo}</dd>
+                <dd className="m-0">
+                  {(api && t.avisoFijo?.(variable, d.lag1, d.motivo)) || d.motivo}
+                </dd>
               </>
             )}
             <dt className="text-muted">{t.howN}</dt>

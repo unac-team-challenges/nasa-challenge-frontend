@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Periodo } from '@/data/datos'
 import type { Idioma } from '@/i18n/textos'
 import { hayWebgl } from '@/utils/webgl'
+import { SIN_MARGEN, type Margen } from '@/utils/margenMapa'
 
 export type Tema = 'claro' | 'oscuro'
 
@@ -44,6 +45,10 @@ interface EstadoApp {
   informeMin: boolean
   /** La última zona elegida salió de un toque en el mapa (y no de la Pista o de la URL) */
   zonaDesdeMapa: boolean
+  /** Lo que tapan los paneles del explorador arriba y abajo del mapa 2D (px); lo mide el explorador */
+  margenMapa: Margen
+  /** Sube cada vez que se pide volver a la vista inicial: el mapa 2D deshace su zoom manual */
+  reinicio2d: number
   /** null = sigue al sistema */
   tema: Tema | null
   /** El navegador puede dibujar 3D (WebGL) */
@@ -72,6 +77,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   sinNino: false,
   informeMin: !zonaEnUrl(),
   zonaDesdeMapa: false,
+  margenMapa: SIN_MARGEN,
+  reinicio2d: 0,
   tema: null,
   conWebgl: GL,
   modoMapa: GL ? '3d' : '2d',

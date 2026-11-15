@@ -1,5 +1,6 @@
 /** Textos de la interfaz en español e inglés (del prototipo v2, con datos reales de NASA POWER). */
 import type { Estado, Region, Variable } from '@/data/datos'
+import { avisoZonaEn } from '@/i18n/avisoZona'
 
 export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
@@ -57,10 +58,15 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
-  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
-  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
-  calorNota:
-    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+  calorCosa: { lluvia: 'lluvia anual', temperatura: 'temperatura media' } as PorVariable<string>,
+  calorMedia: (cosa: string, a: number, b: number) => `Color: ${cosa} ${a}–${b} en cada celda`,
+  calorAnio: (cosa: string, anio: number) => `Color: ${cosa} de ${anio} en cada celda`,
+  calorNota: {
+    lluvia:
+      'Celdas NASA POWER de ~50 km (MERRA-2). Más oscuro = llueve más: la costa es ocre y la selva, violeta. En los Andes el valor sale suavizado.',
+    temperatura:
+      'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
+  } as PorVariable<string>,
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -85,7 +91,7 @@ const es = {
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
-  avisoFijo: null as ((variable: Variable, lag1: number | null) => string) | null,
+  avisoFijo: null as ((variable: Variable, lag1: number | null, motivo: string) => string) | null,
   status: {
     real: 'Cambio real',
     posible_casualidad: 'Posible casualidad',
@@ -212,6 +218,7 @@ const es = {
     'Cifras de un recuadro de unos 25 km de lado en la selva; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
+  mapaControles: 'Controles del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
   noGl: 'Tu navegador no muestra 3D. Te mostramos el mapa en 2D con los mismos datos.',
   tipVal: (nombre: string, v: string, u: string, estado: string) =>
@@ -284,10 +291,15 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
-  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
-  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
-  calorNota:
-    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  calorCosa: { lluvia: 'annual rainfall', temperatura: 'mean temperature' },
+  calorMedia: (cosa, a, b) => `Colour: ${cosa} ${a}–${b} in each cell`,
+  calorAnio: (cosa, anio) => `Colour: ${cosa} of ${anio} in each cell`,
+  calorNota: {
+    lluvia:
+      'NASA POWER cells of ~50 km (MERRA-2). Darker = more rain: the coast is ochre and the jungle, violet. In the Andes values are smoothed.',
+    temperatura:
+      'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
+  },
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>
@@ -309,8 +321,9 @@ const en: Textos = {
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : 'temperature'} averaged over ${celdas} ${local ? '~50 km ' : ''}${celdas === 1 ? 'cell' : 'cells'}`,
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
-  avisoFijo: (_variable, lag1) =>
+  avisoFijo: (_variable, lag1, motivo) =>
     [
+      avisoZonaEn(motivo),
       lag1 != null &&
         lag1 > 0.5 &&
         'Years very similar to each other (high lag1): the trend may look more certain than it is.',
@@ -434,6 +447,7 @@ const en: Textos = {
     'Tree cover from MODIS MOD44B (NASA), 250 m pixels. Forest: pixels with 30 % or more trees.',
   selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
+  mapaControles: 'Map controls',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
   tipVal: (nombre, v, u, estado) => `${nombre}, ${v} ${u}, ${estado.toLowerCase()}`,

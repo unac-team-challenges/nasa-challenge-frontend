@@ -37,7 +37,7 @@ const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed
  * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
  */
 export function Cabecera() {
-  // Selectores sueltos: la cabecera no se vuelve a dibujar con el estado del mapa
+  // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
   const idioma = useApp((s) => s.idioma)
   const setIdioma = useApp((s) => s.setIdioma)
   const alternarTema = useApp((s) => s.alternarTema)
@@ -138,7 +138,8 @@ export function Cabecera() {
               variant="toggle"
               size="sm"
               lang={i}
-              aria-label={nombre}
+              // El nombre accesible incluye lo que se ve (WCAG 2.5.3): «English (EN)»
+              aria-label={`${nombre} (${corto})`}
               aria-pressed={idioma === i}
               className={`${opcion} px-2.5 text-xs font-semibold tracking-wide`}
               onClick={() => setIdioma(i)}

@@ -63,13 +63,13 @@ describe('otras rutas', () => {
   it('el selector de idioma resalta el idioma actual', async () => {
     renderRuta('/metodologia')
     const grupo = await screen.findByRole('group', { name: 'Cambiar idioma' })
-    expect(within(grupo).getByRole('button', { name: 'Español' })).toHaveAttribute(
+    expect(within(grupo).getByRole('button', { name: /Español/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    await userEvent.click(within(grupo).getByRole('button', { name: 'English' }))
+    await userEvent.click(within(grupo).getByRole('button', { name: /English/ }))
     expect(useApp.getState().idioma).toBe('en')
-    expect(within(grupo).getByRole('button', { name: 'English' })).toHaveAttribute(
+    expect(within(grupo).getByRole('button', { name: /English/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

@@ -1,4 +1,4 @@
-import { Outlet } from '@tanstack/react-router'
+import { Outlet, useRouterState } from '@tanstack/react-router'
 import { lazy, Suspense, useEffect } from 'react'
 import { Cabecera } from '@/components/Cabecera'
 import { MapaSkeleton } from '@/components/Esperas'
@@ -19,6 +19,7 @@ export default function App() {
   const conWebgl = useApp((s) => s.conWebgl)
   const modoMapa = useApp((s) => s.modoMapa)
   const ruta = useRuta()
+  const hash = useRouterState({ select: (s) => s.location.hash })
   useDecidirFuente(ruta)
   useMeta(ruta)
   useEffect(() => {
@@ -26,8 +27,8 @@ export default function App() {
   }, [idioma])
   useEffect(() => {
     // Con #ancla (menú de metodología) el router baja a la sección: no volver arriba
-    if (!location.hash) scrollTo(0, 0)
-  }, [ruta])
+    if (!hash) scrollTo(0, 0)
+  }, [ruta, hash])
   // En el explorador, la vista 2D desmonta el 3D (libera la tarjeta gráfica)
   const en2d = conWebgl && ruta === 'explorar' && modoMapa === '2d'
 

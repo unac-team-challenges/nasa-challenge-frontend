@@ -52,8 +52,8 @@ export function MenuMetodologia() {
       <DropdownMenu.Trigger asChild>
         <Button
           variant="ghost"
-          aria-current={activa ? 'page' : undefined}
-          className="group relative rounded-m px-2.5 hover:bg-panel-2 hover:no-underline data-[state=open]:bg-panel-2 aria-[current=page]:text-accent-text sm:px-3"
+          data-activa={activa || undefined}
+          className="group relative rounded-m px-2.5 hover:bg-panel-2 hover:no-underline data-[state=open]:bg-panel-2 data-activa:text-accent-text sm:px-3"
         >
           <BookOpen className="size-4.5" aria-hidden="true" />
           <span className="max-sm:sr-only">{t.metodologiaCorto}</span>
@@ -78,7 +78,7 @@ export function MenuMetodologia() {
           className="z-50 w-[min(22rem,calc(100vw-24px))] rounded-l border border-line bg-panel p-1.5 text-sm shadow-[0_18px_40px_-12px_var(--shadow)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1 motion-reduce:animate-none"
         >
           <DropdownMenu.Item asChild onSelect={() => (navego.current = true)}>
-            <Link to="/metodologia" className={item}>
+            <Link to="/metodologia" aria-current={activa ? 'page' : undefined} className={item}>
               <span className="grid size-8 flex-none place-items-center rounded-s bg-accent text-accent-fg">
                 <BookOpen className="size-4" aria-hidden="true" />
               </span>

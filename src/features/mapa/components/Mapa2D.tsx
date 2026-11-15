@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -20,6 +21,7 @@ import { SIN_MARGEN } from '@/utils/margenMapa'
 import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
 import { dibujarCalor, tieneAnio } from '@/features/mapa/utils/calor'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
+import { COLOR_TENDENCIA, LUGARES_VEGETACION, lugarDe } from '@/features/mapa/utils/vegetacion'
 
 const LON0 = -75.0
 const LAT0 = -9.2
@@ -202,7 +204,7 @@ interface Props {
  */
 export function Mapa2D({ interactivo = true }: Props) {
   const { idioma, periodo } = useApp()
-  const { variable, sel, seleccionar } = useBusqueda()
+  const { variable, sel, seleccionar, vegetacion } = useBusqueda()
   const anio = useAnio()
   const tema = useApp((s) => s.tema) // el suelo y los colores del año se leen del tema
   const rango = useRango()
@@ -369,6 +371,11 @@ export function Mapa2D({ interactivo = true }: Props) {
   }
 
   const etiqueta = (id: string) => {
+    // Modo Vegetación: el nombre y, si lo tiene, su lugar medido (sin lluvia ni temperatura)
+    if (vegetacion) {
+      const l = lugarDe(id)
+      return l ? `${NOMBRE[id]}, ${t.vegConLugar(l.nombre)}` : NOMBRE[id]
+    }
     const d = zonas[id]
     const valorAnio = an?.porId[id]?.[anio ?? 0]
     if (d.status !== 'pocos_datos' && anio != null && valorAnio != null)
@@ -550,7 +557,10 @@ export function Mapa2D({ interactivo = true }: Props) {
               relleno = d.status === 'posible_casualidad' ? 'url(#rayado-calor)' : 'transparent'
             else if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
             else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
-            if (d.status === 'pocos_datos') {
+            if (vegetacion && !urlCalor) {
+              // Modo Vegetación sin malla (aún no cargó): los departamentos quedan de fondo, sin dato
+              relleno = 'color-mix(in srgb, var(--muted) 22%, transparent)'
+            } else if (d.status === 'pocos_datos') {
               relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'
               trazo = 'var(--muted)'
               grosor = 1.5
@@ -617,6 +627,30 @@ export function Mapa2D({ interactivo = true }: Props) {
               />
             )
           })}
+          {/* Modo Vegetación: los 5 recuadros medidos, a tamaño real, con el color de su tendencia */}
+          {vegetacion && (
+            <g aria-hidden style={{ pointerEvents: 'none' }}>
+              {LUGARES_VEGETACION.map((l) => {
+                const [x0, y0] = proyectar([l.caja[0], l.caja[3]])
+                const [x1, y1] = proyectar([l.caja[2], l.caja[1]])
+                return (
+                  <rect
+                    key={l.id}
+                    x={x0}
+                    y={y0}
+                    width={x1 - x0}
+                    height={y1 - y0}
+                    vectorEffect="non-scaling-stroke"
+                    style={{
+                      fill: `var(${COLOR_TENDENCIA[l.tendencia]})`,
+                      stroke: 'var(--fg)',
+                      strokeWidth: 1.5,
+                    }}
+                  />
+                )
+              })}
+            </g>
+          )}
         </svg>
       </div>
 
@@ -649,7 +683,29 @@ export function Mapa2D({ interactivo = true }: Props) {
               </span>
             )
           })()}
+          {/* Lugares con vegetación medida: debajo de las etiquetas de departamento */}
           {interactivo &&
+            vegetacion &&
+            LUGARES_VEGETACION.map((l) => {
+              // El nombre va justo encima del borde norte de su recuadro, sin taparlo
+              const [x, y] = aPantalla(proyectar([l.lon, l.caja[3]]))
+              return (
+                <span
+                  key={l.id}
+                  className="lbl3d lbl2d veg"
+                  style={
+                    {
+                      transform: `translate(${x}px, ${y}px) translate(-50%, calc(-100% - 4px))`,
+                      '--veg': `var(${COLOR_TENDENCIA[l.tendencia]})`,
+                    } as CSSProperties
+                  }
+                >
+                  {l.nombre}
+                </span>
+              )
+            })}
+          {interactivo &&
+            !vegetacion &&
             conEtiqueta
               // En celular solo la zona elegida, para no tapar el mapa
               .filter((id) => !celular || id === marcada)
@@ -676,6 +732,7 @@ export function Mapa2D({ interactivo = true }: Props) {
 
       {/* La misma ficha técnica del 3D (features/mapa/utils/tarjeta.ts), junto al puntero */}
       {tip &&
+        !vegetacion &&
         (() => {
           const c = datosTarjeta(zonas[tip.id], variable, idioma, an?.porId[tip.id]?.[anio ?? 0])
           return (

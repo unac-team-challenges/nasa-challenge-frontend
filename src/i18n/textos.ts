@@ -88,6 +88,19 @@ const es = {
     vegetacion:
       'Celdas de ~27 km con el NDVI de MODIS (NASA): cada año, la media de al menos 6 meses sin nubes. En la selva el NDVI se satura cerca de 0,85: muestra dónde hay vegetación, no cuánto bosque se pierde.',
   } as PorVariable<string>,
+  // Modo «Vegetación» del mapa: los 5 recuadros medidos (no hay datos de los 25 departamentos)
+  vegetacionBtn: 'Vegetación',
+  vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
+  mapHVeg: 'Vegetación medida con satélite',
+  mapSubVeg: 'NDVI de MODIS · 25 departamentos y 5 lugares medidos',
+  vegSube: 'Más vegetación',
+  vegBaja: 'Menos árboles',
+  vegIgual: 'Sin cambio claro',
+  legVegNota:
+    'Cada cuadro es el área medida (unos 25 km de lado), no el departamento. Tócalo para ver el antes y después.',
+  vegIntroH: 'Vegetación del Perú',
+  vegIntro:
+    'Cada celda de unos 27 km muestra el NDVI de MODIS: más verde, más vegetación. Toca un departamento para ver su ficha, o uno de los 5 lugares donde medimos el antes y después con más detalle. En la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -563,6 +576,18 @@ const en: Textos = {
     vegetacion:
       'Cells of ~27 km with MODIS NDVI (NASA): each year, the mean of at least 6 cloud-free months. In the rainforest NDVI saturates near 0.85: it shows where vegetation is, not how much forest is lost.',
   },
+  vegetacionBtn: 'Vegetation',
+  vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
+  mapHVeg: 'Vegetation measured by satellite',
+  mapSubVeg: 'MODIS NDVI · 25 departments and 5 measured places',
+  vegSube: 'More vegetation',
+  vegBaja: 'Fewer trees',
+  vegIgual: 'No clear change',
+  legVegNota:
+    'Each square is the measured area (about 25 km wide), not the department. Tap it to see before and after.',
+  vegIntroH: 'Vegetation of Peru',
+  vegIntro:
+    'Each cell of about 27 km shows the MODIS NDVI: greener means more vegetation. Tap a department to see its report, or one of the 5 places where we measured the before and after in more detail. On the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>

@@ -7,6 +7,26 @@ import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 
+const CLAVE = 'leyenda-abierta'
+
+/** La última elección del usuario ('1' abierta, '0' cerrada), o null si nunca eligió. */
+function eleccionGuardada(): boolean | null {
+  try {
+    const v = localStorage.getItem(CLAVE)
+    return v === null ? null : v === '1'
+  } catch {
+    return null
+  }
+}
+
+function guardarEleccion(abierta: boolean) {
+  try {
+    localStorage.setItem(CLAVE, abierta ? '1' : '0')
+  } catch {
+    /* sin almacenamiento (modo privado): vuelve al valor por defecto */
+  }
+}
+
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {
   const { idioma, periodo } = useApp()
@@ -14,8 +34,15 @@ export function Leyenda() {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { rango, fuente } = useVista()
-  // Abierta en escritorio; en celular empieza cerrada para no tapar el mapa
-  const [abierta, setAbierta] = useState(() => !matchMedia('(max-width: 900px)').matches)
+  // Lo que el usuario dejó la última vez; si nunca eligió, abierta en escritorio y cerrada en
+  // celular para no tapar el mapa
+  const [abierta, setAbierta] = useState(
+    () => eleccionGuardada() ?? !matchMedia('(max-width: 900px)').matches,
+  )
+  const elegir = (abre: boolean) => {
+    setAbierta(abre)
+    guardarEleccion(abre)
+  }
   // En temperatura, subir es más calor (ocre) y hundirse es más frío (azul)
   const sube = `var(--map-${claveMapa(1, variable)})`
   const baja = `var(--map-${claveMapa(-1, variable)})`
@@ -65,9 +92,40 @@ export function Leyenda() {
 
   return (
     <div className="absolute bottom-[86px] left-4 z-[3] grid max-w-[min(340px,calc(100%-120px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
-      <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
-        <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
+      <details
+        className="group"
+        open={abierta}
+        // Al montar, el navegador avisa con el mismo valor: solo cuenta si cambió
+        onToggle={(e) => e.currentTarget.open !== abierta && elegir(e.currentTarget.open)}
+      >
+        <summary className="flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="flex-none">
+            <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8M12 16.6v.1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
           {t.legSum}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="flex-none transition-transform group-open:rotate-180"
+          >
+            <path
+              d="M6 9l6 6 6-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </summary>
         <svg
           viewBox="0 0 330 118"
@@ -134,6 +192,24 @@ export function Leyenda() {
           {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
         </p>
       </details>
+      {abierta && (
+        <button
+          type="button"
+          aria-label={t.legMin}
+          title={t.legMin}
+          onClick={() => elegir(false)}
+          className="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M5 5l14 14M19 5L5 19"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }

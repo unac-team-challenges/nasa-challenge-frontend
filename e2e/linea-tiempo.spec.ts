@@ -30,6 +30,27 @@ test.describe('celular (390 × 844): la línea de tiempo va acostada, abajo del 
     await expect(page).toHaveURL(new RegExp(`anio=${medio}`))
   })
 
+  test('en Tendencia es una sola fila sin deslizador; Año a año agrega el riel', async ({
+    page,
+  }) => {
+    await page.goto('/explorar?sinwebgl')
+    const barra = page.getByRole('group', { name: 'Máquina del tiempo' })
+    const tendencia = (await barra.boundingBox())!
+    expect(tendencia.height).toBeLessThan(50)
+    await expect(barra.getByRole('slider', { name: 'Año' })).toHaveCount(0)
+
+    await barra.getByRole('button', { name: 'Año a año' }).click()
+    await expect(barra.getByRole('slider', { name: 'Año' })).toBeVisible()
+    const porAnio = (await barra.boundingBox())!
+    expect(porAnio.height).toBeGreaterThan(tendencia.height)
+    expect(porAnio.height).toBeLessThan(80)
+    // el interruptor va de lado a lado
+    const t = (await barra.getByRole('button', { name: 'Tendencia', exact: true }).boundingBox())!
+    const a = (await barra.getByRole('button', { name: 'Año a año' }).boundingBox())!
+    expect(a.x).toBeGreaterThan(t.x)
+    expect(Math.abs(a.y - t.y)).toBeLessThan(2)
+  })
+
   test('no tapa la leyenda ni los botones del mapa', async ({ page }) => {
     await page.goto('/explorar?sinwebgl&anio=2021')
     const barra = (await page.getByRole('group', { name: 'Máquina del tiempo' }).boundingBox())!

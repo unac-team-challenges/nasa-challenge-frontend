@@ -33,8 +33,13 @@ const es = {
   // Explorador
   explorador: 'Explorador',
   mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
-  mapSub: (a: number, b: number) => `Cambio por década, ${a}–${b}`,
+  mapSub: 'Cambio por década',
+  mapSubAnio: 'Cada departamento frente a su propio promedio',
+  /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
+  mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
+  mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
+  legMin: 'Minimizar la leyenda',
   legCols: {
     lluvia: [
       ['Sube', 'llueve más'],
@@ -154,8 +159,14 @@ const es = {
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
+  timeModeAria: 'Qué ver en el mapa',
   timeTrend: 'Tendencia',
-  timeBackTrend: 'Ver la tendencia',
+  timeTrendTitle: (a: number, b: number) => `Tendencia ${a}–${b}: cuánto cambió en esos años`,
+  timeByYear: 'Año a año',
+  timeByYearTitle: 'Año a año: cómo fue cada año frente a su promedio',
+  timeHelp: (n: number) =>
+    `Tendencia: cuánto cambió en ${n} años. Año a año: cómo fue ese año frente a su promedio.`,
+  timeHelpClose: 'Cerrar la ayuda',
   timePlay: (a: number, b: number) => `Reproducir ${a}–${b}`,
   timePause: 'Pausar',
   timeYear: 'Año',
@@ -180,6 +191,20 @@ const es = {
   cmpCap: 'NDVI anual de MODIS MOD13A3 (NASA), píxeles de 1 km. Desliza para comparar 2001 y 2024.',
   cmpUnidad:
     'Cifras de un recuadro de 0,25° × 0,25° (~27 × 27 km) sobre el valle; no son el promedio del departamento.',
+  /** Etiqueta del aviso de una zona (p. ej. Olmos o La Pampa) */
+  cuidado: 'Léelo con cuidado',
+  // Árboles de la selva (MODIS MOD44B), donde el NDVI se satura
+  selvaH: 'Árboles de la selva',
+  selvaTexto: (zona: string, a: number, b: number, ka: number, kb: number) =>
+    `En ${zona}, los árboles cubrían el ${a} % del suelo en 2001 y el ${b} % en 2024: el bosque pasó de ${ka} km² a ${kb} km².`,
+  selvaSinCambio: (zona: string, b: number) =>
+    `En ${zona}, los árboles cubren cerca del ${b} % del suelo y de 2001 a 2024 no hay un cambio distinguible de 0. Es el contraste con la selva que se pierde.`,
+  selvaTendencia: (v: string) => `Tendencia: ${v} puntos de árboles por década`,
+  selvaNoDistinguible: 'No distinguible de 0',
+  selvaCap:
+    'Cobertura de árboles de MODIS MOD44B (NASA), píxeles de 250 m. Bosque: píxeles con 30 % o más de árboles.',
+  selvaUnidad:
+    'Cifras de un recuadro de unos 25 km de lado en la selva; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
@@ -229,8 +254,12 @@ const en: Textos = {
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
   mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
-  mapSub: (a, b) => `Change per decade, ${a}–${b}`,
+  mapSub: 'Change per decade',
+  mapSubAnio: 'Each department vs its own average',
+  mapModoTendencia: (a, b) => `trend ${a}–${b}`,
+  mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
+  legMin: 'Minimize the legend',
   legCols: {
     lluvia: [
       ['Rises', 'more rain'],
@@ -351,8 +380,14 @@ const en: Textos = {
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
   },
+  timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
-  timeBackTrend: 'Back to the trend',
+  timeTrendTitle: (a, b) => `Trend ${a}–${b}: how much changed over those years`,
+  timeByYear: 'By year',
+  timeByYearTitle: 'By year: how each year compared with its average',
+  timeHelp: (n) =>
+    `Trend: how much changed over ${n} years. By year: how that year compared with its average.`,
+  timeHelpClose: 'Close the help',
   timePlay: (a, b) => `Play ${a}–${b}`,
   timePause: 'Pause',
   timeYear: 'Year',
@@ -375,6 +410,17 @@ const en: Textos = {
   cmpCap: 'Annual NDVI from MODIS MOD13A3 (NASA), 1 km pixels. Drag to compare 2001 and 2024.',
   cmpUnidad:
     'Figures for a 0.25° × 0.25° box (~27 × 27 km) over the valley; not the department average.',
+  cuidado: 'Read with care',
+  selvaH: 'Rainforest trees',
+  selvaTexto: (zona, a, b, ka, kb) =>
+    `In ${zona}, trees covered ${a} % of the ground in 2001 and ${b} % in 2024: forest went from ${ka} km² to ${kb} km².`,
+  selvaSinCambio: (zona, b) =>
+    `In ${zona}, trees cover about ${b} % of the ground and from 2001 to 2024 there is no change distinguishable from 0. It is the contrast with the rainforest being lost.`,
+  selvaTendencia: (v) => `Trend: ${v} points of tree cover per decade`,
+  selvaNoDistinguible: 'Not distinguishable from 0',
+  selvaCap:
+    'Tree cover from MODIS MOD44B (NASA), 250 m pixels. Forest: pixels with 30 % or more trees.',
+  selvaUnidad: 'Figures for a box about 25 km wide in the rainforest; not the department average.',
   vistaMapa: 'Map view',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",
@@ -699,6 +745,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         anios: '2001 y 2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
+      {
+        variable: 'Árboles de la selva',
+        fuente: 'MODIS MOD44B (NASA): % del suelo cubierto por árboles, pedido con AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
     ],
     fuentesNota:
       'Cada número viene de una sola fuente y la ficha dice cuál: no mezclamos ni promediamos fuentes. No son estaciones de medición: cada valor es el promedio de una celda de satélite o de modelo.',
@@ -826,6 +879,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
         fuente: 'MODIS MOD13A3 (NASA): NDVI vegetation index, requested with AppEEARS',
         resolucion: '1 km',
         anios: '2001 & 2024',
+        enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      },
+      {
+        variable: 'Rainforest trees',
+        fuente: 'MODIS MOD44B (NASA): % of the ground covered by trees, requested with AppEEARS',
+        resolucion: '250 m',
+        anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
     ],

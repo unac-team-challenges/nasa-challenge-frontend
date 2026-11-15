@@ -390,6 +390,18 @@ h3 {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+/* Área de toque de 44 px (guía de Apple) sin agrandar el control: en celular, un borde invisible lo
+   hace tocable en 44 px. Solo crece en el eje donde el control mide menos; un control de 44 px o más
+   no cambia. El elemento debe estar posicionado (relative o absolute). */
+@media (max-width: 900px) {
+  .toque44::after {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
+}
+
 /* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
 @keyframes entrada {
   from {

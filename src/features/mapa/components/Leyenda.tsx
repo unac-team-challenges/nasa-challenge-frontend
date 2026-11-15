@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { anomaliasAnio, fuenteLocal } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor, num } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -36,7 +36,8 @@ function guardarEleccion(abierta: boolean) {
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {
   const { idioma, periodo } = useApp()
-  const { variable, anio } = useBusqueda()
+  const { variable } = useBusqueda()
+  const anio = useAnio()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { rango, fuente } = useVista()
@@ -133,7 +134,7 @@ export function Leyenda() {
           // Al montar, el navegador avisa con el mismo valor: solo cuenta si cambió
           onToggle={(e) => e.currentTarget.open !== abierta && elegir(e.currentTarget.open)}
         >
-          <summary className="flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
+          <summary className="toque44 relative flex min-h-8 cursor-pointer items-center gap-1.5 text-sm font-semibold group-open:pr-9">
             <svg
               width="18"
               height="18"
@@ -271,7 +272,7 @@ export function Leyenda() {
             aria-label={t.legMin}
             title={t.legMin}
             onClick={() => elegir(false)}
-            className="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
+            className="toque44 absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center rounded-s border-0 bg-transparent text-fg hover:bg-line"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path

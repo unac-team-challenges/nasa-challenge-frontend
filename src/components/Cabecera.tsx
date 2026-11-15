@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useRef } from 'react'
 import {
   CloudRain,
   GraduationCap,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
+import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { MenuMetodologia } from '@/components/MenuMetodologia'
@@ -52,8 +54,15 @@ export function Cabecera() {
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
+  // En celular la cabecera se esconde al bajar por la página y vuelve al subir (más sitio para leer)
+  const barra = useRef<HTMLElement>(null)
+  const oculta = useOcultarAlBajar(barra, '(max-width: 900px)')
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]">
+    <header
+      ref={barra}
+      data-oculta={oculta}
+      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md max-[900px]:transition-transform max-[900px]:duration-200 max-[900px]:data-[oculta=true]:-translate-y-full max-[900px]:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+    >
       <Link
         to="/"
         search={(p) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })}

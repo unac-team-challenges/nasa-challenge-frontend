@@ -33,7 +33,11 @@ const es = {
   // Explorador
   explorador: 'Explorador',
   mapH: { lluvia: 'Lluvia anual', temperatura: 'Temperatura media' } as PorVariable<string>,
-  mapSub: (a: number, b: number) => `Cambio por década, ${a}–${b}`,
+  mapSub: 'Cambio por década',
+  mapSubAnio: 'Cada departamento frente a su propio promedio',
+  /** El título del mapa dice en qué modo está: tendencia de todo el periodo o un solo año */
+  mapModoTendencia: (a: number, b: number) => `tendencia ${a}–${b}`,
+  mapModoAnio: (y: number) => `solo ${y}`,
   legSum: 'Cómo leer el mapa',
   legCols: {
     lluvia: [
@@ -154,8 +158,14 @@ const es = {
     temperatura: 'Verás cuánto cambió su temperatura y si el cambio es real o casualidad.',
   } as PorVariable<string>,
   // Máquina del tiempo
+  timeModeAria: 'Qué ver en el mapa',
   timeTrend: 'Tendencia',
-  timeBackTrend: 'Ver la tendencia',
+  timeTrendTitle: (a: number, b: number) => `Tendencia ${a}–${b}: cuánto cambió en esos años`,
+  timeByYear: 'Año a año',
+  timeByYearTitle: 'Año a año: cómo fue cada año frente a su promedio',
+  timeHelp: (n: number) =>
+    `Tendencia: cuánto cambió en ${n} años. Año a año: cómo fue ese año frente a su promedio.`,
+  timeHelpClose: 'Cerrar la ayuda',
   timePlay: (a: number, b: number) => `Reproducir ${a}–${b}`,
   timePause: 'Pausar',
   timeYear: 'Año',
@@ -229,7 +239,10 @@ const en: Textos = {
   mapaAria: 'Map of Peru in 3D: each department rises or sinks by how much the variable changed',
   explorador: 'Explorer',
   mapH: { lluvia: 'Annual rainfall', temperatura: 'Mean temperature' },
-  mapSub: (a, b) => `Change per decade, ${a}–${b}`,
+  mapSub: 'Change per decade',
+  mapSubAnio: 'Each department vs its own average',
+  mapModoTendencia: (a, b) => `trend ${a}–${b}`,
+  mapModoAnio: (y) => `${y} only`,
   legSum: 'How to read the map',
   legCols: {
     lluvia: [
@@ -351,8 +364,14 @@ const en: Textos = {
     temperatura:
       "You'll see how much its temperature changed and whether the change is real or chance.",
   },
+  timeModeAria: 'What to show on the map',
   timeTrend: 'Trend',
-  timeBackTrend: 'Back to the trend',
+  timeTrendTitle: (a, b) => `Trend ${a}–${b}: how much changed over those years`,
+  timeByYear: 'By year',
+  timeByYearTitle: 'By year: how each year compared with its average',
+  timeHelp: (n) =>
+    `Trend: how much changed over ${n} years. By year: how that year compared with its average.`,
+  timeHelpClose: 'Close the help',
   timePlay: (a, b) => `Play ${a}–${b}`,
   timePause: 'Pause',
   timeYear: 'Year',

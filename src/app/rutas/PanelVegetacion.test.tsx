@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { renderRuta } from '@/testing/render'
 import { useApp } from '@/stores/app'
 
-beforeEach(() => useApp.setState({ idioma: 'es', informeMin: false, sinNino: false }))
+beforeEach(() => useApp.setState({ idioma: 'es', informeMin: false }))
 
 describe('modo Vegetación del mapa', () => {
   it('el botón Vegetación entra al modo, lo escribe en la URL y quita la máquina del tiempo', async () => {

@@ -12,6 +12,7 @@ import { CampoSeguir } from '@/features/ficha/components/CampoSeguir'
 import { CausasConsecuencias } from '@/features/ficha/components/CausasConsecuencias'
 import { ComoLoSabemos } from '@/features/ficha/components/ComoLoSabemos'
 import { Confianza } from '@/features/ficha/components/Confianza'
+import { SelectorZona } from '@/features/ficha/components/SelectorZona'
 import { DosFuentes } from '@/features/ficha/components/DosFuentes'
 import { EstLimitaciones } from '@/features/ficha/components/EstLimitaciones'
 import { EstRanking } from '@/features/ficha/components/EstRanking'
@@ -66,6 +67,7 @@ export const Ficha = memo(function Ficha() {
           {t.tapH}
         </h2>
         <p className="m-0 text-muted">{t.tapP[variable]}</p>
+        <SelectorZona className="self-start" />
         <p className="m-0 border-t border-line pt-3 text-xs text-muted">{t.disclaimer}</p>
       </div>
     )
@@ -82,7 +84,10 @@ export const Ficha = memo(function Ficha() {
   return (
     <div ref={raiz} className="aparece-hijos flex flex-col gap-4.5">
       <div className="mr-11 flex flex-col gap-0.5">
-        <span className="text-[13px] text-muted">{t.kind(REGION[sel])}</span>
+        <span className="flex items-center justify-between gap-2 text-[13px] text-muted">
+          {t.kind(REGION[sel])}
+          <SelectorZona className="max-w-44 flex-none" />
+        </span>
         <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
           {NOMBRE[sel]}
         </h2>

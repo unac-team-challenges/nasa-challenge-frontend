@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { anomaliasPeru } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { colorAnomalia } from '@/utils/color'
-import { useAnio, useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia } from '@/utils/formato'
 import { useRango } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -18,7 +18,8 @@ const PASO_MS = 850
  * el desplazamiento de la página). Las franjas del Perú son el riel; encima va el deslizador.
  */
 export function BarraTiempo() {
-  const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
+  const { idioma, reproduciendo, setReproduciendo } = useApp()
+  const periodo = usePeriodo()
   const { variable, setAnio } = useBusqueda()
   const anio = useAnio()
   // El Play lee el año y la función más recientes sin reiniciar su reloj

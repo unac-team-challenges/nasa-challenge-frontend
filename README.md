@@ -22,6 +22,8 @@ E2E_PORT=4391 pnpm e2e    # si el puerto 4173 ya está ocupado
 
 > **Red del evento:** el wifi de la sede corta `registry.npmjs.org` (`ECONNRESET`). Para instalar paquetes, conéctate al hotspot del celular.
 
+Arquitectura: ver `ARQUITECTURE.md`
+
 ## Stack
 
 | Parte                    | Librería                                                                                                                                      |
@@ -31,8 +33,8 @@ E2E_PORT=4391 pnpm e2e    # si el puerto 4173 ya está ocupado
 | Estilos y componentes    | Tailwind CSS v4 (`@tailwindcss/vite`) + **shadcn/ui** (`Button`, `Alert` y `Skeleton` en `src/components/ui`, estilo new-york) + lucide-react |
 | Calidad                  | **ESLint** (typescript-eslint, react-hooks) + Prettier + Vitest + **Testing Library** (jsdom) + Playwright                                    |
 | Datos del servidor       | TanStack Query + openapi-fetch (`src/api`), con la copia local como plan B                                                                    |
-| Rutas y enlaces          | **TanStack Router** (`src/router.tsx`) + **Zod** (`src/lib/busqueda.ts`): ver «Rutas y enlaces»                                               |
-| Estado global            | Zustand (`src/store.ts`): idioma, tema, fuente de datos, vista 3D/2D, informe abierto, Play y «sin El Niño». Lo que se comparte va en la URL  |
+| Rutas y enlaces          | **TanStack Router** (`src/app/router.tsx`) + **Zod** (`src/lib/busqueda.ts`): ver «Rutas y enlaces»                                           |
+| Estado global            | Zustand (`src/stores/app.ts`): idioma, tema, fuente de datos, vista 3D/2D, informe abierto, Play y «sin El Niño». Lo que se comparte va en la URL |
 | Gráficos                 | SVG propio (`GraficoSerie`) para la serie de la ficha                                                                                         |
 | Antes y después (Caso 2) | react-compare-slider                                                                                                                          |
 | Letra "Carta"            | Newsreader + Public Sans (`@fontsource-variable`, incluidas en el build: funcionan sin internet)                                              |
@@ -62,7 +64,7 @@ Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` 
 
 ## Metadatos
 
-`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/lib/meta.ts` las actualiza según pantalla, idioma y tema, y `public/favicon.svg` cambia de color con el tema del sistema. **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
+`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/hooks/meta.ts` las actualiza según pantalla, idioma y tema, y `public/favicon.svg` cambia de color con el tema del sistema. **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
 
 ## Datos y periodo
 

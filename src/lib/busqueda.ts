@@ -18,6 +18,8 @@ const esquema = z.object({
     .enum(ORDEN_PERFILES as [Perfil, ...Perfil[]])
     .optional()
     .catch(undefined),
+  /** Capa del mapa: «vegetacion» muestra los 5 recuadros con vegetación medida en vez de la variable */
+  capa: z.enum(['vegetacion']).optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
   anio: z.coerce.number().int().min(1981).max(2100).optional().catch(undefined),
 })
@@ -53,9 +55,21 @@ export function useBusqueda() {
     perfil: s.perfil ?? 'agricultor',
     sel: id ?? null,
     anio: s.anio ?? null,
+    /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
+    vegetacion: s.capa === 'vegetacion',
     setVariable: (variable: Variable) => {
       useApp.getState().setSinNino(false)
-      return poner({ variable })
+      return poner({ variable, capa: undefined })
+    },
+    /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
+    setVegetacion: () => {
+      useApp.getState().setReproduciendo(false)
+      return navigate({
+        to: id ? '/zona/$id' : '/explorar',
+        params: id ? { id } : {},
+        search: (p: Busqueda) => ({ ...p, capa: 'vegetacion' as const, anio: undefined }),
+        replace: true,
+      })
     },
     setPerfil: (perfil: Perfil) => poner({ perfil }),
     /** Elegir una zona abre el informe */

@@ -6,11 +6,12 @@ import { useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
+import { COLOR_TENDENCIA, type TendenciaVegetacion } from '@/features/mapa/utils/vegetacion'
 
 /** Leyenda ilustrada y plegable (v6): tres mini columnas, texturas, escala y qué es la variable. */
 export function Leyenda() {
   const { idioma, periodo } = useApp()
-  const { variable, anio } = useBusqueda()
+  const { variable, anio, vegetacion } = useBusqueda()
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { rango, fuente } = useVista()
@@ -62,9 +63,41 @@ export function Leyenda() {
     </>
   )
   const muestra = 'h-3.5 w-[18px] flex-none rounded-[3px] box-border'
+  const caja =
+    'absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]'
+
+  // Modo Vegetación: los colores de los 5 recuadros y qué es un recuadro (no el departamento)
+  if (vegetacion) {
+    const tendencias: [TendenciaVegetacion, string][] = [
+      ['sube', t.vegSube],
+      ['baja', t.vegBaja],
+      ['igual', t.vegIgual],
+    ]
+    return (
+      <div className={caja}>
+        <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
+          <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
+            {t.legSum}
+          </summary>
+          <div className="mt-1.5 grid grid-cols-3 gap-x-2.5 text-xs">
+            {tendencias.map(([k, texto]) => (
+              <span key={k} className="flex items-center gap-1.5">
+                <span
+                  className={`${muestra} border border-fg`}
+                  style={{ background: `var(${COLOR_TENDENCIA[k]})` }}
+                />
+                {texto}
+              </span>
+            ))}
+          </div>
+          <p className="m-0 mt-1.5 text-xs text-muted">{t.legVegNota}</p>
+        </details>
+      </div>
+    )
+  }
 
   return (
-    <div className="absolute bottom-16 left-4 z-[3] grid max-w-[min(340px,calc(100%-110px))] gap-1.5 rounded-m border border-line bg-panel/92 px-3 py-2.5 text-[13px] min-[901px]:bottom-3.5 min-[901px]:max-w-[min(340px,calc(100%-140px))]">
+    <div className={caja}>
       <details open={abierta} onToggle={(e) => setAbierta(e.currentTarget.open)}>
         <summary className="flex min-h-7 cursor-pointer items-center gap-1.5 text-sm font-semibold">
           {t.legSum}
@@ -128,15 +161,6 @@ export function Leyenda() {
                   '',
                 ),
               )}
-        </p>
-        {/* Los lugares con vegetación medida (marcados en el mapa, no son una variable) */}
-        <p className="m-0 flex items-start gap-1.5 text-xs text-fg">
-          <span
-            className="mt-[3px] size-[7px] shrink-0 rounded-full"
-            style={{ background: 'var(--map-green)' }}
-            aria-hidden="true"
-          />
-          {t.legVeg}
         </p>
         <p className="m-0 text-xs text-muted">
           {/* La máquina del tiempo usa la copia local */}

@@ -23,7 +23,7 @@ export function Mapa3D({ modo }: Props) {
   const escena = useRef<EscenaPeru | null>(null)
   const { idioma, tema, conWebgl, periodo } = useApp()
   const busqueda = useBusqueda()
-  const { variable, sel, anio } = busqueda
+  const { variable, sel, anio, vegetacion } = busqueda
   // La escena se crea una sola vez: ve la URL y las funciones más recientes por esta referencia
   const busquedaRef = useRef(busqueda)
   useEffect(() => {
@@ -50,6 +50,7 @@ export function Mapa3D({ modo }: Props) {
     const { variable: v, sel: s0 } = busquedaRef.current
     const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
+    e.setVegetacion(busquedaRef.current.vegetacion)
     if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
     useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
     const sistema = matchMedia('(prefers-color-scheme: dark)')
@@ -73,6 +74,11 @@ export function Mapa3D({ modo }: Props) {
   useEffect(() => {
     escena.current?.setDatos(zonas, variable)
   }, [zonas, variable])
+
+  // Modo Vegetación: los 5 recuadros medidos sobre los departamentos atenuados
+  useEffect(() => {
+    escena.current?.setVegetacion(vegetacion)
+  }, [vegetacion])
 
   useEffect(() => {
     if (modo === 'explorar') escena.current?.seleccionar(sel && esUbigeo(sel) ? sel : null, true)

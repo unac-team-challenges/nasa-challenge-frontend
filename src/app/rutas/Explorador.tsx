@@ -13,6 +13,7 @@ import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Button } from '@/components/ui/button'
+import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 
 const boton = 'bg-panel/92'
 
@@ -34,7 +35,7 @@ const RETRASO_INFO_S = 1.3
 export function Explorador() {
   const { idioma, sinNino, informeMin, setInformeMin } = useApp()
   const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
-  const { variable, sel, anio, seleccionar } = useBusqueda()
+  const { variable, sel, anio, seleccionar, vegetacion } = useBusqueda()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
@@ -120,10 +121,14 @@ export function Explorador() {
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
-                {t.mapH[variable]}
+                {vegetacion ? t.mapHVeg : t.mapH[variable]}
               </h2>
               <span className="text-[13px] text-muted">
-                {anio == null ? t.mapSub(rango.year_start, rango.year_end) : t.legTimeNote(anio)}
+                {vegetacion
+                  ? t.mapSubVeg
+                  : anio == null
+                    ? t.mapSub(rango.year_start, rango.year_end)
+                    : t.legTimeNote(anio)}
               </span>
             </div>
             {!conWebgl && (
@@ -131,7 +136,7 @@ export function Explorador() {
                 {t.noGl}
               </p>
             )}
-            {sinNino && variable === 'lluvia' && (
+            {sinNino && variable === 'lluvia' && !vegetacion && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.ninoOn}
               </p>
@@ -139,7 +144,8 @@ export function Explorador() {
           </div>
           <div className="pointer-events-auto contents">
             <Leyenda />
-            <BarraTiempo />
+            {/* La vegetación no tiene máquina del tiempo (solo 5 lugares, 2001 frente a 2024) */}
+            {!vegetacion && <BarraTiempo />}
           </div>
           <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] flex gap-1.5">
             {conWebgl && (
@@ -239,7 +245,7 @@ export function Explorador() {
               <span className="font-display text-[15px] font-[650] tracking-display whitespace-nowrap min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]">
                 {sel ? NOMBRE[sel] : t.railHint}
               </span>
-              {d && d.status !== 'pocos_datos' && (
+              {d && d.status !== 'pocos_datos' && !vegetacion && (
                 <span
                   className="text-[13px] min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]"
                   style={{ color: `var(${colorDireccion(d.slope_per_decade, variable)})` }}
@@ -262,7 +268,7 @@ export function Explorador() {
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >
-              <Ficha />
+              {vegetacion ? <PanelVegetacion /> : <Ficha />}
             </div>
           </div>
         )}

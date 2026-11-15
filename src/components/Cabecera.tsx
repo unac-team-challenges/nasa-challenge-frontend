@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
  */
 export function Cabecera() {
   const { idioma, setIdioma, alternarTema } = useApp()
-  const { variable, setVariable, perfil, setPerfil } = useBusqueda()
+  const { variable, setVariable, perfil, setPerfil, vegetacion, setVegetacion } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   return (
@@ -50,12 +50,21 @@ export function Cabecera() {
               key={v}
               variant="toggle"
               size="sm"
-              aria-pressed={variable === v}
+              aria-pressed={!vegetacion && variable === v}
               onClick={() => setVariable(v)}
             >
               {nombre}
             </Button>
           ))}
+          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos */}
+          <Button
+            variant="toggle"
+            size="sm"
+            aria-pressed={vegetacion}
+            onClick={() => setVegetacion()}
+          >
+            {t.vegetacionBtn}
+          </Button>
         </div>
         <label className="sr-only" htmlFor="perfil">
           {t.perfilLbl}

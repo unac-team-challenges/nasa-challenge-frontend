@@ -4,8 +4,8 @@ import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { EscenaPeru, type ModoMapa } from '@/mapa/escena'
-import { Mapa2D } from '@/mapa/Mapa2D'
+import { EscenaPeru, type ModoMapa } from '@/features/mapa/escena/escena'
+import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 
 interface Props {
   modo: ModoMapa

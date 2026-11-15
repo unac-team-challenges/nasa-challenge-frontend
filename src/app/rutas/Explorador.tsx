@@ -3,19 +3,21 @@ import { NOMBRE } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { fmtValor } from '@/utils/formato'
 import { useRango, useZonas } from '@/hooks/useZonas'
-import type { EscenaPeru } from '@/mapa/escena'
-import { Mapa2D } from '@/mapa/Mapa2D'
+import type { EscenaPeru } from '@/features/mapa/escena/escena'
+import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
-import { BarraTiempo } from '@/components/BarraTiempo'
+import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
 import { MapaSkeleton } from '@/components/Esperas'
-import { Ficha } from '@/components/Ficha'
-import { Leyenda } from '@/components/Leyenda'
+import { Ficha } from '@/features/ficha/components/Ficha'
+import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Button } from '@/components/ui/button'
 
 // three.js se descarga aparte: mientras llega se ve el esqueleto del mapa
-const Mapa3D = lazy(() => import('@/mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
+const Mapa3D = lazy(() =>
+  import('@/features/mapa/components/Mapa3D').then((m) => ({ default: m.Mapa3D })),
+)
 
 const boton = 'bg-panel/92'
 

@@ -6,10 +6,10 @@ import {
   notFound,
   type RouterHistory,
 } from '@tanstack/react-router'
-import App from '@/App'
+import App from '@/app/App'
 import { NoEncontrada, PantallaError } from '@/components/Errores'
 import { ExploradorSkeleton, PaginaSkeleton } from '@/components/Esperas'
-import { Portada } from '@/components/Portada'
+import { Inicio } from '@/app/rutas/Inicio'
 import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from '@/lib/busqueda'
 
 /**
@@ -24,14 +24,14 @@ const raiz = createRootRoute({
   notFoundComponent: NoEncontrada,
 })
 
-const inicio = createRoute({ getParentRoute: () => raiz, path: '/', component: Portada })
+const inicio = createRoute({ getParentRoute: () => raiz, path: '/', component: Inicio })
 
 // El mapa y la ficha son un solo diseño para /explorar y /zona/:id: al elegir una zona
 // la pantalla no se vuelve a montar (el 3D no se recrea). Las rutas hijas no dibujan nada.
 const mapa = createRoute({
   getParentRoute: () => raiz,
   id: 'mapa',
-  component: lazyRouteComponent(() => import('@/components/Explorador'), 'Explorador'),
+  component: lazyRouteComponent(() => import('@/app/rutas/Explorador'), 'Explorador'),
   pendingComponent: ExploradorSkeleton,
 })
 const explorar = createRoute({ getParentRoute: () => mapa, path: '/explorar' })
@@ -46,7 +46,10 @@ const zona = createRoute({
 const metodologia = createRoute({
   getParentRoute: () => raiz,
   path: '/metodologia',
-  component: lazyRouteComponent(() => import('@/components/Metodologia'), 'Metodologia'),
+  component: lazyRouteComponent(
+    () => import('@/features/metodologia/components/Metodologia'),
+    'Metodologia',
+  ),
   pendingComponent: PaginaSkeleton,
 })
 

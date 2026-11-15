@@ -1,5 +1,5 @@
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
-import { VALLES } from '@/data/caso2'
+import { VALLES } from '@/features/ficha/data/caso2'
 import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 

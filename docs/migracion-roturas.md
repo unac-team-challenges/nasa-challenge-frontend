@@ -11,4 +11,6 @@ Todo lo que se rompió, se desvió del plan (`docs/superpowers/plans/2026-11-14-
 
 ## Durante la migración
 
-(vacío por ahora)
+- **Tareas 4 y 5 en un solo commit** (`refactor: features y app`), como permite el plan: la Tarea 4 sola deja `tsc` roto hasta que exista `app/rutas/Inicio.tsx`.
+- **Prettier no está al día en el repo** (ya antes de migrar: `fauna.ts`, `escena.ts`, `Ficha.tsx`, `Explorador.tsx`, `textos.ts`, `schema.d.ts`, los json no pasan `prettier --check`; `pnpm lint` no lo exige). Al mover, solo se envolvieron las líneas de import que pasaron de 100 columnas (router, Explorador, Ficha); `fauna.ts` y `escena.ts` se dejaron tal cual para no meter ruido (prettier reescribía 280 líneas de `fauna.ts`). Pendiente: un commit aparte de `pnpm format` si el equipo quiere. Avisar al equipo antes de formatear todo.
+- **`Portada` ya no importa `Mapa3D`:** recibe `mapa: ReactNode`; el `lazy` + `Suspense` + `MapaSkeleton` viven ahora en `src/app/rutas/Inicio.tsx`. Mismo comportamiento.

@@ -14,13 +14,15 @@ import { colorDireccion } from '@/utils/direccion'
 import { fmtP, fmtPct, fmtValor, num } from '@/utils/formato'
 import { useDetalle, useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
-import { AntesDespues } from '@/components/AntesDespues'
+import { AntesDespues } from '@/features/ficha/components/AntesDespues'
 import { ErrorSerie } from '@/components/Errores'
 import { GraficoSkeleton } from '@/components/Esperas'
 import { Button } from '@/components/ui/button'
 
 // Recharts y el gráfico se descargan aparte, al abrir la primera ficha
-const GraficoSerie = lazy(() => import('@/components/GraficoSerie').then((m) => ({ default: m.GraficoSerie })))
+const GraficoSerie = lazy(() =>
+  import('@/features/ficha/components/GraficoSerie').then((m) => ({ default: m.GraficoSerie })),
+)
 
 const ESTADOS = ['real', 'posible_casualidad', 'pocos_datos'] as const
 

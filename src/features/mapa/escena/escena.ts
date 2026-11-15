@@ -13,7 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
-import { Fauna, type Animal } from '@/mapa/fauna'
+import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false

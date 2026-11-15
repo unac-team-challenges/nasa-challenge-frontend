@@ -7,7 +7,7 @@ import { fmtAnomalia, fmtValor } from '@/utils/formato'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { CAJA_SUELO, pintarSuelo2D } from '@/mapa/suelo2d'
+import { CAJA_SUELO, pintarSuelo2D } from '@/features/mapa/utils/suelo2d'
 
 const LON0 = -75.0
 const LAT0 = -9.2

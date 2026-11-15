@@ -1,12 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import {
-  ChevronDown,
   CloudRain,
+  GraduationCap,
   House,
   Moon,
+  Sprout,
   Sun,
   Thermometer,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { Variable } from '@/data/datos'
@@ -20,6 +20,11 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+}
+
+const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
+  agricultor: Sprout,
+  estudiante: GraduationCap,
 }
 
 const IDIOMAS = [
@@ -97,44 +102,40 @@ export function Cabecera() {
             )
           })}
         </div>
-        <label className="sr-only" htmlFor="perfil">
-          {t.perfilLbl}
-        </label>
-        <div className={`${riel} relative`}>
-          <UserRound
-            className="pointer-events-none absolute left-3 size-4 text-muted"
-            aria-hidden="true"
-          />
-          <select
-            id="perfil"
-            value={perfil}
-            onChange={(e) => setPerfil(e.target.value as Perfil)}
-            className="min-h-9 cursor-pointer appearance-none rounded-[8px] border-0 bg-transparent pr-8 pl-9 text-sm font-medium hover:bg-panel"
-          >
-            {ORDEN_PERFILES.map((p) => (
-              <option key={p} value={p}>
-                {t.perfiles[p][0]}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 size-4 text-muted"
-            aria-hidden="true"
-          />
+        <div className={riel} role="group" aria-label={t.perfilLbl}>
+          {ORDEN_PERFILES.map((p) => {
+            const Icono = ICONO_PERFIL[p]
+            return (
+              <Button
+                key={p}
+                variant="toggle"
+                size="sm"
+                className={opcion}
+                aria-pressed={perfil === p}
+                title={`${t.perfiles[p][0]}: ${t.perfiles[p][1]}`}
+                onClick={() => setPerfil(p)}
+              >
+                <Icono className="size-4" aria-hidden="true" />
+                {/* En celular solo el ícono: con texto, el segundo botón quedaba fuera de la tira */}
+                <span className="max-[479px]:sr-only">{t.perfiles[p][0]}</span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
-        {/* Mismo aspecto que el botón de Metodología: texto en escritorio, solo icono en celular */}
+        {/* Como Metodología. Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
+            el logo también lleva al inicio) */}
         <Button
           asChild
           variant="ghost"
           data-activa={enInicio || undefined}
-          className="relative rounded-m px-2.5 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text sm:px-3"
+          className="relative rounded-m px-2 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text sm:px-3 sm:max-[780px]:hidden"
         >
           <Link to="/" search={aInicio} aria-current={enInicio ? 'page' : undefined}>
             <House className="size-4.5" aria-hidden="true" />
-            <span className="max-sm:sr-only">{t.inicioCorto}</span>
+            <span className="max-[899px]:sr-only">{t.inicioCorto}</span>
             {enInicio && (
               <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
             )}

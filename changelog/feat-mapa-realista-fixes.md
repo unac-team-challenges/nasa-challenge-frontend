@@ -7,7 +7,7 @@ Mapa 3D más realista (agua viva, sol y luna, cielo, nubes de lluvia), paleta "t
 - **Sol (claro) y luna (oscuro)** en el cielo real, bajos al frente (al norte, como en Perú). La vista de inicio baja un poco para dejar una franja de cielo. Una sola dirección de luz (`DIR_LUZ`) para la luz, la sombra del Perú y la de las nubes.
 - **Cielo anclado al mundo** (equirectangular): azul de día, noche con estrellas. Neblina del horizonte celeste o azul noche, sin depender del fondo de la página.
 - **Nubes de lluvia** con su sombra, solo con la variable lluvia: dos draw calls instanciados. Comparten `uTime` y `uTope` con las gotas, así que no hay trabajo de CPU por cuadro.
-- **Botón Inicio** en la cabecera, activo en `/`. En celular queda solo el icono.
+- **Botón Inicio** en la cabecera, activo en `/`. Solo icono bajo 900 px y oculto entre 640 y 779 px, donde la cabecera no cabe en 2 filas (ahí el logo también lleva al inicio). Los botones de solo icono pasan a `px-2` en celular para que todo quepa en 360 px.
 
 ## Cambiado
 - **Paleta de la página "Nazca"**: marrón oscuro en oscuro (`#201c19`) y marrón claro en claro (`#d6c3a5`). Textos con contraste WCAG ≥ 4.5:1. El color de la barra del navegador sigue el tema.

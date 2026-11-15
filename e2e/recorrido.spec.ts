@@ -12,10 +12,16 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.locator('canvas')).toBeVisible()
 
   // Elegir perfil lleva al explorador
-  await page.getByRole('button', { name: /Agricultor/ }).click()
+  // La portada y la cabecera tienen un botón «Agricultor»: este es el de la portada
+  await page
+    .locator('main')
+    .getByRole('button', { name: /Agricultor/ })
+    .click()
   await expect(page).toHaveURL(/\/explorar\?.*perfil=agricultor/)
   await expect(page.getByRole('region', { name: 'Explorador' })).toBeVisible()
-  await expect(page.locator('#perfil')).toHaveValue('agricultor')
+  await expect(
+    page.getByRole('group', { name: 'Perfil' }).getByRole('button', { name: 'Agricultor' }),
+  ).toHaveAttribute('aria-pressed', 'true')
 
   // Variable: lluvia → temperatura (datos reales de NASA POWER)
   const variable = page.getByRole('group', { name: 'Variable' })

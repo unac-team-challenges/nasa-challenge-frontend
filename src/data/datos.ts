@@ -5,17 +5,22 @@
  */
 import geo from '@/data/departamentos.json'
 import power from '@/data/power.json'
+import vegetacion from '@/data/vegetacion.json'
 
-export type Variable = 'lluvia' | 'temperatura'
+export type Variable = 'lluvia' | 'temperatura' | 'vegetacion'
 export type Periodo = 'largo' | 'reciente'
 export type Estado = 'real' | 'posible_casualidad' | 'pocos_datos'
 export type Region = 'costa' | 'sierra' | 'selva'
 /** Años que cubre una tendencia (de la API o de la copia local). */
 export type Rango = { year_start: number; year_end: number }
 
-export const VARIABLES: Variable[] = ['lluvia', 'temperatura']
+export const VARIABLES: Variable[] = ['lluvia', 'temperatura', 'vegetacion']
 /** Fuente de la copia local (src/data/power.json). */
 export const FUENTE_LOCAL = 'NASA POWER (MERRA-2)'
+/** Fuente de la copia local de vegetación (src/data/vegetacion.json). */
+export const FUENTE_VEGETACION = 'MODIS MOD13A3 v061 (NDVI) vía AppEEARS'
+/** Fuente de la copia local de una variable. */
+export const fuenteLocal = (v: Variable) => (v === 'vegetacion' ? FUENTE_VEGETACION : FUENTE_LOCAL)
 
 export interface Departamento {
   id: string
@@ -68,11 +73,27 @@ interface BloqueVariable {
   sin_nino: Record<Periodo, Record<string, ZonaCruda>>
   series: Record<string, [number, number][]>
 }
-const DATOS = power as unknown as {
+const POWER = power as unknown as {
   generado: string
   anios_nino: number[]
   periodos: Record<Periodo, Rango>
-  variables: Record<Variable, BloqueVariable>
+  variables: Record<'lluvia' | 'temperatura', BloqueVariable>
+}
+/** NDVI de MODIS (2001–2024): no existe antes de 2001 ni depende de El Niño, así que sus dos periodos y
+ *  sus dos variantes son la misma serie. */
+const VEG = vegetacion as unknown as Pick<BloqueVariable, 'unidad' | 'parametro' | 'series'> & {
+  periodos: { reciente: Record<string, ZonaCruda> }
+}
+const DATOS = {
+  ...POWER,
+  variables: {
+    ...POWER.variables,
+    vegetacion: {
+      ...VEG,
+      periodos: { reciente: VEG.periodos.reciente, largo: VEG.periodos.reciente },
+      sin_nino: { reciente: VEG.periodos.reciente, largo: VEG.periodos.reciente },
+    },
+  } as Record<Variable, BloqueVariable>,
 }
 
 export const DEPARTAMENTOS = geo as Departamento[]

@@ -5,6 +5,7 @@ import {
   GraduationCap,
   House,
   Leaf,
+  MapPin,
   Moon,
   Sprout,
   Sun,
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button'
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+  vegetacion: Leaf,
 }
 
 const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
@@ -112,7 +114,7 @@ export function Cabecera() {
               </Button>
             )
           })}
-          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos */}
+          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos de cerca (Caso 2 y selva) */}
           <Button
             variant="toggle"
             size="sm"
@@ -121,7 +123,7 @@ export function Cabecera() {
             title={t.vegetacionBtn}
             onClick={() => setVegetacion()}
           >
-            <Leaf className="size-4" aria-hidden="true" />
+            <MapPin className="size-4" aria-hidden="true" />
             {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
             <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
           </Button>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { TEXTOS } from '@/i18n/textos'
-import { anomaliasAnio, FUENTE_LOCAL } from '@/data/datos'
+import { anomaliasAnio, fuenteLocal } from '@/data/datos'
 import { claveMapa } from '@/utils/direccion'
 import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia, fmtValor, num } from '@/utils/formato'
@@ -315,7 +315,7 @@ export function Leyenda() {
               </p>
               <p className="m-0 text-xs text-muted">
                 {/* La máquina del tiempo usa la copia local */}
-                {t.varDef[variable](anio == null ? fuente : FUENTE_LOCAL)}
+                {t.varDef[variable](anio == null ? fuente : fuenteLocal(variable))}
               </p>
             </>
           )}

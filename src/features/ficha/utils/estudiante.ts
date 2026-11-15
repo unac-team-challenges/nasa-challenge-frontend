@@ -57,7 +57,7 @@ export function ranking(zonas: Record<string, Zona>, id: string) {
 
 /** Los 25 departamentos como CSV: la tabla que el estudiante abre en Excel, R o Python. */
 export function tablaCsv(zonas: Record<string, Zona>, variable: Variable) {
-  const u = variable === 'lluvia' ? 'mm' : 'c'
+  const u = { lluvia: 'mm', temperatura: 'c', vegetacion: 'ndvi' }[variable]
   const cab = [
     'id',
     'departamento',

@@ -57,9 +57,9 @@ export function anomalias(pts: Punto[], variable: Variable, media = promedio(pts
 /** Años más secos o más calurosos (los de mayor anomalía en contra de lo que preocupa al campo). */
 export function peoresAnios(pts: Punto[], variable: Variable, cuantos = 3) {
   const filas = anomalias(pts, variable)
-  // Lluvia: preocupan los años secos (anomalía más negativa). Temperatura: los más calurosos.
+  // Lluvia y vegetación: preocupan los años de menos (anomalía más negativa). Temperatura: los más calurosos.
   const orden =
-    variable === 'lluvia' ? (x: number, y: number) => x - y : (x: number, y: number) => y - x
+    variable === 'temperatura' ? (x: number, y: number) => y - x : (x: number, y: number) => x - y
   return filas
     .slice()
     .sort((p, q) => orden(p.a, q.a))
@@ -69,7 +69,11 @@ export function peoresAnios(pts: Punto[], variable: Variable, cuantos = 3) {
 
 /** La serie como CSV (año y valor), para que el estudiante la abra en una hoja de cálculo. */
 export function serieCsv(pts: Punto[], variable: Variable) {
-  const cabecera = variable === 'lluvia' ? 'anio,lluvia_mm' : 'anio,temperatura_c'
+  const cabecera = {
+    lluvia: 'anio,lluvia_mm',
+    temperatura: 'anio,temperatura_c',
+    vegetacion: 'anio,ndvi',
+  }[variable]
   return [cabecera, ...pts.map((p) => `${p.y},${+p.v.toFixed(3)}`)].join('\n')
 }
 
@@ -109,14 +113,14 @@ export function escalaTendencia(zonas: Zona[], variable: Variable) {
 
 /**
  * Qué es un «año malo» para el campo, frente a lo normal: lluvia, un año seco (20 % o más por
- * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima).
+ * debajo del promedio); temperatura, un año caluroso (0,3 °C o más por encima); vegetación, un año de poco verdor (NDVI 0,01 o más por debajo).
  */
-export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3 } as const
+export const UMBRAL_MALO = { lluvia: -20, temperatura: 0.3, vegetacion: -0.01 } as const
 
 export function esMalo(anomalia: number, variable: Variable) {
-  return variable === 'lluvia'
-    ? anomalia <= UMBRAL_MALO.lluvia
-    : anomalia >= UMBRAL_MALO.temperatura
+  return variable === 'temperatura'
+    ? anomalia >= UMBRAL_MALO.temperatura
+    : anomalia <= UMBRAL_MALO[variable]
 }
 
 /**

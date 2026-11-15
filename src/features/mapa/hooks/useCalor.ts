@@ -9,15 +9,17 @@ import { PARADAS_LLUVIA, PARADAS_VEG, prepararCalor, type Calor } from '@/featur
  * Temperatura: de la API si la sesión la usa; si no, o si falla, de la copia local (mismos números).
  * Lluvia: igual (mm/año de NASA POWER, campo `valor`). Cada copia va en un chunk aparte
  * para no pesar en la carga inicial. Se prepara una sola vez y la comparten el 3D, el 2D y la leyenda.
- * Modo Vegetación: el NDVI de MODIS por celda de 0,25° (2001–2024), de la API o de su copia local.
+ * Vegetación (variable o modo): el NDVI de MODIS por celda de 0,25° (2001–2024), de la API o de su copia local.
  */
 export function useCalor(): Calor | null {
   const { variable, vegetacion } = useBusqueda()
   const fuente = useApp((s) => s.fuente)
+  // La variable Vegetación y el modo Vegetación pintan la misma malla de NDVI
+  const ndvi = vegetacion || variable === 'vegetacion'
   const { data } = useQuery({
-    queryKey: ['celdas', vegetacion ? 'vegetacion' : variable, fuente],
+    queryKey: ['celdas', ndvi ? 'vegetacion' : variable, fuente],
     queryFn: async () => {
-      if (vegetacion)
+      if (ndvi)
         return prepararCalor(
           (fuente === 'api' && (await celdasDeApi('vegetacion'))) ||
             ((await import('@/data/celdas_vegetacion.json')).default as Malla),

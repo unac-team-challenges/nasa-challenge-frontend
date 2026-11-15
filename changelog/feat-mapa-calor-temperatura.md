@@ -22,5 +22,13 @@ PR: base `developer`. Va con el PR #62 del backend (`GET /api/celdas`).
 ## Sin cambios
 - Lluvia, altura de columnas (tendencia), semáforo, ficha y franjas de la máquina del tiempo.
 
+## Refrescar la copia local
+`src/data/celdas_temperatura.json` es una foto de `data/celdas/temperatura.json` del backend (hoy idéntico). Si el cron
+del backend cambia las celdas, se actualiza con:
+```bash
+curl -s 'https://<API>/api/celdas?variable=temperatura' -o src/data/celdas_temperatura.json
+```
+La API sirve el archivo tal cual, así que el resultado es byte a byte el del backend. Mientras la API responda, manda ella.
+
 ## Pendiente
 - Ucayali (0,77 °C/década) es atípico frente a estudios andinos: revisar en el backend.

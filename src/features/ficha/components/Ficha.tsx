@@ -92,7 +92,8 @@ export const Ficha = memo(function Ficha() {
       </div>
 
       {!pocos && <Tendencia zona={d} perfil={perfil} />}
-      <Confianza zona={d} perfil={perfil} />
+      {/* El agricultor ve la confianza dentro de la tendencia; sin cifras, aquí sola */}
+      {(!campo || pocos) && <Confianza zona={d} perfil={perfil} />}
       {/* Solo el agricultor: lo que necesita para su campaña, sacado de la misma serie anual */}
       {campo && !pocos && (
         <>

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { Zona } from '@/data/datos'
-import { cifraCampo, listaAnios, miles } from '@/features/ficha/utils/campo'
+import {
+  cambioEnPeriodo,
+  cifraCampo,
+  fraccion,
+  listaAnios,
+  metrosEquivalentes,
+  miles,
+} from '@/features/ficha/utils/campo'
 
 const zona = (z: Partial<Zona>): Zona => ({
   id: '20',
@@ -56,5 +63,35 @@ describe('miles', () => {
     expect(miles(2310.4, 'en').replace(/\s/g, '')).toBe('2,310')
     expect(miles(2310.4, 'es')).toMatch(/^2\D?310$/)
     expect(miles(12, 'es')).toBe('12')
+  })
+})
+
+describe('fraccion', () => {
+  it('cambios chicos en palabras', () => {
+    expect(fraccion(-1)).toBe('igual')
+    expect(fraccion(3)).toBe('poquito')
+    expect(fraccion(-10)).toBe('poco')
+    expect(fraccion(-19)).toBe('quinto')
+    expect(fraccion(25)).toBe('cuarto')
+    expect(fraccion(-33)).toBe('tercio')
+    expect(fraccion(50)).toBe('mitad')
+  })
+  it('hacia abajo no pasa de «menos de la mitad»; hacia arriba llega al doble y al triple', () => {
+    expect(fraccion(-70)).toBe('masMitad')
+    expect(fraccion(81)).toBe('casiDoble')
+    expect(fraccion(100)).toBe('doble')
+    expect(fraccion(150)).toBe('masDoble')
+    expect(fraccion(200)).toBe('triple')
+    expect(fraccion(300)).toBe('masTriple')
+  })
+})
+
+describe('cambioEnPeriodo y metrosEquivalentes', () => {
+  it('la pendiente por década por las décadas del periodo', () => {
+    expect(cambioEnPeriodo(-8, 2001, 2024)).toBeCloseTo(-18.4)
+  })
+  it('grados en metros de altura, redondeado a decenas', () => {
+    expect(metrosEquivalentes(0.5)).toBe(80) // 76,9 m
+    expect(metrosEquivalentes(-1.1)).toBe(170)
   })
 })

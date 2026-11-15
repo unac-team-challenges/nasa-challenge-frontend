@@ -7,7 +7,7 @@ import { fmtPct, num } from '@/utils/formato'
 import { useDetalle, useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { efectoNino } from '@/features/ficha/utils/serie'
-import { listaAnios } from '@/features/ficha/utils/campo'
+import { fraccion, listaAnios } from '@/features/ficha/utils/campo'
 
 /** Comunicados oficiales de la Comisión ENFEN (estado del sistema de alerta de El Niño). */
 const ENFEN = 'https://enfen.imarpe.gob.pe/comunicados/'
@@ -15,6 +15,7 @@ const ENFEN = 'https://enfen.imarpe.gob.pe/comunicados/'
 /**
  * Agricultor: «¿qué trae El Niño aquí?». Cuánto se apartaron de lo esperado (la tendencia), en
  * promedio, los años de El Niño en esta zona: en el norte suele llover mucho más; en el sur andino, a veces menos.
+ * La lluvia va en palabras («Casi el doble de lluvia»), con el % entre paréntesis.
  */
 export function CampoNino() {
   const idioma = useApp((s) => s.idioma)
@@ -38,20 +39,29 @@ export function CampoNino() {
       {e ? (
         <>
           <span
-            className="font-display text-[34px] leading-none font-[750] tracking-[-0.02em] tabular-nums"
+            className="font-display text-[28px] leading-[1.1] font-[750] tracking-[-0.015em]"
             style={{ color: `var(${colorDireccion(e.promedio, variable)})` }}
           >
             {lluvia
-              ? fmtPct(e.promedio)
+              ? fraccion(e.promedio) === 'igual'
+                ? t.ninoIgual
+                : t.ninoGrande(t.cuanto(fraccion(e.promedio), e.promedio >= 0, null))
               : `${e.promedio >= 0 ? '+' : '−'}${num(e.promedio, 1, idioma)} °C`}
           </span>
           <p className="m-0">
-            {t.ninoAqui[variable](
-              NOMBRE[sel],
-              listaAnios(e.anios, idioma),
-              lluvia ? `${Math.round(Math.abs(e.promedio))} %` : `${num(e.promedio, 1, idioma)} °C`,
-              e.promedio >= 0,
-            )}
+            {lluvia
+              ? t.ninoAquiLluvia(
+                  NOMBRE[sel],
+                  listaAnios(e.anios, idioma),
+                  t.cuanto(fraccion(e.promedio), e.promedio >= 0, 'esperado'),
+                  fmtPct(e.promedio),
+                )
+              : t.ninoAquiCalor(
+                  NOMBRE[sel],
+                  listaAnios(e.anios, idioma),
+                  `${num(Math.abs(e.promedio), 1, idioma)} °C`,
+                  e.promedio >= 0,
+                )}
           </p>
         </>
       ) : (

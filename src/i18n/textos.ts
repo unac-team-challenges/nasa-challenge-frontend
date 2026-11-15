@@ -16,6 +16,21 @@ type Frecuencia =
   | { tipo: 'unoSiUnoNo' }
   | { tipo: 'cada'; cada: number }
   | { tipo: 'cadaEntre'; de: number; a: number }
+/** Un cambio en %, en palabras de chacra (ver fraccion en features/ficha/utils/campo.ts). */
+type Fraccion =
+  | 'igual'
+  | 'poquito'
+  | 'poco'
+  | 'quinto'
+  | 'cuarto'
+  | 'tercio'
+  | 'mitad'
+  | 'masMitad'
+  | 'casiDoble'
+  | 'doble'
+  | 'masDoble'
+  | 'triple'
+  | 'masTriple'
 /** Cuánta lluvia faltó (ver cuantoFalto). */
 type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
 
@@ -157,26 +172,76 @@ const es = {
   // Ficha: el mismo dato, contado para el agricultor o para el estudiante
   /** Confianza en palabras de campo: [título, explicación] */
   confCampo: {
-    real: ['Cambio claro', 'Es poco probable que sea solo suerte.'],
-    posible_casualidad: [
-      'Puede ser casualidad',
-      'Hay años buenos y años malos, pero todavía no se ve un cambio claro.',
+    real: [
+      'Esto ya viene pasando',
+      'No es cosa de un año suelto: se viene repitiendo año tras año.',
     ],
-    pocos_datos: ['Faltan datos', 'No hay datos suficientes aquí para decir algo.'],
+    posible_casualidad: [
+      'Por ahora, sube y baja nomás',
+      'Hay años buenos y años malos, pero no se ve que vaya para un lado. Un año malo no hace costumbre.',
+    ],
+    pocos_datos: [
+      'Aquí no lo podemos medir',
+      'No hay datos suficientes en esta zona para decir algo.',
+    ],
   } as Record<Estado, [string, string]>,
-  /** valor sin signo: "8 %" o "0,20 °C" */
+  /**
+   * Un cambio en palabras, frente a algo («que antes», «de lo esperado»): «un poco más»,
+   * «como un cuarto menos», «casi el doble».
+   */
+  cuanto: (f: Fraccion, sube: boolean, frente: 'antes' | 'esperado' | null) =>
+    `${
+      sube
+        ? {
+            igual: 'casi igual',
+            poquito: 'un poquito más',
+            poco: 'un poco más',
+            quinto: 'como un quinto más',
+            cuarto: 'como un cuarto más',
+            tercio: 'como un tercio más',
+            mitad: 'como la mitad más',
+            masMitad: 'como la mitad más',
+            casiDoble: 'casi el doble',
+            doble: 'como el doble',
+            masDoble: 'más del doble',
+            triple: 'como el triple',
+            masTriple: 'más del triple',
+          }[f]
+        : {
+            igual: 'casi igual',
+            poquito: 'un poquito menos',
+            poco: 'un poco menos',
+            quinto: 'como un quinto menos',
+            cuarto: 'como un cuarto menos',
+            tercio: 'como un tercio menos',
+            mitad: 'casi la mitad menos',
+            masMitad: 'menos de la mitad',
+            casiDoble: 'menos de la mitad',
+            doble: 'menos de la mitad',
+            masDoble: 'menos de la mitad',
+            triple: 'menos de la mitad',
+            masTriple: 'menos de la mitad',
+          }[f]
+    }${frente === 'antes' ? ' que antes' : frente === 'esperado' ? (f === 'igual' ? ' que lo esperado' : ' de lo esperado') : ''}`,
+  /** Titular del cambio claro. lluvia: cuanto ya armado; temperatura: grados sin signo ("0,5 °C") */
   campoFrase: {
-    lluvia: (valor: string, sube: boolean) =>
-      `Cada 10 años llueve un ${valor} ${sube ? 'más' : 'menos'}`,
-    temperatura: (valor: string, sube: boolean) =>
-      `Cada 10 años hace ${valor} ${sube ? 'más de calor' : 'más de frío'}`,
-  } as PorVariable<(valor: string, sube: boolean) => string>,
+    lluvia: (desde: number, cuanto: string) => `Desde ${desde}, llueve ${cuanto}`,
+    temperatura: (desde: number, grados: string, sube: boolean) =>
+      `Desde ${desde}, hace como ${grados} más de ${sube ? 'calor' : 'frío'}`,
+  },
   /** Titular cuando el cambio no es claro: no se afirma ni dirección ni cifra */
   campoSinCambio: {
     lluvia: 'No se ve un cambio claro en la lluvia',
     temperatura: 'No se ve un cambio claro en el calor',
   } as PorVariable<string>,
   campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
+  /** cifra sin signo: "8 %" o "0,20 °C" */
+  campoRitmo: (cifra: string, sube: boolean, a: number, b: number) =>
+    `Son unos ${cifra} ${sube ? 'más' : 'menos'} cada 10 años, de ${a} a ${b}.`,
+  /** El calor en metros de altura (ver metrosEquivalentes) */
+  campoAltura: (metros: string, sube: boolean) =>
+    `Es como tener la chacra unos ${metros} más ${sube ? 'abajo' : 'arriba'} en el cerro.`,
+  campoAlturaNota: 'Cuenta aproximada: subiendo 1000 metros, el aire se enfría unos 6,5 °C.',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
@@ -298,13 +363,16 @@ const es = {
     pocos: 'No se pueden comparar',
   },
   ninoAquiH: '¿Qué trae El Niño aquí?',
-  /** valor sin signo: "81 %" o "0,5 °C" */
-  ninoAqui: {
-    lluvia: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), en ${zona} llovió en promedio ${valor} ${sube ? 'más' : 'menos'} que lo esperado en esos años.`,
-    temperatura: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), ${zona} estuvo en promedio ${valor} ${sube ? 'más caluroso' : 'más frío'} que lo esperado en esos años.`,
-  } as PorVariable<(zona: string, anios: string, valor: string, sube: boolean) => string>,
+  /** La cifra grande de El Niño en palabras: «Casi el doble de lluvia» (cuanto sin nada enfrente) */
+  ninoGrande: (cuanto: string) => `${cuanto[0].toUpperCase()}${cuanto.slice(1)} de lluvia`,
+  /** Cifra grande cuando El Niño casi no cambia la lluvia aquí */
+  ninoIgual: 'Lo de siempre',
+  /** cuanto: «casi el doble de lo esperado»; cifra con signo: "+81 %" */
+  ninoAquiLluvia: (zona: string, anios: string, cuanto: string, cifra: string) =>
+    `En los años de El Niño (${anios}), en ${zona} llovió ${cuanto} (${cifra}).`,
+  /** grados sin signo: "0,5 °C" */
+  ninoAquiCalor: (zona: string, anios: string, grados: string, sube: boolean) =>
+    `En los años de El Niño (${anios}), en ${zona} hizo como ${grados} más de ${sube ? 'calor' : 'frío'} de lo esperado.`,
   ninoSinAnios: 'Con los años de El Niño quitados, aquí no se puede ver lo que trae.',
   ninoEnfen: 'Ver el estado de alerta de El Niño (ENFEN)',
   normalH: 'Un año normal aquí',
@@ -642,22 +710,73 @@ const en: Textos = {
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
   confCampo: {
-    real: ['Clear change', 'It is unlikely to be just luck.'],
-    posible_casualidad: [
-      'May be chance',
-      'There are good years and bad years, but no clear change yet.',
+    real: [
+      'This is already happening',
+      'It’s not a one-off year: it keeps repeating year after year.',
     ],
-    pocos_datos: ['Not enough data', 'There is not enough data here to say anything.'],
+    posible_casualidad: [
+      'For now, it just goes up and down',
+      'There are good years and bad years, but it isn’t heading one way. One bad year doesn’t make a pattern.',
+    ],
+    pocos_datos: [
+      'We can’t measure it here',
+      'There isn’t enough data in this area to say anything.',
+    ],
+  },
+  cuanto: (f, sube, frente) => {
+    const [palabra, como] = sube
+      ? (
+          {
+            igual: ['about the same', true],
+            poquito: ['a tiny bit more', false],
+            poco: ['a bit more', false],
+            quinto: ['about a fifth more', false],
+            cuarto: ['about a quarter more', false],
+            tercio: ['about a third more', false],
+            mitad: ['about 50 % more', false],
+            masMitad: ['about 50 % more', false],
+            casiDoble: ['almost twice as much', true],
+            doble: ['about twice as much', true],
+            masDoble: ['more than twice as much', true],
+            triple: ['about three times as much', true],
+            masTriple: ['more than three times as much', true],
+          } as const
+        )[f]
+      : (
+          {
+            igual: ['about the same', true],
+            poquito: ['a tiny bit less', false],
+            poco: ['a bit less', false],
+            quinto: ['about a fifth less', false],
+            cuarto: ['about a quarter less', false],
+            tercio: ['about a third less', false],
+            mitad: ['almost half as much', true],
+            masMitad: ['less than half as much', true],
+            casiDoble: ['less than half as much', true],
+            doble: ['less than half as much', true],
+            masDoble: ['less than half as much', true],
+            triple: ['less than half as much', true],
+            masTriple: ['less than half as much', true],
+          } as const
+        )[f]
+    if (!frente) return palabra
+    return `${palabra} ${como ? 'as' : 'than'} ${frente === 'antes' ? 'before' : 'expected'}`
   },
   campoFrase: {
-    lluvia: (valor, sube) => `Every 10 years it rains ${valor} ${sube ? 'more' : 'less'}`,
-    temperatura: (valor, sube) => `Every 10 years it gets ${valor} ${sube ? 'warmer' : 'cooler'}`,
+    lluvia: (desde, cuanto) => `Since ${desde}, it rains ${cuanto}`,
+    temperatura: (desde, grados, sube) =>
+      `Since ${desde}, it’s about ${grados} ${sube ? 'warmer' : 'cooler'}`,
   },
   campoSinCambio: {
     lluvia: 'No clear change in rainfall',
     temperatura: 'No clear change in heat',
   },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
+  campoRitmo: (cifra, sube, a, b) =>
+    `That’s about ${cifra} ${sube ? 'more' : 'less'} every 10 years, from ${a} to ${b}.`,
+  campoAltura: (metros, sube) =>
+    `It’s like having your field about ${metros} ${sube ? 'lower' : 'higher'} up the mountain.`,
+  campoAlturaNota: 'Rough rule: going up 1000 metres, the air cools by about 6.5 °C.',
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
@@ -761,12 +880,12 @@ const en: Textos = {
     pocos: 'Cannot compare',
   },
   ninoAquiH: 'What does El Niño bring here?',
-  ninoAqui: {
-    lluvia: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than expected for those years.`,
-    temperatura: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than expected for those years.`,
-  },
+  ninoGrande: (cuanto) => `${cuanto[0].toUpperCase()}${cuanto.slice(1)} rain`,
+  ninoIgual: 'Same as usual',
+  ninoAquiLluvia: (zona, anios, cuanto, cifra) =>
+    `In El Niño years (${anios}), rain in ${zona} was ${cuanto} (${cifra}).`,
+  ninoAquiCalor: (zona, anios, grados, sube) =>
+    `In El Niño years (${anios}), ${zona} was about ${grados} ${sube ? 'hotter' : 'cooler'} than expected.`,
   ninoSinAnios: 'With the El Niño years removed, we cannot show what it brings here.',
   ninoEnfen: 'See the El Niño alert status (ENFEN)',
   normalH: 'A normal year here',

@@ -52,6 +52,8 @@ describe('explorador con la URL', () => {
     expect(await within(informe).findByText('No se ve un cambio claro en la lluvia')).toBeVisible()
     expect(within(informe).queryByText(/Cada 10 años llueve/)).toBeNull()
     expect(within(informe).queryByText('Seguro')).toBeNull()
+    // La confianza va dentro de la tendencia, una sola vez, en palabras de campo
+    expect(within(informe).getAllByText('Por ahora, sube y baja nomás')).toHaveLength(1)
   })
 
   it('las causas con sentido no salen si el cambio puede ser casualidad (Amazonas, lluvia)', async () => {

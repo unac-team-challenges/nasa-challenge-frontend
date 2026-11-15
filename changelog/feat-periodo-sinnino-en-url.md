@@ -1,6 +1,6 @@
 # feat/periodo-sinnino-en-url
 
-PR: base `feat/ficha-agricultor-estudiante` (apilada sobre el PR #54; pasa a `developer` cuando ese se fusione). Solo frontend; no toca el contrato.
+PR: base `feat/ficha-agricultor-estudiante` (la rama del #54; pasa a `developer` cuando ese se fusione). Solo frontend; no toca el contrato.
 
 ## Cambiado
 - El periodo de la tendencia y «sin los años de El Niño» pasan de Zustand a la URL (`?periodo=largo&sinnino=1`), con una sola fuente de verdad. Un enlace compartido o el de «Cómo citar» abre la misma vista.

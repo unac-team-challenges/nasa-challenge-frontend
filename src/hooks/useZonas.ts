@@ -49,7 +49,7 @@ export function useDecidirFuente(ruta: Ruta) {
 
 /**
  * Lo que se ve de una variable: datos de la API (o null = copia local), sus años y su fuente.
- * La API solo cubre la vista principal (tendencia larga, con El Niño): la variante sin El Niño
+ * La API solo cubre la vista principal (2001–2024, con El Niño): la variante sin El Niño
  * y la máquina del tiempo usan la copia local hasta que el contrato las incluya.
  */
 export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fuente: string } {
@@ -60,7 +60,7 @@ export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fu
   const decidida = useApp((s) => s.fuente)
   const { data } = useDatosApi()
   const api =
-    decidida === 'api' && periodo === 'largo' && !sinNino ? (data?.[variable] ?? null) : null
+    decidida === 'api' && periodo === 'reciente' && !sinNino ? (data?.[variable] ?? null) : null
   return api
     ? { api, rango: api.rango, fuente: api.fuente }
     : { api: null, rango: PERIODOS[periodo], fuente: FUENTE_LOCAL }

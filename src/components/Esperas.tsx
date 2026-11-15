@@ -1,3 +1,4 @@
+import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -69,15 +70,16 @@ export function FichaSkeleton({ anunciar = true }: { anunciar?: boolean }) {
   )
 }
 
-/** La pantalla del explorador mientras baja su código: el mapa y el informe en su lugar. */
+/**
+ * El explorador mientras baja su código: el mapa ya está de fondo (App lo monta), así que solo
+ * se ve el informe en su lugar.
+ */
 export function ExploradorSkeleton() {
   return (
-    <section className="grid flex-1 grid-cols-1 min-[901px]:min-h-[560px] min-[901px]:grid-cols-[minmax(0,62fr)_minmax(340px,38fr)]">
-      <div className="relative h-[62vh] min-h-80 border-b border-line min-[901px]:h-auto min-[901px]:border-r min-[901px]:border-b-0">
-        <Estado />
-        <MapaSkeleton explorar anunciar={false} />
-      </div>
-      <div className="hidden bg-panel px-5.5 pt-5.5 min-[901px]:block">
+    <section className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px]">
+      <Estado />
+      <div className={`flex-none ${ALTO_MAPA_CELULAR} min-[901px]:hidden`} />
+      <div className="pointer-events-auto flex-1 bg-panel px-5.5 pt-5.5 min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[clamp(340px,38vw,560px)] min-[901px]:flex-none min-[901px]:border-l min-[901px]:border-line">
         <FichaSkeleton anunciar={false} />
       </div>
     </section>

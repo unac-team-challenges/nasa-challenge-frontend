@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { METODOLOGIA, TEXTOS } from '@/i18n/textos'
+import { PERIODOS } from '@/data/datos'
+import { useRango } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
@@ -19,6 +21,13 @@ export function Metodologia() {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
   const m = METODOLOGIA[idioma]
+  const rangos = {
+    lluvia: useRango('lluvia'),
+    temperatura: useRango('temperatura'),
+    local: PERIODOS.largo,
+  }
+  const anios = (f: { anios?: string; rango?: keyof typeof rangos }) =>
+    f.rango ? `${rangos[f.rango].year_start}–${rangos[f.rango].year_end}` : f.anios
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-9 px-4 py-10">
@@ -61,7 +70,7 @@ export function Metodologia() {
                     {f.fuente} · <Ext a={f.enlace} />
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{f.resolucion}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{f.anios}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{anios(f)}</td>
                 </tr>
               ))}
             </tbody>

@@ -64,11 +64,11 @@ Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` 
 
 ## Metadatos
 
-`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/hooks/meta.ts` las actualiza según pantalla, idioma y tema, y `public/favicon.svg` cambia de color con el tema del sistema. **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
+`index.html` trae las etiquetas en español (título, descripción, Open Graph, Twitter y `theme-color` para tema claro y oscuro; es lo único que leen los rastreadores sin JavaScript). `src/hooks/meta.ts` las actualiza según pantalla, idioma y tema. El favicon es `public/favicon.ico` (logo del equipo). **Pendiente:** `og:image` (`/og.png`) debe ser una URL absoluta (`https://<dominio>/og.png`) cuando se defina el dominio.
 
 ## Datos y periodo
 
-Con la API del backend (`VITE_API_URL`) se muestra **2001–2024** (lluvia GPM IMERG, temperatura MERRA-2 vía POWER). Si no responde, la copia local (`src/data/power.json`, NASA POWER) muestra **1981–2024**. «Sin El Niño» y la máquina del tiempo usan siempre la copia local. Detalle en `/metodologia` y `docs/para-favio.md`.
+Con la API del backend (`VITE_API_URL`) se muestra **2001–2024** (lluvia GPM IMERG, temperatura MERRA-2 vía POWER). Si no responde, la copia local (`src/data/power.json`, NASA POWER) muestra también **2001–2024** (la serie 1981–2024 sigue en los datos). «Sin El Niño» y la máquina del tiempo usan siempre la copia local. Detalle en `/metodologia` y `docs/para-favio.md`.
 
 ## Pendiente de decisión
 

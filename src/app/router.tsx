@@ -9,7 +9,7 @@ import {
 import App from '@/app/App'
 import { NoEncontrada, PantallaError } from '@/components/Errores'
 import { ExploradorSkeleton, PaginaSkeleton } from '@/components/Esperas'
-import { Inicio } from '@/app/rutas/Inicio'
+import { Portada } from '@/features/portada/components/Portada'
 import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from '@/lib/busqueda'
 
 /**
@@ -24,7 +24,7 @@ const raiz = createRootRoute({
   notFoundComponent: NoEncontrada,
 })
 
-const inicio = createRoute({ getParentRoute: () => raiz, path: '/', component: Inicio })
+const inicio = createRoute({ getParentRoute: () => raiz, path: '/', component: Portada })
 
 // El mapa y la ficha son un solo diseño para /explorar y /zona/:id: al elegir una zona
 // la pantalla no se vuelve a montar (el 3D no se recrea). Las rutas hijas no dibujan nada.

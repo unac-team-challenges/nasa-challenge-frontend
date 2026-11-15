@@ -1,65 +1,124 @@
-import { lazy, Suspense, useRef, useState } from 'react'
-import { NOMBRE } from '@/data/datos'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
+import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { fmtValor } from '@/utils/formato'
 import { useRango, useZonas } from '@/hooks/useZonas'
-import type { EscenaPeru } from '@/features/mapa/escena/escena'
+import { escenaActiva } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 import { useApp } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { BarraTiempo } from '@/features/tiempo/components/BarraTiempo'
-import { MapaSkeleton } from '@/components/Esperas'
 import { Ficha } from '@/features/ficha/components/Ficha'
 import { Leyenda } from '@/features/mapa/components/Leyenda'
 import { Button } from '@/components/ui/button'
 
-// three.js se descarga aparte: mientras llega se ve el esqueleto del mapa
-const Mapa3D = lazy(() =>
-  import('@/features/mapa/components/Mapa3D').then((m) => ({ default: m.Mapa3D })),
-)
-
 const boton = 'bg-panel/92'
 
+const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+/** Ancho del informe abierto en escritorio y de su franja minimizada. */
+const ANCHO_INFORME = 'clamp(340px, 38vw, 560px)'
+const FRANJA = 56
+/** Presentación del departamento elegido: entra, se queda y sale (ms, igual que en index.css). */
+const PRESENTACION_MS = 1900
+/** La información aparece cuando la presentación ya se está yendo. */
+const RETRASO_INFO_S = 1.3
+
 /**
- * Explorador (v10): el mapa abre a todo el ancho con el informe minimizado;
- * al tocar una zona, el informe se abre solo.
+ * Explorador: el mapa es el fondo de toda la pantalla y el informe se desliza encima, a la
+ * derecha. Antes el informe cambiaba las columnas de la grilla: el lienzo 3D cambiaba de
+ * tamaño de golpe y la página parpadeaba al elegir una zona. Ahora el lienzo no se toca: la
+ * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
   const { idioma, sinNino, informeMin, setInformeMin } = useApp()
-  const { conWebgl, modoMapa, setModoMapa } = useApp()
-  const { variable, sel, anio } = useBusqueda()
+  const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
+  const { variable, sel, anio, seleccionar } = useBusqueda()
   const en3d = modoMapa === '3d'
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const rango = useRango()
-  const escena = useRef<EscenaPeru | null>(null)
-  const [girando, setGirando] = useState(true)
   const d = sel ? zonas[sel] : null
   const etiquetaInforme = informeMin ? t.showReport : t.hideReport
+  const informe = useRef<HTMLElement>(null)
+  const [anchoInforme, setAnchoInforme] = useState(0)
+
+  // Presentación breve del departamento elegido; luego aparece su información. Se decide al
+  // renderizar (patrón «ajustar estado cuando cambia una prop»), no en un efecto.
+  const [intro, setIntro] = useState<{ id: string; n: number } | null>(null)
+  const [abrirTarde, setAbrirTarde] = useState(false)
+  const [previa, setPrevia] = useState({ sel, informeMin })
+  if (sel !== previa.sel || informeMin !== previa.informeMin) {
+    setPrevia({ sel, informeMin })
+    if (sel !== previa.sel) {
+      const animar = !!sel && !reducido()
+      setIntro(animar && sel ? { id: sel, n: (intro?.n ?? 0) + 1 } : null)
+      // si el informe estaba cerrado, se abre cuando la presentación termina
+      setAbrirTarde(animar && previa.informeMin)
+    }
+  }
+  useEffect(() => {
+    if (!intro) return
+    const fin = setTimeout(() => setIntro(null), PRESENTACION_MS)
+    return () => clearTimeout(fin)
+  }, [intro])
+
+  // El informe tapa parte del mapa: la escena corre el Perú para que quede a la vista
+  useEffect(() => {
+    const el = informe.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setAnchoInforme(el.offsetWidth))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  useEffect(() => {
+    escenaActiva.current?.setPanel(informeMin ? FRANJA : anchoInforme)
+  }, [informeMin, anchoInforme, modoMapa])
+
+  const volverAlInicio = () => {
+    seleccionar(null)
+    setInformeMin(true)
+    escenaActiva.current?.recentrar()
+  }
+  // El informe y la zona del mapa se mueven juntos, cuando la presentación ya se va
+  const demoraPanel = !informeMin && abrirTarde ? `${RETRASO_INFO_S - 0.2}s` : '0s'
+  const estilo = {
+    '--ancho-informe': ANCHO_INFORME,
+    '--tapa': informeMin ? `${FRANJA}px` : 'var(--ancho-informe)',
+  } as CSSProperties
 
   return (
     <section
       aria-label={t.explorador}
-      className={`grid flex-1 grid-cols-1 min-[901px]:min-h-[560px] ${
-        informeMin
-          ? 'min-[901px]:grid-cols-[minmax(0,1fr)_56px]'
-          : 'min-[901px]:grid-cols-[minmax(0,62fr)_minmax(340px,38fr)]'
-      }`}
+      style={estilo}
+      className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px]"
     >
-      {/* Mapa */}
-      <div className="relative flex min-w-0 flex-col border-b border-line min-[901px]:border-r min-[901px]:border-b-0">
-        <div className="relative h-[62vh] min-h-80 flex-none min-[901px]:h-auto min-[901px]:flex-1">
-          {/* En 2D el 3D se desmonta: libera la tarjeta gráfica */}
-          {en3d ? (
-            <Suspense fallback={<MapaSkeleton explorar />}>
-              <Mapa3D modo="explorar" controlRef={escena} alGirar={setGirando} />
-            </Suspense>
-          ) : (
+      {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
+      <div
+        className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:left-0 min-[901px]:right-[var(--tapa)] min-[901px]:h-auto min-[901px]:transition-[right] min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
+        style={{ transitionDelay: demoraPanel }}
+      >
+        {intro && (
+          <div
+            key={intro.n}
+            className="presentacion absolute inset-0 z-[4] grid place-items-center px-4 text-center"
+            aria-hidden="true"
+          >
+            <div>
+              <p className="presentacion-nombre">{NOMBRE[intro.id]}</p>
+              <p className="presentacion-sub">{t.introDepto[REGION[intro.id]]}</p>
+            </div>
+          </div>
+        )}
+        {conWebgl && !en3d && (
+          <div className="pointer-events-auto absolute inset-0">
             <Mapa2D />
-          )}
+          </div>
+        )}
+        <div className="entrada-suave">
           <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
-            <div className="pointer-events-auto flex flex-wrap items-baseline gap-2.5">
+            <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-xl font-[650] tracking-display">
                 {t.mapH[variable]}
               </h2>
@@ -78,9 +137,11 @@ export function Explorador() {
               </p>
             )}
           </div>
-          <Leyenda />
-          <BarraTiempo />
-          <div className="absolute right-4 bottom-3.5 z-[3] flex gap-1.5">
+          <div className="pointer-events-auto contents">
+            <Leyenda />
+            <BarraTiempo />
+          </div>
+          <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] flex gap-1.5">
             {conWebgl && (
               <div
                 className="inline-flex overflow-hidden rounded-s border border-line-2 bg-panel/92"
@@ -107,7 +168,7 @@ export function Explorador() {
               aria-pressed={girando}
               aria-label={girando ? t.spinOn : t.spinOff}
               title={girando ? t.spinOn : t.spinOff}
-              onClick={() => escena.current?.alternarGiro()}
+              onClick={() => escenaActiva.current?.alternarGiro()}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -123,10 +184,9 @@ export function Explorador() {
             <Button
               size="icon"
               className={boton}
-              disabled={!en3d}
               aria-label={t.recenter}
               title={t.recenter}
-              onClick={() => escena.current?.recentrar()}
+              onClick={volverAlInicio}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="3" fill="currentColor" />
@@ -142,9 +202,13 @@ export function Explorador() {
         </div>
       </div>
 
-      {/* Informe (minimizable a una franja que muestra la zona y su valor) */}
+      {/* Informe: en escritorio se desliza sobre el mapa; minimizado deja una franja de 56 px */}
       <aside
-        className="relative flex min-w-0 overflow-hidden bg-panel"
+        ref={informe}
+        className={`pointer-events-auto relative flex min-w-0 overflow-hidden border-line bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          informeMin ? 'min-[901px]:translate-x-[calc(100%-56px)]' : ''
+        }`}
+        style={{ transitionDelay: demoraPanel }}
         aria-label={etiquetaInforme}
       >
         <button
@@ -156,7 +220,7 @@ export function Explorador() {
           onClick={() => setInformeMin(!informeMin)}
           className={
             informeMin
-              ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg min-[901px]:h-full min-[901px]:flex-col min-[901px]:justify-start min-[901px]:px-0 min-[901px]:py-3.5'
+              ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg min-[901px]:h-full min-[901px]:w-14 min-[901px]:flex-none min-[901px]:flex-col min-[901px]:justify-start min-[901px]:px-0 min-[901px]:py-3.5'
               : 'presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
           }
         >
@@ -192,7 +256,14 @@ export function Explorador() {
             className="min-w-0 flex-1 px-4 pt-5.5 pb-7 min-[901px]:overflow-y-auto min-[901px]:px-5.5"
             aria-live="polite"
           >
-            <Ficha />
+            {/* La información entra suave cuando termina la presentación del departamento */}
+            <div
+              key={sel ?? 'ninguna'}
+              className="entrada"
+              style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
+            >
+              <Ficha />
+            </div>
           </div>
         )}
       </aside>

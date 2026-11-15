@@ -48,6 +48,9 @@ interface EstadoApp {
   conWebgl: boolean
   modoMapa: ModoVista
   setModoMapa: (m: ModoVista) => void
+  /** El mapa 3D gira solo (lo avisa la escena; lo usa el botón de giro) */
+  girando: boolean
+  setGirando: (g: boolean) => void
   /** Se decide una sola vez por sesión (null = aún no): así el mapa no salta de una fuente a otra */
   fuente: Fuente | null
   fijarFuente: (f: Fuente) => void
@@ -59,8 +62,8 @@ interface EstadoApp {
 
 export const useApp = create<EstadoApp>((set, get) => ({
   idioma: idiomaInicial(),
-  // Solo la tendencia larga (1981–2024): decisión de Favio, 14 nov. El periodo reciente sigue en los datos.
-  periodo: 'largo',
+  // 2001–2024 por defecto: el periodo decidido el 14 nov (backend, docs/tendencias.md) y el que sirve la API.
+  periodo: 'reciente',
   setPeriodo: (periodo) => set({ periodo, reproduciendo: false }),
   reproduciendo: false,
   setReproduciendo: (reproduciendo) => set({ reproduciendo }),
@@ -71,6 +74,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   modoMapa: GL ? '3d' : '2d',
   // Sin WebGL, el 2D es la única vista posible
   setModoMapa: (modoMapa) => set({ modoMapa: GL ? modoMapa : '2d' }),
+  girando: true,
+  setGirando: (girando) => set({ girando }),
   fuente: null,
   fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
   setIdioma: (idioma) => set({ idioma }),

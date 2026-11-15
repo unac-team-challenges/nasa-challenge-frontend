@@ -13,6 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
+import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
@@ -28,6 +29,10 @@ const ESCALA_MIN = 0.12
 const FPS_FONDO = 30
 const FPS_SIN_FOCO = 15
 const ELEVA_SEL = 0.35
+/** El departamento bajo el puntero sube un poco (como fill-extrusion en Mapbox o deck.gl). */
+const ELEVA_HOVER = 0.18
+/** Brillo de acento del departamento bajo el puntero (emisivo, entra y sale suave). */
+const BRILLO_HOVER = 0.2
 const LON0 = -75.0
 const LAT0 = -9.2
 const K = 2.2
@@ -106,6 +111,8 @@ interface DatosMalla {
   objetivo: number
   centro: THREE.Vector3
   contorno: THREE.LineSegments<THREE.BufferGeometry, THREE.LineDashedMaterial>
+  /** 0..1: cuánto brilla por el hover (se interpola en cada cuadro). */
+  brillo: number
 }
 type Malla = THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshStandardMaterial> & {
   userData: DatosMalla
@@ -129,11 +136,25 @@ const proyectar = ([lon, lat]: number[]) =>
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
 const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+/** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
+const RELIEVE = 1.8
+/** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
+const DPR_RELIEVE = 0.7
 const SUELO_VS = `
+uniform sampler2D uMundo, uMundo2, uPeru;
+uniform vec4 uCaja, uCajaPeru;
+uniform float uRelieve;
 varying vec3 vW;
 #include <fog_pars_vertex>
 void main() {
   vec4 w = modelMatrix * vec4(position, 1.0);
+  // Relieve real de los vecinos (SRTM): sube solo la tierra, nunca dentro del Perú (ahí están las columnas)
+  vec2 uv = (w.xz - uCaja.xy) / uCaja.zw;
+  if (uRelieve > 0.0 && all(greaterThan(uv, vec2(0.0))) && all(lessThan(uv, vec2(1.0)))) {
+    float tierra = smoothstep(0.5, 0.62, texture2D(uMundo, uv).g);
+    float peru = texture2D(uPeru, (w.xz - uCajaPeru.xy) / uCajaPeru.zw).g;
+    w.y += texture2D(uMundo2, uv).r * tierra * (1.0 - smoothstep(0.02, 0.3, peru)) * uRelieve;
+  }
   vW = w.xyz;
   vec4 mvPosition = viewMatrix * w;
   gl_Position = projectionMatrix * mvPosition;
@@ -143,7 +164,7 @@ const SUELO_FS = `
 uniform float uTime;
 uniform sampler2D uMundo, uMundo2, uPeru;
 uniform vec4 uCaja, uCajaPeru;
-uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uAgua, uFrontera;
+uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uNieve, uAgua, uFrontera;
 varying vec3 vW;
 #include <fog_pars_fragment>
 void main() {
@@ -160,7 +181,10 @@ void main() {
   mar += ola * 0.012 * (1.0 - lejos);
   float banda = smoothstep(0.1, 0.36, cerca) * (1.0 - smoothstep(0.4, 0.47, cerca));
   mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)));
-  vec3 suelo = mix(uTierraBaja, uTierraAlta, 0.35 + 0.65 * smoothstep(0.45, 0.9, t.r));
+  // Color por altitud (t2.r = elevación / 6000 m), nieve sobre ~4800 m y sombreado real del relieve (t.r)
+  vec3 suelo = mix(uTierraBaja, uTierraAlta, smoothstep(0.02, 0.7, t2.r));
+  suelo = mix(suelo, uNieve, smoothstep(0.8, 0.92, t2.r));
+  suelo *= 0.62 + 0.7 * t.r;
   suelo = mix(suelo, uAgua, t2.g * 0.55);
   suelo = mix(suelo, uFrontera, t2.b * 0.45);
   vec3 col = mix(mar, suelo, tierra);
@@ -170,6 +194,45 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
   #include <fog_fragment>
 }`
+
+/** Relieve real sobre la cara superior de las columnas: la textura y su caja, compartidas con el suelo. */
+interface RelieveTapa {
+  uMundo: { value: THREE.Texture | null }
+  uCaja: { value: THREE.Vector4 }
+}
+
+/**
+ * Sombra de contacto en las paredes de cada columna: más oscuras junto al suelo, como una maqueta
+ * con oclusión ambiental. Se calcula en el mismo shader (sin pasadas extra ni SSAO). La distancia
+ * es en unidades del mundo, así que una columna alta y una baja se oscurecen igual cerca del piso.
+ */
+function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa) {
+  const decl = '#include <common>\nvarying float vAlto, vPared;\nvarying vec2 vXZ;'
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uMundo = tapa.uMundo
+    sh.uniforms.uCaja = tapa.uCaja
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', decl).replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+  vPared = 1.0 - abs(normal.z); // tapas: normal ±z en el espacio de la extrusión
+  vec4 wPos = modelMatrix * vec4(position, 1.0);
+  vAlto = wPos.y - (modelMatrix * vec4(position.xy, 0.0, 1.0)).y;
+  vXZ = wPos.xz;`,
+    )
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', decl + '\nuniform sampler2D uMundo;\nuniform vec4 uCaja;')
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);
+  // Cara superior: Andes, valles y llanura amazónica con el sombreado real (SRTM), sin cambiar la altura del dato
+  float hs = texture2D(uMundo, (vXZ - uCaja.xy) / uCaja.zw).r;
+  diffuseColor.rgb *= mix(0.74 + 0.5 * hs, 1.0, vPared);`,
+      )
+  }
+  mat.customProgramCacheKey = () => 'columna-sombra-relieve'
+  return mat
+}
 
 /** Desenfoque de caja separable, 3 pasadas (≈ gaussiano). */
 function desenfocar(src: Float32Array, S: number, r: number) {
@@ -225,9 +288,11 @@ function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number
   const tierra = new Float32Array(S * S)
   for (let i = 0; i < S * S; i++) tierra[i] = img[i * 4] / 255
   const ancho = desenfocar(tierra, S, 6)
+  const fino = desenfocar(tierra, S, 1) // máscara del relieve: dentro del Perú no sube
   const out = new Uint8Array(S * S * 4)
   for (let i = 0; i < S * S; i++) {
     out[i * 4] = ancho[i] * 255
+    out[i * 4 + 1] = fino[i] * 255
     out[i * 4 + 3] = 255
   }
   const tx = new THREE.DataTexture(out, S, S, THREE.RGBAFormat)
@@ -281,6 +346,35 @@ function texturaRayada(hex: string) {
   return tx
 }
 
+/** Ficha técnica que aparece al pasar el puntero por un departamento (texto, nunca HTML). */
+function crearTarjeta(capa: HTMLElement) {
+  const nuevo = (clase: string, padre: HTMLElement, tag = 'div') => {
+    const el = document.createElement(tag)
+    el.className = clase
+    padre.appendChild(el)
+    return el
+  }
+  const raiz = nuevo('ficha3d', capa)
+  const caja = nuevo('ficha3d-caja', raiz)
+  const nombre = nuevo('ficha3d-nombre', caja)
+  const valor = nuevo('ficha3d-valor', caja)
+  const estado = nuevo('ficha3d-estado', caja)
+  const ic = nuevo('ficha3d-ic', caja)
+  return {
+    raiz,
+    nombre,
+    valor,
+    estado,
+    ic,
+    rango: nuevo('ficha3d-rango', ic, 'span'),
+    punto: nuevo('ficha3d-punto', ic, 'span'),
+    meta: nuevo('ficha3d-meta', caja),
+    /** Tamaño medido al llenarla (una lectura de layout por cambio de hover, no por cuadro). */
+    ancho: 0,
+    alto: 0,
+  }
+}
+
 interface Vuelo {
   p0: THREE.Vector3
   t0: THREE.Vector3
@@ -290,6 +384,9 @@ interface Vuelo {
   dur: number
 }
 
+/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
+export const escenaActiva: { current: EscenaPeru | null } = { current: null }
+
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -298,6 +395,8 @@ export class EscenaPeru {
   private hemi = new THREE.HemisphereLight(0xdbeaf3, 0x14202b, 0.8 * LUZ)
   private sol = new THREE.DirectionalLight(0xfff4e0, 0.8 * LUZ)
   private mar: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
+  /** Malla densa solo sobre la caja de la textura: ahí sube el relieve. */
+  private relieve: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
   private texturas: THREE.Texture[] = []
   private mapa = new THREE.Group()
   private mallas: Malla[] = []
@@ -344,12 +443,22 @@ export class EscenaPeru {
   private tipTimer = 0
   private destruida = false
   private tip: HTMLDivElement
+  private tarjeta: ReturnType<typeof crearTarjeta>
+  private acento = new THREE.Color()
   private idioma: 'es' | 'en' = 'es'
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
   private quitarEventos: () => void
   private contenedor: HTMLElement
   private capaEtiquetas: HTMLElement
   private modo: ModoMapa
+  /**
+   * Corrimiento horizontal de la imagen (px): en la portada el Perú va a la derecha, junto al
+   * texto; en el explorador se corre a la izquierda del informe abierto. Se anima en cuadro()
+   * con setViewOffset, así el lienzo nunca cambia de tamaño al abrir el informe.
+   */
+  private corrimiento = 0
+  private tapa: RelieveTapa = { uMundo: { value: null }, uCaja: { value: new THREE.Vector4() } }
+  private panel = 0
   private alElegir?: (id: string) => void
   private alGirar?: (girando: boolean) => void
 
@@ -396,7 +505,10 @@ export class EscenaPeru {
       const geom = new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false })
       const malla = new THREE.Mesh(
         geom,
-        new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 }),
+        conSombraDeContacto(
+          new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0.02 }),
+          this.tapa,
+        ),
       ) as unknown as Malla
       malla.position.z = -PISO
       // Un solo LineSegments por departamento (antes: una línea y un material por anillo)
@@ -416,7 +528,14 @@ export class EscenaPeru {
       )
       contorno.computeLineDistances()
       malla.add(contorno)
-      malla.userData = { id: z.id, h: 0.4, objetivo: 0.4, centro: new THREE.Vector3(), contorno }
+      malla.userData = {
+        id: z.id,
+        h: 0.4,
+        objetivo: 0.4,
+        centro: new THREE.Vector3(),
+        contorno,
+        brillo: 0,
+      }
       this.mapa.add(malla)
       this.mallas.push(malla)
       this.porId.set(z.id, malla)
@@ -441,6 +560,8 @@ export class EscenaPeru {
     const cajaPeru = { x: -lado / 2, z: -lado / 2, w: lado }
     const sombra = texturaSombraPeru(this.mapa.position, cajaPeru)
     const vacio1 = pixel(153, 0, 0)
+    this.tapa.uMundo.value = vacio1
+    this.tapa.uCaja.value.set(cx0, cz0, cx1 - cx0, cz1 - cz0)
     const vacio2 = pixel(0, 0, 0)
     this.texturas.push(sombra, vacio1, vacio2)
     const u = (v: unknown) => ({ value: v })
@@ -460,6 +581,8 @@ export class EscenaPeru {
           uSombra: u(new THREE.Color()),
           uTierraBaja: u(new THREE.Color()),
           uTierraAlta: u(new THREE.Color()),
+          uNieve: u(new THREE.Color()),
+          uRelieve: u(RELIEVE),
           uAgua: u(new THREE.Color()),
           uFrontera: u(new THREE.Color()),
         },
@@ -486,13 +609,23 @@ export class EscenaPeru {
         tx.needsUpdate = true
         this.texturas.push(tx)
         matSuelo.uniforms[clave].value = tx
+        if (clave === 'uMundo') this.tapa.uMundo.value = tx
         this.sucio = true
       })
     this.mar = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matSuelo)
     this.mar.rotation.x = -Math.PI / 2
     this.mar.position.y = -PISO - 0.02
-    this.mar.renderOrder = 1
+    this.mar.renderOrder = 2
     this.escena.add(this.mar)
+    // Relieve: mismo material, malla densa solo en la caja. Va 1 cm encima del mar y se dibuja
+    // antes, así el plano grande no vuelve a pintar esos píxeles (la prueba de profundidad los descarta).
+    const seg = celular() ? 128 : 192
+    this.relieve = new THREE.Mesh(new THREE.PlaneGeometry(cx1 - cx0, cz1 - cz0, seg, seg), matSuelo)
+    this.relieve.rotation.x = -Math.PI / 2
+    this.relieve.position.set((cx0 + cx1) / 2, this.mar.position.y + 0.01, (cz0 + cz1) / 2)
+    this.relieve.renderOrder = 1
+    this.relieve.frustumCulled = false // la caja de la geometría es plana; el relieve sube en el shader
+    this.escena.add(this.relieve)
 
     // Etiquetas flotantes (capa HTML encima del lienzo; texto, nunca HTML)
     capaEtiquetas.replaceChildren()
@@ -598,9 +731,14 @@ export class EscenaPeru {
     })
     this.tip = nuevaEtiqueta('tip3d')
     this.tip.hidden = true
+    this.tarjeta = crearTarjeta(capaEtiquetas)
     this.particulas = { geo: geoP, puntos }
 
-    const ro = new ResizeObserver(() => this.redimensionar())
+    // Dibujar en el mismo callback (antes de que el navegador pinte): sin cuadro en blanco
+    const ro = new ResizeObserver(() => {
+      this.redimensionar()
+      if (!this.destruida) this.renderer.render(this.escena, this.camara)
+    })
     ro.observe(contenedor)
     const io = new IntersectionObserver((es) => {
       this.fueraDePantalla = !es[0].isIntersecting
@@ -700,6 +838,7 @@ export class EscenaPeru {
     this.alturas(instantaneo)
     this.textosEtiquetas()
     this.actualizarParticulas()
+    this.llenarTarjeta()
   }
 
   /**
@@ -712,6 +851,7 @@ export class EscenaPeru {
     this.alturas(false)
     this.textosEtiquetas()
     this.actualizarParticulas()
+    this.llenarTarjeta()
   }
 
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
@@ -727,6 +867,7 @@ export class EscenaPeru {
   /** Relee los tokens del tema (claro/oscuro) y repinta. */
   aplicarTema() {
     this.colores.clear()
+    this.acento.set(this.color('--accent'))
     const bg = new THREE.Color(this.color('--bg'))
     const claro = esTemaClaro()
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
@@ -742,6 +883,7 @@ export class EscenaPeru {
     U.uSombra.value.set(hexMix(mar, '#000000', claro ? 0.35 : 0.6))
     U.uTierraBaja.value.set(hexMix(fondo, fg, claro ? 0.3 : 0.08))
     U.uTierraAlta.value.set(hexMix(fondo, claro ? '#ffffff' : fg, claro ? 0.6 : 0.32))
+    U.uNieve.value.set(claro ? '#ffffff' : hexMix(fondo, fg, 0.7))
     U.uAgua.value.set(hexMix(mar, claro ? fg : this.color('--accent-soft'), claro ? 0.25 : 0.35))
     U.uFrontera.value.set(hexMix(fondo, fg, claro ? 0.55 : 0.45))
     U.fogColor.value.copy(bg)
@@ -773,16 +915,68 @@ export class EscenaPeru {
     return v
   }
 
-  /** Resalta la zona bajo el puntero tocando solo 2 materiales (antes se repintaban los 25). */
+  /**
+   * Zona bajo el puntero: cambia el contorno de 2 departamentos y llena la ficha. La elevación y el
+   * brillo entran suave en cuadro(); aquí no se recompila ningún material.
+   */
   private setHover(id: string | null) {
     if (id === this.hover) return
     const antes = this.hover ? this.porId.get(this.hover) : undefined
-    antes?.material.emissive.set(0x000000)
     this.hover = id
+    if (antes) this.pintarContorno(antes)
     const m = id ? this.porId.get(id) : undefined
-    m?.material.emissive.set(this.color('--accent')).multiplyScalar(0.18)
+    if (m) this.pintarContorno(m)
+    this.llenarTarjeta()
     this.renderer.domElement.style.cursor = id && this.modo === 'explorar' ? 'pointer' : ''
     this.sucio = true
+  }
+
+  /** Contorno: acento si está elegida, color del texto si está bajo el puntero, punteado si hay pocos datos. */
+  private pintarContorno(m: Malla) {
+    const d = this.zonas[m.userData.id]
+    if (!d) return
+    const pocos = d.status === 'pocos_datos'
+    const lm = m.userData.contorno.material
+    lm.color.set(
+      m.userData.id === this.sel
+        ? this.color('--accent')
+        : m.userData.id === this.hover
+          ? this.color('--fg')
+          : this.color(pocos ? '--muted' : '--bg'),
+    )
+    lm.dashSize = pocos ? 0.35 : 1
+    lm.gapSize = pocos ? 0.25 : 0.0001
+  }
+
+  /**
+   * Ficha técnica del departamento bajo el puntero: cambio por década (o anomalía del año), estado,
+   * rango probable (IC 95 %) dibujado frente al cero, q y años. Patrón de tooltip de deck.gl.
+   */
+  private llenarTarjeta() {
+    const T = this.tarjeta
+    const d = this.hover ? this.zonas[this.hover] : undefined
+    T.raiz.classList.toggle('on', !!d)
+    if (!d || !this.hover) return
+    const c = datosTarjeta(d, this.variable, this.idioma, this.anio?.valores[this.hover])
+    const fuerte = document.createElement('strong')
+    const chico = document.createElement('small')
+    fuerte.textContent = c.valor
+    chico.textContent = c.unidad
+    T.nombre.textContent = c.nombre
+    T.valor.replaceChildren(fuerte, chico)
+    T.estado.textContent = c.estado
+    T.raiz.dataset.estado = c.datos.estado
+    T.raiz.dataset.clave = c.datos.clave
+    T.ic.hidden = !c.ic
+    if (c.ic) {
+      T.rango.style.left = c.ic.left
+      T.rango.style.width = c.ic.width
+      T.punto.style.left = c.ic.punto
+    }
+    T.meta.textContent = c.meta
+    T.ancho = T.raiz.offsetWidth
+    T.alto = T.raiz.offsetHeight
+    this.posEtiqueta.delete(T.raiz)
   }
 
   setTextoOceano(t: string) {
@@ -793,6 +987,7 @@ export class EscenaPeru {
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
     if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
+    this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.sucio = true
   }
@@ -907,7 +1102,40 @@ export class EscenaPeru {
 
   /** Vuelve a la vista inicial del modo actual. */
   recentrar() {
+    this.seleccionar(null, false) // la vista inicial no marca ninguna zona
     this.vista(false)
+  }
+
+  /**
+   * Cambia entre la portada y el explorador sin recrear la escena: la cámara vuela de una vista
+   * a la otra y el Perú se corre a su lugar. Antes se destruía todo y se volvía a cargar.
+   */
+  setModo(modo: ModoMapa) {
+    if (modo === this.modo) return
+    this.modo = modo
+    this.setHover(null)
+    this.setAnimal(null)
+    if (modo === 'inicio') this.seleccionar(null, false)
+    this.vista(false, 1600) // vuelo largo y suave entre la portada y el explorador
+    this.sucio = true
+  }
+
+  /** Ancho (px) que el informe tapa a la derecha del mapa en el explorador. */
+  setPanel(px: number) {
+    this.panel = px
+    this.sucio = true
+  }
+
+  /** Hacia dónde debe ir el corrimiento según el modo y el ancho. */
+  private corrimientoObjetivo() {
+    if (this.ancho <= 900) return 0 // en celular el mapa va arriba y el texto abajo
+    return this.modo === 'inicio' ? this.ancho * 0.24 : -this.panel / 2
+  }
+
+  private aplicarCorrimiento() {
+    if (Math.abs(this.corrimiento) < 0.5) this.camara.clearViewOffset()
+    else
+      this.camara.setViewOffset(this.ancho, this.alto, -this.corrimiento, 0, this.ancho, this.alto)
   }
 
   destruir() {
@@ -927,6 +1155,7 @@ export class EscenaPeru {
     this.particulas.geo.dispose()
     this.particulas.puntos.material.dispose()
     this.mar.geometry.dispose()
+    this.relieve.geometry.dispose()
     this.mar.material.dispose()
     this.texturas.forEach((t) => t.dispose())
     if (this.escena.background instanceof THREE.Texture) this.escena.background.dispose()
@@ -938,7 +1167,6 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    const acento = this.color('--accent')
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -966,14 +1194,8 @@ export class EscenaPeru {
       mat.map = mapa
       mat.transparent = transparente
       mat.opacity = opacidad
-      mat.emissive.set(0x000000)
-      if (m.userData.id === this.hover) mat.emissive.set(acento).multiplyScalar(0.18)
-      const pocos = d.status === 'pocos_datos'
-      const elegida = m.userData.id === this.sel
-      const lm = m.userData.contorno.material
-      lm.color.set(elegida ? acento : this.color(pocos ? '--muted' : '--bg'))
-      lm.dashSize = pocos ? 0.35 : 1
-      lm.gapSize = pocos ? 0.25 : 0.0001
+      mat.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
+      this.pintarContorno(m)
     }
     this.sucio = true
   }
@@ -1039,7 +1261,7 @@ export class EscenaPeru {
       : signo + Math.round(Math.abs(v)) + ' mm'
   }
 
-  private vista(instantaneo: boolean) {
+  private vista(instantaneo: boolean, dur = 1100) {
     const v = VISTAS[this.modo]
     const a = this.camara.aspect
     // En pantallas angostas, la cámara se aleja para que el Perú entre completo (v12)
@@ -1048,6 +1270,7 @@ export class EscenaPeru {
       new THREE.Vector3(v.pos[0] * k, v.pos[1] * k, v.pos[2] * k),
       new THREE.Vector3(v.tgt[0], v.tgt[1], v.tgt[2]),
       instantaneo,
+      dur,
     )
     // Gira en la portada y en el explorador mientras no haya zona elegida
     this.setGiro(this.modo === 'inicio' || !this.sel)
@@ -1062,7 +1285,7 @@ export class EscenaPeru {
     this.setGiro(false)
   }
 
-  private volarCamara(pos: THREE.Vector3, tgt: THREE.Vector3, instantaneo: boolean) {
+  private volarCamara(pos: THREE.Vector3, tgt: THREE.Vector3, instantaneo: boolean, dur = 1100) {
     if (instantaneo || reducido()) {
       this.camara.position.copy(pos)
       this.controles.target.copy(tgt)
@@ -1077,7 +1300,7 @@ export class EscenaPeru {
       p1: pos,
       t1: tgt,
       inicio: performance.now(),
-      dur: 1100,
+      dur,
     }
   }
 
@@ -1089,6 +1312,8 @@ export class EscenaPeru {
     this.renderer.setSize(w, h, false)
     this.camara.aspect = w / h
     this.camara.updateProjectionMatrix()
+    this.corrimiento = this.corrimientoObjetivo()
+    this.aplicarCorrimiento()
     // tamaño de los puntos en píxeles del búfer, como hace PointsMaterial
     if (this.particulas)
       this.particulas.puntos.material.uniforms.uEscala.value = (h * this.renderer.getPixelRatio()) / 2
@@ -1114,6 +1339,8 @@ export class EscenaPeru {
           this.dpr = nuevo
           p.cambio = t
           p.pendiente = true // se aplica al empezar el próximo cuadro (si no, parpadea en blanco)
+          // Equipo lento: sin malla de relieve (el mar plano sigue con el color y el sombreado)
+          this.relieve.visible = nuevo >= DPR_RELIEVE
           p.media = 0
         }
       }
@@ -1162,14 +1389,33 @@ export class EscenaPeru {
       if (k >= 1) this.vuelo = null
     }
     let moviendo = false
+    const quieto = reducido()
+    const dc = this.corrimientoObjetivo() - this.corrimiento
+    if (Math.abs(dc) > 0.5) {
+      this.corrimiento += quieto ? dc : dc * 0.12
+      this.aplicarCorrimiento()
+      moviendo = true
+    }
     for (const m of this.mallas) {
+      const id = m.userData.id
       const dh = m.userData.objetivo - m.userData.h
-      const dz = -PISO + (m.userData.id === this.sel ? ELEVA_SEL : 0) - m.position.z
+      const eleva = id === this.sel ? ELEVA_SEL : id === this.hover ? ELEVA_HOVER : 0
+      const dz = -PISO + eleva - m.position.z
+      const db = (id === this.hover ? 1 : 0) - m.userData.brillo
       if (Math.abs(dh) > 0.002 || Math.abs(dz) > 0.002) {
         moviendo = true
         m.userData.h += dh * (this.anio ? 0.07 : 0.12)
         m.scale.z = m.userData.h
         m.position.z += dz * 0.2
+      }
+      if (db !== 0) {
+        // entra rápido y sale más lento; con «reducir movimiento», de golpe
+        m.userData.brillo =
+          quieto || Math.abs(db) < 0.01
+            ? m.userData.brillo + db
+            : m.userData.brillo + db * (db > 0 ? 0.35 : 0.18)
+        m.material.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
+        moviendo = true
       }
     }
     this.moviendo = moviendo
@@ -1208,6 +1454,24 @@ export class EscenaPeru {
     if (!fuera) el.style.transform = tf
   }
 
+  /** La ficha sigue la cara superior del departamento; no se sale del mapa y baja si no cabe arriba. */
+  private ubicarTarjeta() {
+    const m = this.hover ? this.porId.get(this.hover) : undefined
+    if (!m) return
+    const T = this.tarjeta
+    const v = this.v3
+      .set(m.userData.centro.x, m.position.z + m.scale.z + 0.3, m.userData.centro.z)
+      .project(this.camara)
+    const mitad = T.ancho / 2 + 8
+    const x = Math.min(this.ancho - mitad, Math.max(mitad, ((v.x + 1) / 2) * this.ancho))
+    const y = ((1 - v.y) / 2) * this.alto
+    const abajo = y - T.alto - 22 < 8
+    const tf = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px) translate(-50%, ${abajo ? '22px' : 'calc(-100% - 22px)'})`
+    if (this.posEtiqueta.get(T.raiz) === tf) return
+    this.posEtiqueta.set(T.raiz, tf)
+    T.raiz.style.transform = tf
+  }
+
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
@@ -1239,6 +1503,7 @@ export class EscenaPeru {
       if (p.el.hidden !== celular()) p.el.hidden = celular()
       if (!p.el.hidden) this.ubicarEtiqueta(p.el, p.x, -PISO, p.z)
     }
+    this.ubicarTarjeta()
     const lima = malla('15')
     if (lima)
       this.ubicarEtiqueta(

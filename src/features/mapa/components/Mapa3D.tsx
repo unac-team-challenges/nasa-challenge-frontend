@@ -1,22 +1,23 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useRef } from 'react'
 import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
-import { useBusqueda } from '@/lib/busqueda'
+import { esUbigeo, useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { EscenaPeru, type ModoMapa } from '@/features/mapa/escena/escena'
+import { EscenaPeru, escenaActiva, type ModoMapa } from '@/features/mapa/escena/escena'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
 
 interface Props {
   modo: ModoMapa
-  /** Para que los botones del explorador puedan girar o recentrar el mapa. */
-  controlRef?: RefObject<EscenaPeru | null>
-  /** Avisa cuando el giro automático se activa o se pausa. */
-  alGirar?: (girando: boolean) => void
 }
 
-/** Mapa del Perú en 3D. Si no hay WebGL, muestra el mapa 2D con los mismos datos. */
-export function Mapa3D({ modo, controlRef, alGirar }: Props) {
+/**
+ * Mapa del Perú en 3D. Si no hay WebGL, muestra el mapa 2D con los mismos datos.
+ *
+ * La escena se crea una sola vez y sobrevive al paso entre la portada y el explorador: al cambiar
+ * `modo` la cámara vuela a la otra vista. Antes se destruía y se volvía a cargar (con parpadeo).
+ */
+export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
@@ -31,28 +32,26 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const rango = useRango()
-  const alGirarRef = useRef(alGirar)
-  useEffect(() => {
-    alGirarRef.current = alGirar
-  })
+  const modoInicial = useRef(modo)
 
-  // Crear y destruir la escena cuando cambia el modo
+  // Crear y destruir la escena (solo al montar)
   useEffect(() => {
     if (!conWebgl || !contenedor.current || !capa.current) return
     const e = new EscenaPeru(contenedor.current, capa.current, {
       oceano: TEXTOS[useApp.getState().idioma].ocean,
-      modo,
+      modo: modoInicial.current,
       alElegir: (id) => busquedaRef.current.seleccionar(id),
-      alGirar: (g) => alGirarRef.current?.(g),
+      alGirar: (g) => useApp.getState().setGirando(g),
     })
     escena.current = e
-    if (controlRef) controlRef.current = e
+    escenaActiva.current = e
     e.aplicarTema()
     e.setIdioma(useApp.getState().idioma)
-    const { variable: v, sel: s } = busquedaRef.current
+    const { variable: v, sel: s0 } = busquedaRef.current
+    const s = s0 && esUbigeo(s0) ? s0 : null // /zona/99 no existe: no se marca nada
     e.setDatos(zonas, v, true)
-    if (modo === 'explorar' && s) e.seleccionar(s, true)
-    alGirarRef.current?.(modo === 'inicio' || !s)
+    if (modoInicial.current === 'explorar' && s) e.seleccionar(s, true)
+    useApp.getState().setGirando(modoInicial.current === 'inicio' || !s)
     const sistema = matchMedia('(prefers-color-scheme: dark)')
     const alCambiar = () => e.aplicarTema()
     sistema.addEventListener('change', alCambiar)
@@ -60,18 +59,23 @@ export function Mapa3D({ modo, controlRef, alGirar }: Props) {
       sistema.removeEventListener('change', alCambiar)
       e.destruir()
       escena.current = null
-      if (controlRef) controlRef.current = null
+      if (escenaActiva.current === e) escenaActiva.current = null
     }
-    // zonas y controlRef se leen solo al crear; los cambios llegan por los efectos de abajo
+    // zonas se lee solo al crear; los cambios llegan por los efectos de abajo
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conWebgl, modo])
+  }, [conWebgl])
+
+  // Portada ⇄ explorador: la misma escena, la cámara vuela
+  useEffect(() => {
+    escena.current?.setModo(modo)
+  }, [modo])
 
   useEffect(() => {
     escena.current?.setDatos(zonas, variable)
   }, [zonas, variable])
 
   useEffect(() => {
-    if (modo === 'explorar') escena.current?.seleccionar(sel, true)
+    if (modo === 'explorar') escena.current?.seleccionar(sel && esUbigeo(sel) ? sel : null, true)
   }, [sel, modo])
 
   useEffect(() => {

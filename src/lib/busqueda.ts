@@ -50,7 +50,7 @@ export function useBusqueda() {
     navigate({ to: '.', search: (p: Busqueda) => ({ ...p, ...cambio }), replace: true })
   return {
     variable: s.variable ?? 'lluvia',
-    perfil: s.perfil ?? 'publico',
+    perfil: s.perfil ?? 'agricultor',
     sel: id ?? null,
     anio: s.anio ?? null,
     setVariable: (variable: Variable) => {

@@ -4,13 +4,12 @@ import { ORDEN_PERFILES, TEXTOS } from '../i18n/textos'
 import { useVista } from '../lib/useZonas'
 import { useApp } from '../store'
 import { MapaSkeleton } from './Esperas'
-import { FranjasPeru } from './FranjasPeru'
 import { Button } from './ui/button'
 
 // three.js pesa casi la mitad de la web: se descarga aparte mientras se ve el esqueleto
 const Mapa3D = lazy(() => import('../mapa/Mapa3D').then((m) => ({ default: m.Mapa3D })))
 
-/** Portada: el Perú en 3D, la pregunta, las franjas, los 4 perfiles y el botón principal. */
+/** Portada: el Perú en 3D, la pregunta, los 2 perfiles (agricultor y estudiante) y el botón principal. */
 export function Portada() {
   const { idioma, conWebgl } = useApp()
   const navigate = useNavigate()
@@ -29,7 +28,6 @@ export function Portada() {
             {t.heroH}
           </h1>
           <p className="m-0 max-w-120 text-lg text-muted">{t.heroLead(a, b)}</p>
-          <FranjasPeru />
           <div className="flex flex-col gap-2.5">
             <h2 className="m-0 text-[15px] font-semibold">{t.whoH}</h2>
             <div className="grid grid-cols-1 gap-2 min-[521px]:grid-cols-2">

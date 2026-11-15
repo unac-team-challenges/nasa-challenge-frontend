@@ -74,5 +74,6 @@ test('sin WebGL: el explorador cae al mapa 2D', async ({ page }) => {
   await page.goto('/explorar?sinwebgl')
   await expect(page.getByRole('group', { name: 'Mapa del Perú en 2D' })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Vista del mapa' })).toHaveCount(0)
-  await expect(page.locator('canvas')).toHaveCount(0)
+  // El 2D pinta su suelo en un canvas 2D (data-suelo2d); lo que no debe haber es el del 3D
+  await expect(page.locator('canvas:not([data-suelo2d])')).toHaveCount(0)
 })

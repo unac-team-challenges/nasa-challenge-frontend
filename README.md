@@ -52,7 +52,7 @@ Cada vista es un enlace que se puede compartir (también cada caso de la demo):
 | `/zona/20`     | Explorador con la ficha del departamento `20` (ubigeo `01`–`25`; otro id da «no existe») |
 | `/metodologia` | Metodología, fuentes y créditos                                                          |
 
-Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` (`lluvia` o `temperatura`), `perfil` (`publico`, `agricultor`, `municipalidad`, `estudiante`) y `anio` (máquina del tiempo). Ejemplo: `/zona/20?variable=lluvia&perfil=agricultor&anio=2017`. Los componentes leen y cambian estos valores con `useBusqueda()` (`src/lib/busqueda.ts`). Vercel necesita el _rewrite_ de `vercel.json` para recargar en rutas como `/zona/20`.
+Búsqueda opcional, validada con Zod (un valor inválido se ignora): `variable` (`lluvia` o `temperatura`), `perfil` (`agricultor`, que es el de por defecto, o `estudiante`) y `anio` (máquina del tiempo). Ejemplo: `/zona/20?variable=lluvia&perfil=agricultor&anio=2017`. Los componentes leen y cambian estos valores con `useBusqueda()` (`src/lib/busqueda.ts`). Vercel necesita el _rewrite_ de `vercel.json` para recargar en rutas como `/zona/20`.
 
 ## Esperas y errores
 

@@ -2,7 +2,7 @@
 import type { Estado, Periodo, Region, Variable } from '../data/datos'
 
 export type Idioma = 'es' | 'en'
-export type Perfil = 'publico' | 'agricultor' | 'municipalidad' | 'estudiante'
+export type Perfil = 'agricultor' | 'estudiante'
 
 type PorVariable<T> = Record<Variable, T>
 
@@ -19,14 +19,9 @@ const es = {
   heroH: '¿Qué está cambiando en tu zona del Perú?',
   heroLead: (a: number, b: number) =>
     `Datos de la NASA de ${a} a ${b}. En el mapa, cada departamento sube si llueve más y se hunde si llueve menos.`,
-  stripesCap: (a: number, b: number) =>
-    `El Perú año por año: cada franja es la lluvia de un año frente al promedio ${a}–${b}.`,
-  stripeTitle: (y: number, p: string) => `${y}: ${p} frente al promedio`,
   whoH: '¿Quién eres? Así te lo explicamos',
   perfiles: {
-    publico: ['Público general', 'Lo esencial, en frases cortas'],
     agricultor: ['Agricultor', 'Lluvia y años secos, en palabras de campo'],
-    municipalidad: ['Municipalidad', 'Cifras claras para planificar'],
     estudiante: ['Estudiante', 'Con el detalle de cómo se calcula'],
   } satisfies Record<Perfil, [string, string]>,
   exploreBtn: 'Explorar el mapa',
@@ -197,14 +192,9 @@ const en: Textos = {
   heroH: 'What is changing in your part of Peru?',
   heroLead: (a, b) =>
     `NASA data from ${a} to ${b}. On the map, each department rises where it rains more and sinks where it rains less.`,
-  stripesCap: (a, b) =>
-    `Peru year by year: each stripe is one year's rainfall compared with the ${a}–${b} average.`,
-  stripeTitle: (y, p) => `${y}: ${p} vs average`,
   whoH: "Who are you? We'll explain it your way",
   perfiles: {
-    publico: ['General public', 'The essentials, in short sentences'],
     agricultor: ['Farmer', 'Rain and dry years, in plain words'],
-    municipalidad: ['Local government', 'Clear figures for planning'],
     estudiante: ['Student', 'With the details of how it is calculated'],
   },
   exploreBtn: 'Explore the map',
@@ -361,35 +351,18 @@ const en: Textos = {
 
 export const TEXTOS: Record<Idioma, Textos> = { es, en }
 
-/** Orden de los perfiles en la portada. */
-export const ORDEN_PERFILES: Perfil[] = ['agricultor', 'municipalidad', 'estudiante', 'publico']
+/** Orden de los perfiles en la portada: el público son agricultores y estudiantes (decisión del equipo, 14 nov). */
+export const ORDEN_PERFILES: Perfil[] = ['agricultor', 'estudiante']
 
 /** Frase simple de la ficha según el perfil (solo cambian los textos, no los datos). */
 export const FRASES = {
   es: {
-    noun: { lluvia: 'la lluvia', temperatura: 'la temperatura' } as PorVariable<string>,
-    more: {
-      lluvia: 'llueve cada vez más',
-      temperatura: 'hace cada vez más calor',
-    } as PorVariable<string>,
-    less: {
-      lluvia: 'llueve cada vez menos',
-      temperatura: 'hace cada vez más frío',
-    } as PorVariable<string>,
     farmMore: { lluvia: 'más lluvia', temperatura: 'más calor' } as PorVariable<string>,
     farmLess: { lluvia: 'menos lluvia', temperatura: 'menos calor' } as PorVariable<string>,
-    publicoUp: (z: string, v: string, desde: number) =>
-      `Desde ${desde}, en ${z} ${v}. El cambio no parece casualidad.`,
-    publicoCas: (z: string, n: string) =>
-      `En ${z} ${n} sube y baja de un año a otro. Con estos datos no podemos asegurar que haya una tendencia.`,
     agricultorUp: (z: string, x: string, desde: number) =>
       `Los años en ${z} vienen con ${x} que en ${desde}, y es una tendencia sostenida.`,
     agricultorCas: (z: string) =>
       `En ${z} hay años buenos y años malos, pero no se ve una tendencia clara.`,
-    municipalidadUp: (z: string, n: string, val: string, mas: boolean, a: number, b: number) =>
-      `Evidencia para planificar: ${n} en ${z} ${mas ? 'aumentó' : 'disminuyó'} ${val} por década entre ${a} y ${b}.`,
-    municipalidadCas: (z: string, N: string) =>
-      `${N} en ${z} varió, pero el cambio no es significativo. No conviene usarlo como evidencia de tendencia.`,
     estudianteUp: (p: string, q: string, m: number, val: string) =>
       `Mann-Kendall con prewhitening da p = ${p}; corregido entre ${m} zonas, q = ${q} (menor que 0,05). Pendiente de Sen: ${val} por década.`,
     estudianteCas: (p: string, q: string, m: number) =>
@@ -397,28 +370,11 @@ export const FRASES = {
     few: (z: string) => `En ${z} hay muy pocas celdas con datos. No sacamos conclusiones.`,
   },
   en: {
-    noun: { lluvia: 'rainfall', temperatura: 'temperature' } as PorVariable<string>,
-    more: {
-      lluvia: 'it rains more and more',
-      temperatura: 'it is getting warmer',
-    } as PorVariable<string>,
-    less: {
-      lluvia: 'it rains less and less',
-      temperatura: 'it is getting cooler',
-    } as PorVariable<string>,
     farmMore: { lluvia: 'more rain', temperatura: 'more heat' } as PorVariable<string>,
     farmLess: { lluvia: 'less rain', temperatura: 'less heat' } as PorVariable<string>,
-    publicoUp: (z: string, v: string, desde: number) =>
-      `Since ${desde}, in ${z} ${v}. The change does not look like chance.`,
-    publicoCas: (z: string, n: string) =>
-      `In ${z}, ${n} goes up and down from year to year. With this data we can't say there is a trend.`,
     agricultorUp: (z: string, x: string, desde: number) =>
       `Years in ${z} bring ${x} than in ${desde}, and it is a steady trend.`,
     agricultorCas: (z: string) => `${z} has good years and bad years, but no clear trend.`,
-    municipalidadUp: (z: string, n: string, val: string, mas: boolean, a: number, b: number) =>
-      `Evidence for planning: ${n} in ${z} ${mas ? 'rose' : 'fell'} by ${val} per decade between ${a} and ${b}.`,
-    municipalidadCas: (z: string, N: string) =>
-      `${N} in ${z} varied, but the change is not significant. It should not be used as evidence of a trend.`,
     estudianteUp: (p: string, q: string, m: number, val: string) =>
       `Mann-Kendall with pre-whitening gives p = ${p}; corrected across ${m} areas, q = ${q} (below 0.05). Sen's slope: ${val} per decade.`,
     estudianteCas: (p: string, q: string, m: number) =>

@@ -11,7 +11,7 @@ import { PARADAS_LLUVIA, prepararCalor, type Calor } from '@/features/mapa/utils
  * para no pesar en la carga inicial. Se prepara una sola vez y la comparten el 3D, el 2D y la leyenda.
  */
 export function useCalor(): Calor | null {
-  const { variable } = useBusqueda()
+  const { variable, vegetacion } = useBusqueda()
   const fuente = useApp((s) => s.fuente)
   const { data } = useQuery({
     queryKey: ['celdas', variable, fuente],
@@ -31,5 +31,6 @@ export function useCalor(): Calor | null {
     staleTime: Infinity,
     retry: false,
   })
-  return data ?? null
+  // En el modo Vegetación los departamentos quedan de fondo: sin mapa de calor
+  return vegetacion ? null : (data ?? null)
 }

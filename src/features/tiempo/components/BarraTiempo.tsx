@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { anomaliasPeru } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { colorAnomalia } from '@/utils/color'
-import { useBusqueda } from '@/lib/busqueda'
+import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { fmtAnomalia } from '@/utils/formato'
 import { useRango } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
@@ -19,7 +19,8 @@ const PASO_MS = 850
  */
 export function BarraTiempo() {
   const { idioma, periodo, reproduciendo, setReproduciendo } = useApp()
-  const { variable, anio, setAnio } = useBusqueda()
+  const { variable, setAnio } = useBusqueda()
+  const anio = useAnio()
   // El Play lee el año y la función más recientes sin reiniciar su reloj
   const vivo = useRef({ anio, setAnio })
   useEffect(() => {
@@ -67,6 +68,7 @@ export function BarraTiempo() {
     <div
       role="group"
       aria-label={t.timeAria}
+      data-cubre-mapa
       className={`absolute inset-x-4 bottom-3.5 z-[3] flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-m border border-line bg-panel/94 px-2 py-1 min-[901px]:inset-x-auto min-[901px]:top-3.5 min-[901px]:right-4 min-[901px]:w-24 min-[901px]:flex-col min-[901px]:flex-nowrap min-[901px]:gap-2 min-[901px]:px-2 min-[901px]:py-2.5 ${
         porAnio ? 'min-[901px]:bottom-[70px]' : 'min-[901px]:bottom-auto'
       }`}
@@ -75,7 +77,7 @@ export function BarraTiempo() {
       <div
         role="group"
         aria-label={t.timeModeAria}
-        className="order-1 flex flex-none overflow-hidden rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
+        className="order-1 flex flex-none rounded-s border border-line-2 min-[901px]:w-full min-[901px]:flex-col"
       >
         <Button
           variant="toggle"
@@ -83,7 +85,7 @@ export function BarraTiempo() {
           aria-pressed={!porAnio}
           onClick={() => setAnio(null)}
           title={t.timeTrendTitle(a, b)}
-          className="min-h-8 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-l-s px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-t-s min-[901px]:rounded-bl-none min-[901px]:px-1"
         >
           {t.timeTrend}
         </Button>
@@ -93,7 +95,7 @@ export function BarraTiempo() {
           aria-pressed={porAnio}
           onClick={() => setAnio(b)}
           title={t.timeByYearTitle}
-          className="min-h-8 border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
+          className="toque44 relative min-h-8 rounded-r-s border-l border-line-2 px-2 text-xs min-[901px]:min-h-[34px] min-[901px]:rounded-tr-none min-[901px]:rounded-b-s min-[901px]:border-t min-[901px]:border-l-0 min-[901px]:px-1"
         >
           {t.timeByYear}
         </Button>

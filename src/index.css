@@ -36,6 +36,14 @@
   --calor-3: #f57c2b;
   --calor-4: #d9382a;
   --calor-5: #96172a;
+  /* Mapa de lluvia: seco (ocre, como «menos lluvia») → verde oliva → turquesa → azul → azul profundo → violeta, igual en claro y oscuro */
+  --lluvia-0: #c8975a;
+  --lluvia-1: #a3b55f;
+  --lluvia-2: #3fa98f;
+  --lluvia-3: #2b84c9;
+  --lluvia-4: #2a56b5;
+  --lluvia-5: #3a2f98;
+  --lluvia-6: #6c2a8c;
   --accent: #a8285a;
   --accent-text: #a8285a;
   --accent-fg: #ffffff;
@@ -376,6 +384,18 @@ h3 {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+/* Área de toque de 44 px (guía de Apple) sin agrandar el control: en celular, un borde invisible lo
+   hace tocable en 44 px. Solo crece en el eje donde el control mide menos; un control de 44 px o más
+   no cambia. El elemento debe estar posicionado (relative o absolute). */
+@media (max-width: 900px) {
+  .toque44::after {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
+}
+
 /* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
 @keyframes entrada {
   from {
@@ -451,15 +471,48 @@ h3 {
     0 0 24px var(--bg);
 }
 
+/* Entrada al desplazarse: el bloque aparece mientras sube por la pantalla. Sin JavaScript y solo
+   donde el navegador sabe de líneas de tiempo de desplazamiento; en los demás se ve normal. */
+@supports (animation-timeline: view()) {
+  .aparece,
+  .aparece-hijos > :not(:first-child) {
+    animation: entrada linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .entrada,
   .entrada-suave,
+  .aparece,
+  .aparece-hijos > :not(:first-child),
   .presentacion > div {
     animation: none;
   }
   .saliendo {
     transition: none;
   }
+}
+
+/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
+   departamentos para no competir con el dato del mapa */
+.lbl3d.veg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px 1px 5px;
+}
+.lbl3d.veg::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* --veg: color de la tendencia del lugar (lo pone el mapa) */
+  background: var(--veg, var(--map-green));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--veg, var(--map-green)) 35%, transparent);
 }
 
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */

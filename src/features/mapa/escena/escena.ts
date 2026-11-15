@@ -16,6 +16,11 @@ import { claveMapa } from '@/utils/direccion'
 import { datosTarjeta } from '@/features/mapa/utils/tarjeta'
 import { dibujarCalor, tieneAnio, varianteCalor, type Calor } from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
+import {
+  COLOR_TENDENCIA,
+  LUGARES_VEGETACION,
+  type LugarVegetacion,
+} from '@/features/mapa/utils/vegetacion'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -436,6 +441,21 @@ export class EscenaPeru {
   private etiquetaSel: HTMLDivElement
   private etiquetaOceano: HTMLDivElement
   private etiquetasPais: { el: HTMLDivElement; x: number; z: number; es: string; en: string }[] = []
+  /** Modo «Vegetación»: departamentos planos y atenuados, y los 5 recuadros medidos encima. */
+  private veg = false
+  /** Recuadros con vegetación medida (tamaño real), con su borde. */
+  private cajasVeg: {
+    caja: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+    borde: THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>
+    lugar: LugarVegetacion
+  }[] = []
+  /** Nombres de los lugares con vegetación (solo en el modo Vegetación), junto a su recuadro. */
+  private marcasVeg: {
+    el: HTMLDivElement
+    x: number
+    z: number
+    departamento: string
+  }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
   private particulas: Particulas
   private muestras: [number, number][][] = []
@@ -670,6 +690,40 @@ export class EscenaPeru {
     this.etiquetaSel.hidden = true
     this.etiquetaOceano = nuevaEtiqueta('lbl3d ocean')
     this.etiquetaOceano.textContent = op.oceano
+    for (const l of LUGARES_VEGETACION) {
+      // Recuadro real (unos 25 km de lado), plano sobre su departamento
+      const [o, s, e, n] = l.caja
+      const centro = proyectar([l.lon, l.lat])
+      const geo = new THREE.PlaneGeometry((e - o) * COSLAT * K, (n - s) * K)
+      geo.rotateX(-Math.PI / 2)
+      const caja = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, depthWrite: false }),
+      )
+      const borde = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.9 }),
+      )
+      for (const obj of [caja, borde]) {
+        obj.position.set(centro.x + this.mapa.position.x, 0, -centro.y + this.mapa.position.z)
+        obj.renderOrder = 3
+        obj.visible = false
+        this.escena.add(obj)
+      }
+      this.cajasVeg.push({ caja, borde, lugar: l })
+    }
+    for (const l of LUGARES_VEGETACION) {
+      const v = proyectar([l.lon, l.lat])
+      const el = nuevaEtiqueta('lbl3d veg')
+      el.textContent = l.nombre
+      el.style.setProperty('--veg', `var(${COLOR_TENDENCIA[l.tendencia]})`)
+      this.marcasVeg.push({
+        el,
+        x: v.x + this.mapa.position.x,
+        z: -v.y + this.mapa.position.z,
+        departamento: l.departamento,
+      })
+    }
     for (const p of PAISES) {
       const v = proyectar([p.lon, p.lat])
       const el = nuevaEtiqueta('lbl3d country')
@@ -924,6 +978,22 @@ export class EscenaPeru {
     }
   }
 
+  /**
+   * Modo «Vegetación»: no hay datos de los 25 departamentos, así que se aplanan y atenúan, y se
+   * dibujan encima los 5 recuadros medidos con el color de su tendencia.
+   */
+  setVegetacion(on: boolean) {
+    if (this.veg === on) return
+    this.veg = on
+    this.ubicarCajasVeg()
+    this.pintar()
+    this.alturas(false)
+    this.textosEtiquetas()
+    this.actualizarParticulas()
+    this.llenarTarjeta()
+    this.sucio = true
+  }
+
   /** Zona elegida: se eleva, lleva borde de acento y la cámara vuela hacia ella. */
   seleccionar(id: string | null, volar: boolean) {
     const antes = this.sel
@@ -1027,7 +1097,8 @@ export class EscenaPeru {
    */
   private llenarTarjeta() {
     const T = this.tarjeta
-    const d = this.hover ? this.zonas[this.hover] : undefined
+    // En el modo Vegetación la tarjeta mostraría lluvia o temperatura: no se muestra
+    const d = this.hover && !this.veg ? this.zonas[this.hover] : undefined
     T.raiz.classList.toggle('on', !!d)
     if (!d || !this.hover) return
     const c = datosTarjeta(d, this.variable, this.idioma, this.anio?.valores[this.hover])
@@ -1145,7 +1216,7 @@ export class EscenaPeru {
     P.geo.setDrawRange(0, n)
     P.geo.attributes.position.needsUpdate = true
     P.geo.attributes.aSemilla.needsUpdate = true
-    P.puntos.visible = !reducido() && n > 0
+    P.puntos.visible = !reducido() && n > 0 && !this.veg
     this.pasoParticulas(0)
     this.sucio = true
   }
@@ -1214,6 +1285,12 @@ export class EscenaPeru {
 
   destruir() {
     this.destruida = true
+    for (const c of this.cajasVeg) {
+      c.caja.geometry.dispose()
+      c.caja.material.dispose()
+      c.borde.geometry.dispose()
+      c.borde.material.dispose()
+    }
     clearTimeout(this.tipTimer)
     this.renderer.setAnimationLoop(null)
     this.quitarEventos()
@@ -1242,11 +1319,8 @@ export class EscenaPeru {
 
   private pintar() {
     if (!this.rayadas) return
-    // Temperatura con malla: la tapa muestra el calor por celda; el estado va en rayas y opacidad
-    const calor =
-      this.variable === 'temperatura' && this.calor && tieneAnio(this.calor, this.numeroAnio)
-        ? this.texCalor
-        : null
+    // Con malla (temperatura o lluvia): la tapa muestra el color por celda; el estado va en rayas y opacidad
+    const calor = this.calor && tieneAnio(this.calor, this.numeroAnio) ? this.texCalor : null
     for (const m of this.mallas) {
       const d = this.zonas[m.userData.id]
       if (!d) continue
@@ -1256,7 +1330,12 @@ export class EscenaPeru {
       let transparente = false
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
-      if (calor) {
+      if (this.veg) {
+        // Modo Vegetación: el departamento queda de fondo, sin dato
+        mat.color.set(this.color('--muted'))
+        transparente = true
+        opacidad = 0.22
+      } else if (calor) {
         // Opaco siempre: el estado va pintado en la textura (rayas o velo), sin columnas cortadas
         mat.color.set(0xffffff)
         mapa =
@@ -1279,11 +1358,7 @@ export class EscenaPeru {
       // Recompilar el shader solo si cambia lo que lo define (textura, transparencia o modo calor)
       const conCalor = !!calor
       const defs = (mat.defines ??= {})
-      if (
-        !!mat.map !== !!mapa ||
-        mat.transparent !== transparente ||
-        'CALOR' in defs !== conCalor
-      )
+      if (!!mat.map !== !!mapa || mat.transparent !== transparente || 'CALOR' in defs !== conCalor)
         mat.needsUpdate = true
       if (conCalor) defs.CALOR = ''
       else delete defs.CALOR
@@ -1295,6 +1370,10 @@ export class EscenaPeru {
       mat.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
       this.pintarContorno(m)
     }
+    for (const c of this.cajasVeg) {
+      c.caja.material.color.set(this.color(COLOR_TENDENCIA[c.lugar.tendencia]))
+      c.borde.material.color.set(this.color('--fg'))
+    }
     this.sucio = true
   }
 
@@ -1305,7 +1384,7 @@ export class EscenaPeru {
       if (!d) continue
       const valorAnio = this.anio?.valores[m.userData.id]
       const h =
-        d.status === 'pocos_datos'
+        d.status === 'pocos_datos' || this.veg
           ? 0.05
           : this.anio && valorAnio != null
             ? Math.max(-1.1, Math.min(1.1, valorAnio / this.anio.max)) * ALTURA_MAX
@@ -1339,7 +1418,8 @@ export class EscenaPeru {
       this.texto(L.el, L.id)
       L.el.classList.toggle('sel', L.id === this.sel)
     }
-    const aparte = !!this.sel && !conEtiquetaFija(this.sel)
+    // En el modo Vegetación no va la etiqueta con el valor del departamento elegido
+    const aparte = !this.veg && !!this.sel && !conEtiquetaFija(this.sel)
     this.etiquetaSel.hidden = !aparte
     if (aparte && this.sel) this.texto(this.etiquetaSel, this.sel)
     this.sucio = true
@@ -1534,6 +1614,7 @@ export class EscenaPeru {
     this.pasoParticulas(fondo ? dt : 0)
     this.fauna.paso(fondo ? dt : 0) // con «reducir movimiento» quedan quietos sobre su zona
     if (fondo) this.mar.material.uniforms.uTime.value += dt
+    this.ubicarCajasVeg()
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)
     this.ubicarEtiquetas()
@@ -1571,12 +1652,24 @@ export class EscenaPeru {
     T.raiz.style.transform = tf
   }
 
+  /** Recuadros de vegetación sobre la cara de su departamento; va antes de dibujar (no después). */
+  private ubicarCajasVeg() {
+    const conVeg = this.veg && this.modo === 'explorar'
+    for (const c of this.cajasVeg) {
+      const m = this.porId.get(c.lugar.departamento)
+      c.caja.visible = c.borde.visible = conVeg && !!m
+      if (m) c.caja.position.y = c.borde.position.y = m.position.z + m.scale.z + 0.04
+    }
+  }
+
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
     const malla = (id: string) => this.porId.get(id)
+    // En el modo Vegetación las etiquetas de departamento (con lluvia o temperatura) no van
+    const sinDeptos = apretado || this.veg
     for (const L of this.etiquetas) {
-      const oculta = apretado || !conEtiquetaFija(L.id)
+      const oculta = sinDeptos || !conEtiquetaFija(L.id)
       if (L.el.hidden !== oculta) L.el.hidden = oculta
       if (oculta) continue
       const m = malla(L.id)!
@@ -1589,7 +1682,7 @@ export class EscenaPeru {
       )
     }
     // La etiqueta suelta (zona elegida sin etiqueta fija) también sigue al ancho de la pantalla
-    const aparte = !!this.sel && !conEtiquetaFija(this.sel) && !apretado
+    const aparte = !!this.sel && !conEtiquetaFija(this.sel) && !sinDeptos
     if (this.etiquetaSel.hidden === aparte) this.etiquetaSel.hidden = !aparte
     if (aparte && this.sel) {
       const m = malla(this.sel)
@@ -1600,6 +1693,13 @@ export class EscenaPeru {
           m.position.z + m.scale.z + 0.4,
           m.userData.centro.z,
         )
+    }
+    // Modo Vegetación (solo en el explorador): recuadros y nombres sobre la cara de su departamento
+    const conVeg = this.veg && this.modo === 'explorar'
+    for (const mv of this.marcasVeg) {
+      if (mv.el.hidden === conVeg) mv.el.hidden = !conVeg
+      const m = malla(mv.departamento)
+      if (conVeg && m) this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z)
     }
     for (const p of this.etiquetasPais) {
       // En celular no se muestran los nombres de países (v12)

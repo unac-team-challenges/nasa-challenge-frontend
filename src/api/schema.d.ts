@@ -82,6 +82,8 @@ export interface components {
     schemas: {
         /** @description Medidas de un año completo (12 meses válidos). */
         AnioVegetacion: {
+            /** Format: int32 */
+            anio: number;
             /**
              * Format: double
              * @description Área con NDVI medio del año mayor que `umbral_verde_ndvi`, en km².
@@ -212,10 +214,6 @@ export interface components {
         };
         /** @description `GET /api/vegetacion`: una zona (recuadro sobre un valle) con su serie anual y su tendencia. */
         ZonaVegetacion: {
-            /** @description Por año ("2001", ...): solo años completos. */
-            anios: {
-                [key: string]: components["schemas"]["AnioVegetacion"];
-            };
             /** @description `[oeste, sur, este, norte]` en grados. */
             bbox: number[];
             /** @description Departamento donde está el recuadro. */
@@ -233,8 +231,10 @@ export interface components {
              * @description Píxeles MODIS (~1 km) del recuadro.
              */
             pixeles: number;
+            /** @description Un punto por año, de menor a mayor (como `serie` de `/api/zonas/{id}`): solo años completos. */
+            serie: components["schemas"]["AnioVegetacion"][];
             stats: components["schemas"]["Stats"];
-            /** @description Sobre qué campo de `anios` se calcula `stats` (hoy, "ndvi_anual"). */
+            /** @description Sobre qué campo de `serie` se calcula `stats` (hoy, "ndvi_anual"). */
             tendencia_de: string;
             /** @description P. ej. "valle irrigado". */
             tipo: string;

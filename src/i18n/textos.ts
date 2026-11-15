@@ -163,6 +163,8 @@ const es = {
   cmpDesierto: 'Desierto',
   cmpVerde: 'Vegetación densa',
   cmpCap: 'NDVI anual de MODIS MOD13A3 (NASA), píxeles de 1 km. Desliza para comparar 2001 y 2024.',
+  cmpUnidad:
+    'Cifras de un recuadro de 0,25° × 0,25° (~27 × 27 km) sobre el valle; no son el promedio del departamento.',
   // Mapa 2D
   vistaMapa: 'Vista del mapa',
   mapa2dAria: 'Mapa del Perú en 2D',
@@ -344,6 +346,8 @@ const en: Textos = {
   cmpDesierto: 'Desert',
   cmpVerde: 'Dense vegetation',
   cmpCap: 'Annual NDVI from MODIS MOD13A3 (NASA), 1 km pixels. Drag to compare 2001 and 2024.',
+  cmpUnidad:
+    'Figures for a 0.25° × 0.25° box (~27 × 27 km) over the valley; not the department average.',
   vistaMapa: 'Map view',
   mapa2dAria: 'Map of Peru in 2D',
   noGl: "Your browser can't show 3D. Here is the 2D map with the same data.",

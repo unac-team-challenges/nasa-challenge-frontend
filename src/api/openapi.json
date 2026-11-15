@@ -162,8 +162,13 @@
       "AnioVegetacion": {
         "type": "object",
         "description": "Medidas de un año completo (12 meses válidos).",
-        "required": ["ndvi_anual", "area_verde_km2"],
+        "required": ["anio", "ndvi_anual", "area_verde_km2"],
         "properties": {
+          "anio": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
           "area_verde_km2": {
             "type": "number",
             "format": "double",
@@ -434,20 +439,10 @@
           "fuente",
           "umbral_verde_ndvi",
           "tendencia_de",
-          "anios",
+          "serie",
           "stats"
         ],
         "properties": {
-          "anios": {
-            "type": "object",
-            "description": "Por año (\"2001\", ...): solo años completos.",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/AnioVegetacion"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
           "bbox": {
             "type": "array",
             "items": {
@@ -484,12 +479,19 @@
             "description": "Píxeles MODIS (~1 km) del recuadro.",
             "minimum": 0
           },
+          "serie": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnioVegetacion"
+            },
+            "description": "Un punto por año, de menor a mayor (como `serie` de `/api/zonas/{id}`): solo años completos."
+          },
           "stats": {
             "$ref": "#/components/schemas/Stats"
           },
           "tendencia_de": {
             "type": "string",
-            "description": "Sobre qué campo de `anios` se calcula `stats` (hoy, \"ndvi_anual\")."
+            "description": "Sobre qué campo de `serie` se calcula `stats` (hoy, \"ndvi_anual\")."
           },
           "tipo": {
             "type": "string",

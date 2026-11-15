@@ -133,3 +133,36 @@ export async function detalleDeApi(
     return null
   }
 }
+
+/** Cifras del Caso 2 de un valle según `/api/vegetacion` (km² con NDVI > 0,3 y Sen del NDVI por década). */
+export interface ValleApi {
+  areaAntes: number
+  areaDespues: number
+  sen: number
+}
+
+/**
+ * Vegetación de los valles desde la API, por ubigeo del departamento ("13", "11").
+ * Un valle sin 2001 o 2024 en su `serie`, o sin tendencia, no entra: se queda la copia de caso2.ts.
+ */
+export async function vegetacionDeApi(): Promise<Record<string, ValleApi> | null> {
+  if (!hayApi) return null
+  try {
+    const r = await api.GET('/api/vegetacion')
+    if (!r.data) return null
+    const valles: Record<string, ValleApi> = {}
+    for (const z of r.data) {
+      const antes = z.serie.find((p) => p.anio === 2001)
+      const despues = z.serie.find((p) => p.anio === 2024)
+      if (antes && despues && typeof z.stats.slope_per_decade === 'number')
+        valles[z.ubigeo] = {
+          areaAntes: Math.round(antes.area_verde_km2),
+          areaDespues: Math.round(despues.area_verde_km2),
+          sen: z.stats.slope_per_decade,
+        }
+    }
+    return Object.keys(valles).length ? valles : null
+  } catch {
+    return null
+  }
+}

@@ -167,3 +167,37 @@ describe('detalleDeApi', () => {
     expect(await detalleDeApi('99', 'lluvia')).toBeNull()
   })
 })
+
+describe('imergDeApi (segunda fuente de lluvia)', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('pide lluvia_imerg y pasa de mm/día a mm/año', async () => {
+    const pedidas: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (req: Request) => {
+        pedidas.push(new URL(req.url).searchParams.get('variable') ?? '')
+        return json(ids.map(zonaConStats))
+      }),
+    )
+    const { imergDeApi } = await cargar()
+    const imerg = await imergDeApi()
+    expect(pedidas).toEqual(['lluvia_imerg'])
+    expect(Object.keys(imerg!)).toHaveLength(25)
+    expect(imerg!['21'].slope_per_decade).toBeCloseTo(36.5)
+    expect(imerg!['21'].status).toBe('real')
+  })
+
+  it('si la API no la tiene (backend viejo) devuelve null y la ficha usa la copia local', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'variable no existe' }, 400)),
+    )
+    const { imergDeApi } = await cargar()
+    expect(await imergDeApi()).toBeNull()
+  })
+})

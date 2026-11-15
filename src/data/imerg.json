@@ -1,0 +1,183 @@
+{
+ "generado": "2026-11-15",
+ "fuente": "GPM IMERG v07 (NASA)",
+ "unidad": "mm/año",
+ "origen": "nasa-challenge-backend: data/zonas/lluvia_imerg.json",
+ "zonas": {
+  "01": {
+   "slope_per_decade": -134.23,
+   "ci_low": -237.69,
+   "ci_high": -27.52,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "02": {
+   "slope_per_decade": -144.22,
+   "ci_low": -203.96,
+   "ci_high": -60.19,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "03": {
+   "slope_per_decade": -123.08,
+   "ci_low": -170.64,
+   "ci_high": -52.09,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "04": {
+   "slope_per_decade": -20.49,
+   "ci_low": -58.95,
+   "ci_high": 13.32,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "05": {
+   "slope_per_decade": -82.11,
+   "ci_low": -125.85,
+   "ci_high": -35.08,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "06": {
+   "slope_per_decade": -109.5,
+   "ci_low": -172.72,
+   "ci_high": -45.04,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "07": {
+   "slope_per_decade": -17.79,
+   "ci_low": -35.44,
+   "ci_high": -8.18,
+   "status": "pocos_datos",
+   "n_years": 24
+  },
+  "08": {
+   "slope_per_decade": -162.94,
+   "ci_low": -272.8,
+   "ci_high": -66.28,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "09": {
+   "slope_per_decade": -79.64,
+   "ci_low": -132.06,
+   "ci_high": -34.97,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "10": {
+   "slope_per_decade": -322.43,
+   "ci_low": -462.2,
+   "ci_high": -98.22,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "11": {
+   "slope_per_decade": -14.41,
+   "ci_low": -26.39,
+   "ci_high": -5.95,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "12": {
+   "slope_per_decade": -218.29,
+   "ci_low": -298.94,
+   "ci_high": -91.14,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "13": {
+   "slope_per_decade": -72.89,
+   "ci_low": -116.54,
+   "ci_high": -17.89,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "14": {
+   "slope_per_decade": -26.71,
+   "ci_low": -74.82,
+   "ci_high": 11.31,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "15": {
+   "slope_per_decade": -48.56,
+   "ci_low": -83.0,
+   "ci_high": -17.16,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "16": {
+   "slope_per_decade": -120.75,
+   "ci_low": -264.0,
+   "ci_high": 46.9,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "17": {
+   "slope_per_decade": -127.61,
+   "ci_low": -264.19,
+   "ci_high": 34.6,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "18": {
+   "slope_per_decade": -18.36,
+   "ci_low": -57.3,
+   "ci_high": 20.15,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "19": {
+   "slope_per_decade": -242.48,
+   "ci_low": -403.0,
+   "ci_high": 1.86,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "20": {
+   "slope_per_decade": -19.95,
+   "ci_low": -124.06,
+   "ci_high": 70.26,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "21": {
+   "slope_per_decade": -91.33,
+   "ci_low": -166.26,
+   "ci_high": -11.17,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "22": {
+   "slope_per_decade": -213.53,
+   "ci_low": -339.6,
+   "ci_high": -57.23,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "23": {
+   "slope_per_decade": -4.9,
+   "ci_low": -29.86,
+   "ci_high": 23.18,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "24": {
+   "slope_per_decade": -1.76,
+   "ci_low": -178.85,
+   "ci_high": 134.1,
+   "status": "posible_casualidad",
+   "n_years": 24
+  },
+  "25": {
+   "slope_per_decade": -112.36,
+   "ci_low": -301.31,
+   "ci_high": 50.3,
+   "status": "posible_casualidad",
+   "n_years": 24
+  }
+ }
+}

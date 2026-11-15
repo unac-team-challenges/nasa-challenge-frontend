@@ -133,3 +133,39 @@ export async function detalleDeApi(
     return null
   }
 }
+
+/** Tendencia de una zona en la segunda fuente de lluvia (GPM IMERG), ya en mm/año. */
+export interface TendenciaImerg {
+  slope_per_decade: number
+  ci_low: number
+  ci_high: number
+  status: Estado
+  n_years: number
+}
+
+/**
+ * La lluvia de IMERG desde la API (`lluvia_imerg`, segunda fuente para comparar con POWER),
+ * o null si la API no la tiene o falla. El contrato la da en mm/día: aquí pasa a mm/año.
+ */
+export async function imergDeApi(): Promise<Record<string, TendenciaImerg> | null> {
+  if (!hayApi) return null
+  try {
+    const r = await api.GET('/api/zonas', { params: { query: { variable: 'lluvia_imerg' } } })
+    const lista = r.data as unknown[] | undefined
+    if (!lista || lista.length !== 25 || !lista.every(tieneStats)) return null
+    return Object.fromEntries(
+      (lista as { id: string; stats: StatsApi }[]).map(({ id, stats: s }) => [
+        id,
+        {
+          slope_per_decade: s.slope_per_decade * 365,
+          ci_low: s.ci_low * 365,
+          ci_high: s.ci_high * 365,
+          status: s.status,
+          n_years: s.n_years,
+        },
+      ]),
+    )
+  } catch {
+    return null
+  }
+}

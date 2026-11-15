@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
-import { datosDeApi, detalleDeApi, type DatosApi } from '@/api/consultas'
+import {
+  datosDeApi,
+  detalleDeApi,
+  imergDeApi,
+  type DatosApi,
+  type TendenciaImerg,
+} from '@/api/consultas'
+import imergLocal from '@/data/imerg.json'
 import {
   FUENTE_LOCAL,
   PERIODOS,
@@ -111,4 +118,26 @@ export function useDetalle(id: string | null): {
     return { serie: data?.serie ?? null, nota: data?.nota ?? null, estado, reintentar: refetch }
   }
   return { serie: local, nota: null, estado: 'ok', reintentar: refetch }
+}
+
+/**
+ * Segunda fuente de lluvia (GPM IMERG) para «¿Coinciden dos fuentes de NASA?».
+ * De la API si la sesión usa la API; si no, de la copia local (src/data/imerg.json, los mismos
+ * números). Solo existe para la tendencia 2001–2024 con El Niño, y solo se compara cuando la lluvia
+ * principal es la de POWER (con un backend viejo, la API servía IMERG como lluvia principal).
+ */
+export function useSegundaFuente(): Record<string, TendenciaImerg> | null {
+  const decidida = useApp((s) => s.fuente)
+  const sinNino = useApp((s) => s.sinNino)
+  const periodo = useApp((s) => s.periodo)
+  const { fuente } = useVista('lluvia')
+  const { data } = useQuery({
+    queryKey: ['imerg'],
+    queryFn: imergDeApi,
+    enabled: decidida === 'api',
+    staleTime: Infinity,
+    retry: false,
+  })
+  if (sinNino || periodo !== 'reciente' || !/POWER/.test(fuente)) return null
+  return (decidida === 'api' && data) || (imergLocal.zonas as Record<string, TendenciaImerg>)
 }

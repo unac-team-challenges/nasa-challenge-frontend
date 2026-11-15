@@ -51,15 +51,16 @@ test.describe('celular (390 × 844): la línea de tiempo va acostada, abajo del 
     expect(Math.abs(a.y - t.y)).toBeLessThan(2)
   })
 
-  test('no tapa la leyenda ni los botones del mapa', async ({ page }) => {
+  test('no tapa la leyenda ni el botón «⋯» del mapa', async ({ page }) => {
     await page.goto('/explorar?sinwebgl&anio=2021')
     const barra = (await page.getByRole('group', { name: 'Máquina del tiempo' }).boundingBox())!
     const leyenda = (await page.getByText('Cómo leer el mapa').boundingBox())!
-    const recentrar = (await page
-      .getByRole('button', { name: 'Volver a la vista inicial' })
+    // En celular los controles del mapa van detrás del botón «⋯»
+    const controles = (await page
+      .getByRole('button', { name: 'Controles del mapa' })
       .boundingBox())!
     expect(leyenda.y + leyenda.height).toBeLessThanOrEqual(barra.y)
-    expect(recentrar.y + recentrar.height).toBeLessThanOrEqual(barra.y)
+    expect(controles.y + controles.height).toBeLessThanOrEqual(barra.y)
   })
 })
 

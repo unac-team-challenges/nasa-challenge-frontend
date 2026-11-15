@@ -1,0 +1,2 @@
+# Lo genera `pnpm gen` desde openapi.json: se regenera sin formato, `prettier --write .` no debe tocarlo
+src/api/schema.d.ts

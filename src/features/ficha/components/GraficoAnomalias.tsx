@@ -47,9 +47,15 @@ export function GraficoAnomalias({ id, variable, pts, sinNino, idioma, anio }: P
   const etiquetados = iniciosDeRacha(nino)
   const resaltado = anio != null && anio >= y0 && anio <= y1 ? anio : null
   const [arriba, abajo] = t.anomLeyenda[variable]
+  const veg = variable === 'vegetacion'
   const magnitud = (a: number) =>
-    temp ? `${num(a, 1, idioma)} °C` : `${Math.round(Math.abs(a))} %`
-  const valorAnio = (v: number) => (temp ? `${num(v, 1, idioma)} °C` : `${Math.round(v)} mm`)
+    veg
+      ? `${num(a, 2, idioma)} NDVI`
+      : temp
+        ? `${num(a, 1, idioma)} °C`
+        : `${Math.round(Math.abs(a))} %`
+  const valorAnio = (v: number) =>
+    veg ? `${num(v, 2, idioma)} NDVI` : temp ? `${num(v, 1, idioma)} °C` : `${Math.round(v)} mm`
 
   return (
     <div className="flex flex-col gap-2">

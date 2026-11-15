@@ -1982,6 +1982,8 @@ export class EscenaPeru {
 
   private formatearAnomalia(a: number) {
     const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(a).toFixed(2).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(a) * 100) + ' %'
@@ -1989,6 +1991,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(v).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'

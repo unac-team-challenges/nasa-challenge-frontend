@@ -7,13 +7,13 @@ import { useApp } from '@/stores/app'
 beforeEach(() => useApp.setState({ idioma: 'es', informeMin: false }))
 
 describe('modo Vegetación del mapa', () => {
-  it('el botón Vegetación entra al modo, lo escribe en la URL y quita la máquina del tiempo', async () => {
+  it('el botón Lugares medidos entra al modo, lo escribe en la URL y quita la máquina del tiempo', async () => {
     const router = renderRuta('/explorar?anio=2017')
     const grupo = await screen.findByRole('group', { name: 'Variable' })
-    await userEvent.click(within(grupo).getByRole('button', { name: 'Vegetación' }))
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Lugares medidos' }))
     await waitFor(() => expect(router.state.location.search).toMatchObject({ capa: 'vegetacion' }))
     expect(router.state.location.search).not.toHaveProperty('anio')
-    expect(within(grupo).getByRole('button', { name: 'Vegetación' })).toHaveAttribute(
+    expect(within(grupo).getByRole('button', { name: 'Lugares medidos' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -59,7 +59,7 @@ describe('modo Vegetación del mapa', () => {
   it('en la portada ?capa=vegetacion no marca el botón: el modo es del explorador', async () => {
     renderRuta('/?capa=vegetacion')
     const grupo = await screen.findByRole('group', { name: 'Variable' })
-    expect(within(grupo).getByRole('button', { name: 'Vegetación' })).toHaveAttribute(
+    expect(within(grupo).getByRole('button', { name: 'Lugares medidos' })).toHaveAttribute(
       'aria-pressed',
       'false',
     )

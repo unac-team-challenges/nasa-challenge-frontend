@@ -193,7 +193,7 @@ export function Explorador() {
           </div>
         )}
         <div className="entrada-suave">
-          <div className="pointer-events-none absolute top-3.5 right-24 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
+          <div className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32">
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
                 {t.mapH[variable]} ·{' '}
@@ -229,7 +229,7 @@ export function Explorador() {
             <Popover.Trigger asChild>
               <Button
                 size="icon"
-                className={`${boton} pointer-events-auto absolute right-4 bottom-3.5 z-[3] min-[901px]:hidden`}
+                className={`${boton} pointer-events-auto absolute right-4 bottom-[86px] z-[3] min-[901px]:hidden`}
                 aria-label={t.mapaControles}
                 title={t.mapaControles}
               >

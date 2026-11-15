@@ -9,6 +9,7 @@ type PorVariable<T> = Record<Variable, T>
 const es = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
+  lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
   variableLbl: 'Variable',
@@ -56,6 +57,10 @@ const es = {
   texReal: 'Pleno: cambio real',
   texCas: 'Rayado: posible casualidad',
   texFew: 'Contorno: pocos datos',
+  calorMedia: (a: number, b: number) => `Color: temperatura media ${a}–${b} en cada celda`,
+  calorAnio: (anio: number) => `Color: temperatura media de ${anio} en cada celda`,
+  calorNota:
+    'Celdas NASA POWER de ~50 km (MERRA-2). En los Andes el valor sale suavizado: la celda promedia valles y cumbres.',
   scaleTrend: (v: string) => `Columna más alta: ${v} por década`,
   varDef: {
     lluvia: (fuente: string) =>
@@ -225,6 +230,8 @@ const es = {
   // Metodología
   metodologia: 'Metodología y fuentes',
   metodologiaCorto: 'Metodología',
+  metodologiaTodo: 'Ver la metodología completa',
+  paginaActual: '(página actual)',
   metodologiaEnlace: 'Cómo lo calculamos y de dónde salen los datos',
   irAlMapa: 'Explorar el mapa',
 }
@@ -234,6 +241,7 @@ type Textos = typeof es
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
+  lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',
   cambiarTema: 'Change theme',
   variableLbl: 'Variable',
@@ -277,6 +285,10 @@ const en: Textos = {
   texReal: 'Solid: real change',
   texCas: 'Striped: possibly chance',
   texFew: 'Outline: not enough data',
+  calorMedia: (a, b) => `Colour: mean temperature ${a}–${b} in each cell`,
+  calorAnio: (anio) => `Colour: mean temperature of ${anio} in each cell`,
+  calorNota:
+    'NASA POWER cells of ~50 km (MERRA-2). In the Andes values are smoothed: a cell averages valleys and peaks.',
   scaleTrend: (v) => `Tallest column: ${v} per decade`,
   varDef: {
     lluvia: (fuente) =>
@@ -440,6 +452,8 @@ const en: Textos = {
   // Methodology
   metodologia: 'Methodology and sources',
   metodologiaCorto: 'Methodology',
+  metodologiaTodo: 'Read the full methodology',
+  paginaActual: '(current page)',
   metodologiaEnlace: 'How we calculate it and where the data comes from',
   irAlMapa: 'Explore the map',
 }
@@ -669,6 +683,16 @@ export const META: Record<Idioma, Record<Pagina, { titulo: string; descripcion: 
 
 type Enlace = [texto: string, url: string]
 
+/** Secciones de /metodologia: el id del título es `m-<sección>` (el menú de la cabecera salta a ellas). */
+export const SECCIONES_METODOLOGIA = [
+  'fuentes',
+  'calculo',
+  'semaforo',
+  'limites',
+  'creditos',
+] as const
+export type SeccionMetodologia = (typeof SECCIONES_METODOLOGIA)[number]
+
 interface Metodologia {
   titulo: string
   intro: string
@@ -695,6 +719,8 @@ interface Metodologia {
   creditosCodigo: string
   repos: Enlace[]
   creditosNasa: string
+  /** Una línea por sección para el menú de la cabecera */
+  menuD: Record<SeccionMetodologia, string>
 }
 
 const REPOS: Enlace[] = [
@@ -838,6 +864,13 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       'Hecho con React, Vite, three.js, TanStack, Recharts, Tailwind CSS y shadcn/ui. Tipografías: Newsreader y Public Sans. Código abierto:',
     repos: REPOS,
     creditosNasa: 'Este proyecto no es un producto oficial de la NASA ni cuenta con su respaldo.',
+    menuD: {
+      fuentes: 'Satélites y bases de datos de la NASA',
+      calculo: 'De la serie de años a la tendencia',
+      semaforo: 'Qué significa cada color',
+      limites: 'Hasta dónde llegan los datos',
+      creditos: 'Equipo, datos y código abierto',
+    },
   },
   en: {
     titulo: 'Methodology, sources and credits',
@@ -974,5 +1007,12 @@ export const METODOLOGIA: Record<Idioma, Metodologia> = {
       'Built with React, Vite, three.js, TanStack, Recharts, Tailwind CSS and shadcn/ui. Typefaces: Newsreader and Public Sans. Open source:',
     repos: REPOS,
     creditosNasa: 'This project is not an official NASA product and is not endorsed by NASA.',
+    menuD: {
+      fuentes: 'NASA satellites and datasets',
+      calculo: 'From yearly series to trend',
+      semaforo: 'What each colour means',
+      limites: 'How far the data goes',
+      creditos: 'Team, data and open source',
+    },
   },
 }

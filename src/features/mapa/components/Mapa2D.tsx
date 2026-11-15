@@ -126,6 +126,11 @@ function zoomA(id: string | null, oX: number, oY: number, s: number) {
   return { k, tx: oX * (1 - k) + (cx - VX + k * VX) * s, ty: oY * (1 - k) + (cy - VY + k * VY) * s }
 }
 
+/** Lado mínimo de un objetivo táctil (px): por debajo, la zona recibe un borde invisible que se toca. */
+const TOQUE_MIN = 44
+/** Cuánto puede crecer ese borde (px de trazo): Callao es de ~11 km y a veces mide 3 px. */
+const TOQUE_MAX = 40
+
 /** Dónde va la imagen del suelo, en las mismas coordenadas que los departamentos. */
 const SUELO = (() => {
   const [x, y] = proyectar([CAJA_SUELO.lon0, CAJA_SUELO.lat1])
@@ -216,6 +221,15 @@ export function Mapa2D({ interactivo = true }: Props) {
     zm.k * (oY + (y - VB.y) * s) + zm.ty,
   ]
   const celular = tam.w > 0 && tam.w < 600
+  // Zonas demasiado pequeñas para el dedo (Callao, Tumbes…): su área de toque crece con un borde invisible
+  const aToque =
+    celular && interactivo
+      ? RUTAS.map(({ id, d }) => {
+          const [x0, y0, x1, y1] = CAJAS[id]
+          const lado = Math.min((x1 - x0) * s * zm.k, (y1 - y0) * s * zm.k)
+          return { id, d, trazo: Math.min(TOQUE_MAX, Math.round(TOQUE_MIN - lado)) }
+        }).filter((z) => z.trazo > 0)
+      : []
 
   const valor = (id: string) => {
     const d = zonas[id]
@@ -394,9 +408,12 @@ export function Mapa2D({ interactivo = true }: Props) {
                           seleccionar(id, true)
                         }
                       },
-                      onPointerEnter: () => setEncima(id),
+                      // Con el dedo no hay «pasar por encima»: la ficha flotante tapaba el mapa y
+                      // desaparecía al soltar. El resumen sale en el informe, que se abre al tocar.
+                      onPointerEnter: (e: PointerEvent) =>
+                        e.pointerType !== 'touch' && setEncima(id),
                       onPointerMove: (e: PointerEvent) =>
-                        setTip({ id, x: e.clientX, y: e.clientY }),
+                        e.pointerType !== 'touch' && setTip({ id, x: e.clientX, y: e.clientY }),
                       onPointerLeave: () => {
                         setTip(null)
                         setEncima((x) => (x === id ? null : x))
@@ -406,6 +423,25 @@ export function Mapa2D({ interactivo = true }: Props) {
               />
             )
           })}
+
+          {/* Borde invisible de las zonas pequeñas: más área para el dedo. El teclado usa el trazo de arriba. */}
+          {aToque.map(({ id, d: ruta, trazo }) => (
+            <path
+              key={id}
+              d={ruta}
+              aria-hidden
+              data-toque={id}
+              vectorEffect="non-scaling-stroke"
+              style={{
+                fill: 'none',
+                stroke: 'transparent',
+                strokeWidth: trazo,
+                strokeLinejoin: 'round',
+                pointerEvents: 'stroke',
+              }}
+              onClick={() => seleccionar(id, true)}
+            />
+          ))}
         </svg>
       </div>
 

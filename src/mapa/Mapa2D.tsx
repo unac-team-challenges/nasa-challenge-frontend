@@ -4,6 +4,7 @@ import { TEXTOS } from '../i18n/textos'
 import { colorAnomalia } from '../lib/color'
 import { claveMapa } from '../lib/direccion'
 import { fmtAnomalia, fmtValor } from '../lib/formato'
+import { datosTarjeta } from '../lib/tarjeta'
 import { useRango, useZonas } from '../lib/useZonas'
 import { useBusqueda } from '../lib/busqueda'
 import { useApp } from '../store'
@@ -48,6 +49,21 @@ const RUTAS = DEPARTAMENTOS.map((z) => ({
     )
     .join(''),
 }))
+/** Caja (x0, y0, x1, y1) de cada departamento: para el zoom suave al elegirlo. */
+const CAJAS: Record<string, number[]> = Object.fromEntries(
+  DEPARTAMENTOS.map((z) => {
+    const c = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const poly of z.polys)
+      for (const p of poly[0]) {
+        const [x, y] = proyectar(p)
+        c[0] = Math.min(c[0], x)
+        c[1] = Math.min(c[1], y)
+        c[2] = Math.max(c[2], x)
+        c[3] = Math.max(c[3], y)
+      }
+    return [z.id, c]
+  }),
+)
 
 /** Centro de cada departamento (centroide de su anillo más grande), para las etiquetas. */
 const CENTRO: Record<string, [number, number]> = Object.fromEntries(
@@ -93,6 +109,22 @@ const VB = (() => {
   const pad = 0.6
   return { x: x0 - pad, y: y0 - pad - 1.5, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 + 3 }
 })()
+const { x: VX, y: VY, w: VW, h: VH } = VB
+
+/**
+ * Zoom a la zona elegida: la centra y la agranda hasta ~55 % de la vista, entre 1 y 2,6 veces.
+ * Sin zona, la vista completa. Devuelve k y el desplazamiento en px de pantalla; el suelo y el SVG
+ * lo aplican con CSS (se deslizan) y las etiquetas lo usan para moverse con ellos.
+ */
+function zoomA(id: string | null, oX: number, oY: number, s: number) {
+  if (!id) return { k: 1, tx: 0, ty: 0 }
+  const [x0, y0, x1, y1] = CAJAS[id]
+  const k = Math.min(2.6, Math.max(1, 0.55 * Math.min(VW / (x1 - x0), VH / (y1 - y0))))
+  // en unidades del SVG: el centro de la zona va al centro de la vista
+  const cx = VX + VW / 2 - ((x0 + x1) / 2) * k
+  const cy = VY + VH / 2 - ((y0 + y1) / 2) * k
+  return { k, tx: oX * (1 - k) + (cx - VX + k * VX) * s, ty: oY * (1 - k) + (cy - VY + k * VY) * s }
+}
 
 /** Dónde va la imagen del suelo, en las mismas coordenadas que los departamentos. */
 const SUELO = (() => {
@@ -175,7 +207,14 @@ export function Mapa2D({ interactivo = true }: Props) {
   const s = Math.min(tam.w / VB.w, tam.h / VB.h) || 0
   const oX = (tam.w - VB.w * s) / 2
   const oY = (tam.h - VB.h * s) / 2
-  const aPantalla = ([x, y]: [number, number]) => [oX + (x - VB.x) * s, oY + (y - VB.y) * s]
+  // Una zona que no existe (p. ej. /zona/99) no se marca ni se acerca
+  const marcada = interactivo && sel && sel in CAJAS ? sel : null
+  const zm = zoomA(marcada, oX, oY, s)
+  // Posición en pantalla ya con el zoom: las etiquetas se mueven con el mapa sin agrandarse
+  const aPantalla = ([x, y]: [number, number]) => [
+    zm.k * (oX + (x - VB.x) * s) + zm.tx,
+    zm.k * (oY + (y - VB.y) * s) + zm.ty,
+  ]
   const celular = tam.w > 0 && tam.w < 600
 
   const valor = (id: string) => {
@@ -202,7 +241,6 @@ export function Mapa2D({ interactivo = true }: Props) {
   }
 
   // La zona elegida y la que está bajo el puntero se dibujan al final, para que su borde no quede tapado
-  const marcada = interactivo ? sel : null
   const peso = (id: string) => Number(id === marcada) * 2 + Number(id === encima)
   const orden = [...RUTAS].sort((a, b) => peso(a.id) - peso(b.id))
   const conEtiqueta = [...CLAVE]
@@ -211,156 +249,165 @@ export function Mapa2D({ interactivo = true }: Props) {
   return (
     <div ref={caja} className="absolute inset-0 overflow-hidden">
       {/* Suelo real: mar con profundidad y espuma, relieve, ríos, fronteras y sombra del Perú */}
-      <canvas
-        ref={lienzo}
-        data-suelo2d
-        aria-hidden
-        className="absolute transition-opacity duration-300"
+      <div
+        className="zoom2d absolute inset-0"
         style={{
-          left: oX + (SUELO.x - VB.x) * s,
-          top: oY + (SUELO.y - VB.y) * s,
-          width: SUELO.w * s,
-          height: SUELO.h * s,
-          opacity: conSuelo && tam.w > 0 ? 1 : 0,
+          transform: `translate(${zm.tx}px, ${zm.ty}px) scale(${zm.k})`,
+          transformOrigin: '0 0',
         }}
-      />
-      <svg
-        viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="absolute inset-0 h-full w-full overflow-visible"
-        role="group"
-        aria-label={t.mapa2dAria}
       >
-        <defs>
-          {(['up', 'down', 'green'] as const).map((k) => (
-            <pattern
-              key={k}
-              id={`rayado-${k}`}
-              width={0.24}
-              height={0.24}
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(45)"
-            >
-              <rect width={0.24} height={0.24} style={{ fill: 'var(--panel)' }} />
-              <rect width={0.12} height={0.24} style={{ fill: `var(--map-${k})` }} />
-            </pattern>
-          ))}
-        </defs>
+        <canvas
+          ref={lienzo}
+          data-suelo2d
+          aria-hidden
+          className="absolute transition-opacity duration-300"
+          style={{
+            left: oX + (SUELO.x - VB.x) * s,
+            top: oY + (SUELO.y - VB.y) * s,
+            width: SUELO.w * s,
+            height: SUELO.h * s,
+            opacity: conSuelo && tam.w > 0 ? 1 : 0,
+          }}
+        />
+        <svg
+          viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="absolute inset-0 h-full w-full overflow-visible"
+          role="group"
+          aria-label={t.mapa2dAria}
+        >
+          <defs>
+            {(['up', 'down', 'green'] as const).map((k) => (
+              <pattern
+                key={k}
+                id={`rayado-${k}`}
+                width={0.24}
+                height={0.24}
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(45)"
+              >
+                <rect width={0.24} height={0.24} style={{ fill: 'var(--panel)' }} />
+                <rect width={0.12} height={0.24} style={{ fill: `var(--map-${k})` }} />
+              </pattern>
+            ))}
+          </defs>
 
-        {/* Retícula cada 5° */}
-        <g aria-hidden style={{ stroke: 'var(--fg)', opacity: 0.09 }}>
-          {RETICULA.lon.map((lon) => {
-            const [x] = proyectar([lon, 0])
+          {/* Retícula cada 5° */}
+          <g aria-hidden style={{ stroke: 'var(--fg)', opacity: 0.09 }}>
+            {RETICULA.lon.map((lon) => {
+              const [x] = proyectar([lon, 0])
+              return (
+                <line
+                  key={lon}
+                  x1={x}
+                  x2={x}
+                  y1={SUELO.y}
+                  y2={SUELO.y + SUELO.h}
+                  vectorEffect="non-scaling-stroke"
+                  strokeDasharray="2 4"
+                />
+              )
+            })}
+            {RETICULA.lat.map((lat) => {
+              const [, y] = proyectar([0, lat])
+              return (
+                <line
+                  key={lat}
+                  x1={SUELO.x}
+                  x2={SUELO.x + SUELO.w}
+                  y1={y}
+                  y2={y}
+                  vectorEffect="non-scaling-stroke"
+                  strokeDasharray="2 4"
+                />
+              )
+            })}
+          </g>
+
+          {/* Frontera del Perú: un trazo grueso debajo; los rellenos tapan su mitad interior */}
+          <g aria-hidden style={{ fill: 'none', stroke: 'var(--fg)', opacity: 0.55 }}>
+            {RUTAS.map(({ id, d }) => (
+              <path key={id} d={d} vectorEffect="non-scaling-stroke" strokeWidth={3} />
+            ))}
+          </g>
+
+          {orden.map(({ id, d: ruta }) => {
+            const d = zonas[id]
+            const clave = claveMapa(d.slope_per_decade, variable)
+            let relleno = `var(--map-${clave})`
+            let trazo = 'var(--bg)'
+            let grosor = 0.9
+            let guiones = ''
+            let opacidadTrazo = 0.7
+            const valorAnio = an?.porId[id]?.[anio ?? 0]
+            if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
+            else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
+            if (d.status === 'pocos_datos') {
+              relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'
+              trazo = 'var(--muted)'
+              grosor = 1.5
+              guiones = '4 3'
+              opacidadTrazo = 1
+            }
+            if (interactivo && id === encima && id !== marcada) {
+              trazo = 'var(--fg)'
+              grosor = 2
+              guiones = ''
+              opacidadTrazo = 0.9
+            }
+            // En la portada no se marca la zona elegida en el explorador
+            if (id === marcada) {
+              trazo = 'var(--accent)'
+              grosor = 3
+              guiones = ''
+              opacidadTrazo = 1
+            }
             return (
-              <line
-                key={lon}
-                x1={x}
-                x2={x}
-                y1={SUELO.y}
-                y2={SUELO.y + SUELO.h}
+              <path
+                key={id}
+                d={ruta}
+                fillRule="evenodd"
                 vectorEffect="non-scaling-stroke"
-                strokeDasharray="2 4"
+                style={{
+                  fill: relleno,
+                  stroke: trazo,
+                  strokeWidth: grosor,
+                  strokeDasharray: guiones,
+                  strokeOpacity: opacidadTrazo,
+                  strokeLinejoin: 'round',
+                }}
+                className={
+                  interactivo
+                    ? `zona2d cursor-pointer outline-none focus-visible:[stroke:var(--accent)] focus-visible:[stroke-width:3] ${id === encima ? 'encima' : ''}`
+                    : 'zona2d'
+                }
+                {...(interactivo
+                  ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      'aria-label': etiqueta(id),
+                      'aria-pressed': id === sel,
+                      onClick: () => seleccionar(id),
+                      onKeyDown: (e: KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          seleccionar(id)
+                        }
+                      },
+                      onPointerEnter: () => setEncima(id),
+                      onPointerMove: (e: PointerEvent) =>
+                        setTip({ id, x: e.clientX, y: e.clientY }),
+                      onPointerLeave: () => {
+                        setTip(null)
+                        setEncima((x) => (x === id ? null : x))
+                      },
+                    }
+                  : {})}
               />
             )
           })}
-          {RETICULA.lat.map((lat) => {
-            const [, y] = proyectar([0, lat])
-            return (
-              <line
-                key={lat}
-                x1={SUELO.x}
-                x2={SUELO.x + SUELO.w}
-                y1={y}
-                y2={y}
-                vectorEffect="non-scaling-stroke"
-                strokeDasharray="2 4"
-              />
-            )
-          })}
-        </g>
-
-        {/* Frontera del Perú: un trazo grueso debajo; los rellenos tapan su mitad interior */}
-        <g aria-hidden style={{ fill: 'none', stroke: 'var(--fg)', opacity: 0.55 }}>
-          {RUTAS.map(({ id, d }) => (
-            <path key={id} d={d} vectorEffect="non-scaling-stroke" strokeWidth={3} />
-          ))}
-        </g>
-
-        {orden.map(({ id, d: ruta }) => {
-          const d = zonas[id]
-          const clave = claveMapa(d.slope_per_decade, variable)
-          let relleno = `var(--map-${clave})`
-          let trazo = 'var(--bg)'
-          let grosor = 0.9
-          let guiones = ''
-          let opacidadTrazo = 0.7
-          const valorAnio = an?.porId[id]?.[anio ?? 0]
-          if (an && valorAnio != null) relleno = colorAnomalia(valorAnio, an.max, variable)
-          else if (d.status === 'posible_casualidad') relleno = `url(#rayado-${clave})`
-          if (d.status === 'pocos_datos') {
-            relleno = 'color-mix(in srgb, var(--panel) 55%, transparent)'
-            trazo = 'var(--muted)'
-            grosor = 1.5
-            guiones = '4 3'
-            opacidadTrazo = 1
-          }
-          if (interactivo && id === encima && id !== marcada) {
-            trazo = 'var(--fg)'
-            grosor = 2
-            guiones = ''
-            opacidadTrazo = 0.9
-          }
-          // En la portada no se marca la zona elegida en el explorador
-          if (id === marcada) {
-            trazo = 'var(--accent)'
-            grosor = 3
-            guiones = ''
-            opacidadTrazo = 1
-          }
-          return (
-            <path
-              key={id}
-              d={ruta}
-              fillRule="evenodd"
-              vectorEffect="non-scaling-stroke"
-              style={{
-                fill: relleno,
-                stroke: trazo,
-                strokeWidth: grosor,
-                strokeDasharray: guiones,
-                strokeOpacity: opacidadTrazo,
-                strokeLinejoin: 'round',
-              }}
-              className={
-                interactivo
-                  ? 'cursor-pointer outline-none focus-visible:[stroke:var(--accent)] focus-visible:[stroke-width:3]'
-                  : undefined
-              }
-              {...(interactivo
-                ? {
-                    role: 'button',
-                    tabIndex: 0,
-                    'aria-label': etiqueta(id),
-                    'aria-pressed': id === sel,
-                    onClick: () => seleccionar(id),
-                    onKeyDown: (e: KeyboardEvent) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        seleccionar(id)
-                      }
-                    },
-                    onPointerEnter: () => setEncima(id),
-                    onPointerMove: (e: PointerEvent) => setTip({ id, x: e.clientX, y: e.clientY }),
-                    onPointerLeave: () => {
-                      setTip(null)
-                      setEncima((x) => (x === id ? null : x))
-                    },
-                  }
-                : {})}
-            />
-          )
-        })}
-      </svg>
+        </svg>
+      </div>
 
       {/* Etiquetas: mismo estilo que las del 3D */}
       {tam.w > 0 && (
@@ -371,7 +418,7 @@ export function Mapa2D({ interactivo = true }: Props) {
               return (
                 <span
                   key={p.es}
-                  className="lbl3d country"
+                  className="lbl3d lbl2d country"
                   style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
                 >
                   {p[idioma]}
@@ -384,7 +431,7 @@ export function Mapa2D({ interactivo = true }: Props) {
             if (x < 70) return null
             return (
               <span
-                className="lbl3d ocean"
+                className="lbl3d lbl2d ocean"
                 style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
               >
                 {t.ocean}
@@ -401,7 +448,7 @@ export function Mapa2D({ interactivo = true }: Props) {
                 return (
                   <span
                     key={id}
-                    className={'lbl3d' + (id === marcada ? ' sel' : '')}
+                    className={'lbl3d lbl2d' + (id === marcada ? ' sel' : '')}
                     style={{
                       transform: `translate(${x + dx}px, ${y + dy}px) translate(-50%, -50%)`,
                     }}
@@ -414,14 +461,42 @@ export function Mapa2D({ interactivo = true }: Props) {
         </div>
       )}
 
-      {tip && (
-        <div
-          className="pointer-events-none fixed z-[4] -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-s bg-fg px-2.5 py-1.5 text-[13px] whitespace-nowrap text-bg shadow-[0_4px_14px_var(--shadow)]"
-          style={{ left: tip.x, top: tip.y }}
-        >
-          {etiqueta(tip.id)}
-        </div>
-      )}
+      {/* La misma ficha técnica del 3D (lib/tarjeta.ts), junto al puntero */}
+      {tip &&
+        (() => {
+          const c = datosTarjeta(zonas[tip.id], variable, idioma, an?.porId[tip.id]?.[anio ?? 0])
+          return (
+            <div
+              className="ficha3d on"
+              data-estado={c.datos.estado}
+              data-clave={c.datos.clave}
+              style={{
+                position: 'fixed',
+                zIndex: 4,
+                transform: `translate(${tip.x}px, ${tip.y}px) translate(-50%, calc(-100% - 16px))`,
+              }}
+            >
+              <div className="ficha3d-caja entrada">
+                <div className="ficha3d-nombre">{c.nombre}</div>
+                <div className="ficha3d-valor">
+                  <strong>{c.valor}</strong>
+                  <small>{c.unidad}</small>
+                </div>
+                <div className="ficha3d-estado">{c.estado}</div>
+                {c.ic && (
+                  <div className="ficha3d-ic">
+                    <span
+                      className="ficha3d-rango"
+                      style={{ left: c.ic.left, width: c.ic.width }}
+                    />
+                    <span className="ficha3d-punto" style={{ left: c.ic.punto }} />
+                  </div>
+                )}
+                <div className="ficha3d-meta">{c.meta}</div>
+              </div>
+            </div>
+          )
+        })()}
     </div>
   )
 }

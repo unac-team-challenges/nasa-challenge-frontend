@@ -1,8 +1,8 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 import { ORDEN_PERFILES, TEXTOS } from '@/i18n/textos'
-import { useVista } from '@/lib/useZonas'
-import { useApp } from '@/store'
+import { useVista } from '@/hooks/useZonas'
+import { useApp } from '@/stores/app'
 import { MapaSkeleton } from '@/components/Esperas'
 import { Button } from '@/components/ui/button'
 

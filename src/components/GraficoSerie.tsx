@@ -1,6 +1,6 @@
 import { NOMBRE, ninoEn, type Variable, type Zona } from '@/data/datos'
 import { TEXTOS, type Idioma } from '@/i18n/textos'
-import { fmtValor, num } from '@/lib/formato'
+import { fmtValor, num } from '@/utils/formato'
 
 interface Props {
   zona: Zona

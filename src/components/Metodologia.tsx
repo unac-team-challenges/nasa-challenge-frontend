@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { METODOLOGIA, TEXTOS } from '@/i18n/textos'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
 const enlace = 'text-accent-text underline-offset-2 hover:underline'

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { anomaliasAnio, DEPARTAMENTOS, NOMBRE } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
-import { colorAnomalia } from '@/lib/color'
-import { claveMapa } from '@/lib/direccion'
-import { fmtAnomalia, fmtValor } from '@/lib/formato'
-import { useRango, useZonas } from '@/lib/useZonas'
+import { colorAnomalia } from '@/utils/color'
+import { claveMapa } from '@/utils/direccion'
+import { fmtAnomalia, fmtValor } from '@/utils/formato'
+import { useRango, useZonas } from '@/hooks/useZonas'
 import { useBusqueda } from '@/lib/busqueda'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 import { CAJA_SUELO, pintarSuelo2D } from '@/mapa/suelo2d'
 
 const LON0 = -75.0

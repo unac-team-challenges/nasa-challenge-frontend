@@ -4,7 +4,7 @@
  * que va debajo de los departamentos del SVG.
  * Texturas: public/mapa/mundo*.png (scripts/generar_mundo.py; SRTM/ETOPO1 y Natural Earth).
  */
-import { cssVar, esTemaClaro, hexMix } from '@/lib/color'
+import { cssVar, esTemaClaro, hexMix } from '@/utils/color'
 
 /** Caja de public/mapa/mundo*.png (la misma que MUNDO en escena.ts). */
 const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 }

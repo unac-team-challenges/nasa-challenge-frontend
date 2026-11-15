@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
 /**

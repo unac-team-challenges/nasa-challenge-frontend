@@ -1,5 +1,5 @@
 import { TEXTOS } from '@/i18n/textos'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 import { Skeleton } from '@/components/ui/skeleton'
 
 /** Aviso accesible para lectores de pantalla: "Cargando…". */

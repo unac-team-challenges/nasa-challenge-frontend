@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Periodo } from '@/data/datos'
 import type { Idioma } from '@/i18n/textos'
-import { hayWebgl } from '@/lib/webgl'
+import { hayWebgl } from '@/utils/webgl'
 
 export type Tema = 'claro' | 'oscuro'
 

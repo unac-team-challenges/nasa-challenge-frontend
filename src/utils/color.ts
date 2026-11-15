@@ -1,5 +1,5 @@
 import type { Variable } from '@/data/datos'
-import { claveMapa } from '@/lib/direccion'
+import { claveMapa } from '@/utils/direccion'
 
 /** Lee un token de color del tema (variables CSS de :root). */
 export function cssVar(nombre: string): string {

@@ -10,9 +10,9 @@ import {
   type Variable,
   type Zona,
 } from '@/data/datos'
-import { useApp, type Fuente } from '@/store'
+import { useApp, type Fuente } from '@/stores/app'
 import { useBusqueda } from '@/lib/busqueda'
-import type { Ruta } from '@/lib/ruta'
+import type { Ruta } from '@/hooks/ruta'
 
 /** Las dos variables de la API, pedidas una sola vez al abrir la web. */
 function useDatosApi() {

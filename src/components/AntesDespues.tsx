@@ -1,7 +1,7 @@
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
 import { VALLES } from '@/data/caso2'
 import { TEXTOS } from '@/i18n/textos'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 
 const etiqueta =
   'pointer-events-none absolute top-2 z-10 rounded-full bg-[rgba(15,28,38,0.72)] px-2 py-0.5 text-xs text-white'

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { META } from '@/i18n/textos'
-import { useApp } from '@/store'
-import type { Ruta } from '@/lib/ruta'
+import { useApp } from '@/stores/app'
+import type { Ruta } from '@/hooks/ruta'
 
 /** Fondo de cada tema (--bg de src/index.css): el color de la barra del navegador en el celular. */
 const COLOR = { claro: '#dce2e3', oscuro: '#0f1c26' }

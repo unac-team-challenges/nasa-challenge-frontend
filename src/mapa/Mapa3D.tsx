@@ -1,9 +1,9 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { TEXTOS } from '@/i18n/textos'
-import { useRango, useZonas } from '@/lib/useZonas'
+import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
 import { useBusqueda } from '@/lib/busqueda'
-import { useApp } from '@/store'
+import { useApp } from '@/stores/app'
 import { EscenaPeru, type ModoMapa } from '@/mapa/escena'
 import { Mapa2D } from '@/mapa/Mapa2D'
 

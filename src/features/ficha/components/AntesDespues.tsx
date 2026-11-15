@@ -1,5 +1,6 @@
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
 import { VALLES } from '@/features/ficha/data/caso2'
+import { useVegetacion } from '@/hooks/useVegetacion'
 import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
@@ -13,8 +14,11 @@ const etiqueta =
 export function AntesDespues({ departamento }: { departamento: string }) {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
-  const v = VALLES[departamento]
-  if (!v) return null
+  const local = VALLES[departamento]
+  const api = useVegetacion()?.[departamento]
+  if (!local) return null
+  // Las cifras vienen de la API si contesta; si no, de la copia de caso2.ts (mismos valores del Lab 3)
+  const v = { ...local, ...api }
   const pct = Math.round(((v.areaDespues - v.areaAntes) / v.areaAntes) * 100)
   const src = (anio: number) => `${import.meta.env.BASE_URL}caso2/${v.imagen}_${anio}.png`
 
@@ -56,6 +60,7 @@ export function AntesDespues({ departamento }: { departamento: string }) {
         <span>{t.cmpVerde}</span>
       </div>
       <p className="m-0 text-xs text-muted">{t.cmpCap}</p>
+      <p className="m-0 text-xs text-muted">{t.cmpUnidad}</p>
     </div>
   )
 }

@@ -45,4 +45,12 @@ describe.skipIf(!URL_API)('integración con la API real', () => {
     expect(temp?.serie.length).toBeGreaterThan(20)
     expect(temp!.serie[0].v).toBeLessThan(40)
   })
+
+  it('vegetacionDeApi trae Chavimochic (13) e Ica (11) con las cifras del Lab 3', async () => {
+    const { vegetacionDeApi } = await cargar()
+    const v = await vegetacionDeApi()
+    expect(v, '/api/vegetacion no cumple el contrato: el front usaría caso2.ts').not.toBeNull()
+    expect(v!['13']).toMatchObject({ areaAntes: 189, areaDespues: 356 })
+    expect(v!['11']).toMatchObject({ areaAntes: 118, areaDespues: 222 })
+  })
 })

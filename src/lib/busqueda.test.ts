@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from './busqueda'
+import { esUbigeo, parseSearch, stringifySearch, validarBusqueda } from '@/lib/busqueda'
 
 describe('validarBusqueda (lo que va en la URL)', () => {
   it('acepta valores válidos', () => {

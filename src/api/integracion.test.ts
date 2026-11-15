@@ -15,7 +15,7 @@ describe.skipIf(!URL_API)('integración con la API real', () => {
 
   async function cargar() {
     vi.resetModules()
-    return import('./consultas')
+    return import('@/api/consultas')
   }
 
   it('datosDeApi trae lluvia y temperatura con las 25 zonas y sus tendencias', async () => {

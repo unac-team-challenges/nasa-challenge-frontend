@@ -46,6 +46,9 @@ interface EstadoApp {
   conWebgl: boolean
   modoMapa: ModoVista
   setModoMapa: (m: ModoVista) => void
+  /** El mapa 3D gira solo (lo avisa la escena; lo usa el botón de giro) */
+  girando: boolean
+  setGirando: (g: boolean) => void
   /** Se decide una sola vez por sesión (null = aún no): así el mapa no salta de una fuente a otra */
   fuente: Fuente | null
   fijarFuente: (f: Fuente) => void
@@ -78,6 +81,8 @@ export const useApp = create<EstadoApp>((set, get) => ({
   modoMapa: GL ? '3d' : '2d',
   // Sin WebGL, el 2D es la única vista posible
   setModoMapa: (modoMapa) => set({ modoMapa: GL ? modoMapa : '2d' }),
+  girando: true,
+  setGirando: (girando) => set({ girando }),
   fuente: null,
   fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
   setIdioma: (idioma) => set({ idioma }),

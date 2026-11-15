@@ -370,6 +370,9 @@ interface Vuelo {
   dur: number
 }
 
+/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
+export const escenaActiva: { current: EscenaPeru | null } = { current: null }
+
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -434,6 +437,13 @@ export class EscenaPeru {
   private contenedor: HTMLElement
   private capaEtiquetas: HTMLElement
   private modo: ModoMapa
+  /**
+   * Corrimiento horizontal de la imagen (px): en la portada el Perú va a la derecha, junto al
+   * texto; en el explorador se corre a la izquierda del informe abierto. Se anima en cuadro()
+   * con setViewOffset, así el lienzo nunca cambia de tamaño al abrir el informe.
+   */
+  private corrimiento = 0
+  private panel = 0
   private alElegir?: (id: string) => void
   private alGirar?: (girando: boolean) => void
 
@@ -703,7 +713,11 @@ export class EscenaPeru {
     this.tarjeta = crearTarjeta(capaEtiquetas)
     this.particulas = { geo: geoP, puntos }
 
-    const ro = new ResizeObserver(() => this.redimensionar())
+    // Dibujar en el mismo callback (antes de que el navegador pinte): sin cuadro en blanco
+    const ro = new ResizeObserver(() => {
+      this.redimensionar()
+      if (!this.destruida) this.renderer.render(this.escena, this.camara)
+    })
     ro.observe(contenedor)
     const io = new IntersectionObserver((es) => {
       this.fueraDePantalla = !es[0].isIntersecting
@@ -1086,7 +1100,40 @@ export class EscenaPeru {
 
   /** Vuelve a la vista inicial del modo actual. */
   recentrar() {
+    this.seleccionar(null, false) // la vista inicial no marca ninguna zona
     this.vista(false)
+  }
+
+  /**
+   * Cambia entre la portada y el explorador sin recrear la escena: la cámara vuela de una vista
+   * a la otra y el Perú se corre a su lugar. Antes se destruía todo y se volvía a cargar.
+   */
+  setModo(modo: ModoMapa) {
+    if (modo === this.modo) return
+    this.modo = modo
+    this.setHover(null)
+    this.setAnimal(null)
+    if (modo === 'inicio') this.seleccionar(null, false)
+    this.vista(false, 1600) // vuelo largo y suave entre la portada y el explorador
+    this.sucio = true
+  }
+
+  /** Ancho (px) que el informe tapa a la derecha del mapa en el explorador. */
+  setPanel(px: number) {
+    this.panel = px
+    this.sucio = true
+  }
+
+  /** Hacia dónde debe ir el corrimiento según el modo y el ancho. */
+  private corrimientoObjetivo() {
+    if (this.ancho <= 900) return 0 // en celular el mapa va arriba y el texto abajo
+    return this.modo === 'inicio' ? this.ancho * 0.24 : -this.panel / 2
+  }
+
+  private aplicarCorrimiento() {
+    if (Math.abs(this.corrimiento) < 0.5) this.camara.clearViewOffset()
+    else
+      this.camara.setViewOffset(this.ancho, this.alto, -this.corrimiento, 0, this.ancho, this.alto)
   }
 
   destruir() {
@@ -1212,7 +1259,7 @@ export class EscenaPeru {
       : signo + Math.round(Math.abs(v)) + ' mm'
   }
 
-  private vista(instantaneo: boolean) {
+  private vista(instantaneo: boolean, dur = 1100) {
     const v = VISTAS[this.modo]
     const a = this.camara.aspect
     // En pantallas angostas, la cámara se aleja para que el Perú entre completo (v12)
@@ -1221,6 +1268,7 @@ export class EscenaPeru {
       new THREE.Vector3(v.pos[0] * k, v.pos[1] * k, v.pos[2] * k),
       new THREE.Vector3(v.tgt[0], v.tgt[1], v.tgt[2]),
       instantaneo,
+      dur,
     )
     // Gira en la portada y en el explorador mientras no haya zona elegida
     this.setGiro(this.modo === 'inicio' || !this.sel)
@@ -1235,7 +1283,7 @@ export class EscenaPeru {
     this.setGiro(false)
   }
 
-  private volarCamara(pos: THREE.Vector3, tgt: THREE.Vector3, instantaneo: boolean) {
+  private volarCamara(pos: THREE.Vector3, tgt: THREE.Vector3, instantaneo: boolean, dur = 1100) {
     if (instantaneo || reducido()) {
       this.camara.position.copy(pos)
       this.controles.target.copy(tgt)
@@ -1250,7 +1298,7 @@ export class EscenaPeru {
       p1: pos,
       t1: tgt,
       inicio: performance.now(),
-      dur: 1100,
+      dur,
     }
   }
 
@@ -1262,6 +1310,8 @@ export class EscenaPeru {
     this.renderer.setSize(w, h, false)
     this.camara.aspect = w / h
     this.camara.updateProjectionMatrix()
+    this.corrimiento = this.corrimientoObjetivo()
+    this.aplicarCorrimiento()
     // tamaño de los puntos en píxeles del búfer, como hace PointsMaterial
     if (this.particulas)
       this.particulas.puntos.material.uniforms.uEscala.value = (h * this.renderer.getPixelRatio()) / 2
@@ -1338,6 +1388,12 @@ export class EscenaPeru {
     }
     let moviendo = false
     const quieto = reducido()
+    const dc = this.corrimientoObjetivo() - this.corrimiento
+    if (Math.abs(dc) > 0.5) {
+      this.corrimiento += quieto ? dc : dc * 0.12
+      this.aplicarCorrimiento()
+      moviendo = true
+    }
     for (const m of this.mallas) {
       const id = m.userData.id
       const dh = m.userData.objetivo - m.userData.h

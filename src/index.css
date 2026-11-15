@@ -336,6 +336,51 @@ h3 {
   }
 }
 
+/* Paneles sobre el mapa de fondo: cada bloque de texto con su fondo y su borde, para que se lea
+   encima del mapa animado. Sin backdrop-filter: el desenfoque se recalcularía en cada cuadro. */
+.vidrio {
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* Entradas y salidas suaves (solo opacity y transform: no recalculan el layout) */
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes entrada-suave {
+  from {
+    opacity: 0;
+  }
+}
+.entrada {
+  animation: entrada 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) var(--retraso, 0s) both;
+}
+/* Solo opacidad: con transform, el bloque sería el contenedor de sus hijos absolutos */
+.entrada-suave {
+  animation: entrada-suave 0.7s ease-out var(--retraso, 0s) both;
+}
+.saliendo {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition:
+    opacity 0.32s ease-in,
+    transform 0.32s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada,
+  .entrada-suave {
+    animation: none;
+  }
+  .saliendo {
+    transition: none;
+  }
+}
+
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;

@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 test('el perfil es un interruptor con íconos, no una lista del sistema', async ({ page }) => {
   await page.goto('/explorar?sinwebgl&perfil=agricultor')

@@ -144,10 +144,10 @@ export function useBusqueda() {
     },
     setSinNino: (sin: boolean) => poner({ sinnino: sin ? '1' : undefined }),
     setPerfil: (perfil: Perfil) => poner({ perfil }),
-    /** El idioma queda también en la URL (solo `en`; el español es el valor por defecto) */
+    /** El idioma queda también en la URL (solo `es`; el inglés es el valor por defecto) */
     setIdioma: (idioma: Idioma) => {
       useApp.getState().setIdioma(idioma)
-      return poner({ lang: idioma === 'en' ? 'en' : undefined })
+      return poner({ lang: idioma === 'es' ? 'es' : undefined })
     },
     /** Elegir una zona abre el informe. `desdeMapa`: la presentación solo sale si se tocó el mapa. */
     seleccionar: (zona: string | null, desdeMapa = false) => {

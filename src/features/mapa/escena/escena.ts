@@ -229,7 +229,18 @@ const proyectar = ([lon, lat]: number[]) =>
  * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
-const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.webp
+const TEXTURAS_MUNDO = [
+  ['mapa/mundo.webp', 'uMundo'],
+  ['mapa/mundo2.webp', 'uMundo2'],
+] as const
+// Las texturas (~1 MB) empiezan a bajar apenas llega este módulo, sin esperar a que se arme la
+// escena (~1 s después). El TextureLoader (y el 2D) reutilizan la misma descarga: mismo modo CORS.
+for (const [archivo] of TEXTURAS_MUNDO) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = import.meta.env.BASE_URL + archivo
+}
 /** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
 const RELIEVE = 1.8
 /** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
@@ -435,7 +446,8 @@ function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number
   const S = 256
   const c = document.createElement('canvas')
   c.width = c.height = S
-  const g = c.getContext('2d')!
+  // Se lee con getImageData: canvas en CPU, sin esperar a que la GPU devuelva los píxeles
+  const g = c.getContext('2d', { willReadFrequently: true })!
   g.fillStyle = '#000'
   g.fillRect(0, 0, S, S)
   g.fillStyle = '#fff'
@@ -643,9 +655,6 @@ interface Vuelo {
   dur: number
 }
 
-/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
-export const escenaActiva: { current: EscenaPeru | null } = { current: null }
-
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -695,7 +704,7 @@ export class EscenaPeru {
   private etiquetasVeg: { id: string; el: HTMLDivElement }[] = []
   /** Altura de la cara superior de cada departamento (la leen las plantas en la GPU). */
   private topes = new Float32Array(DEPARTAMENTOS.length)
-  /** Altitud del suelo (canal R de mundo2.png: 0..255 = 0..6000 m), para saber qué planta crece. */
+  /** Altitud del suelo (canal R de mundo2.webp: 0..255 = 0..6000 m), para saber qué planta crece. */
   private elevacion: Uint8ClampedArray | null = null
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
@@ -791,6 +800,8 @@ export class EscenaPeru {
     this.alGirar = op.alGirar
 
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    // Sin chequeo síncrono de shaders en producción: frena el primer frame
+    r.debug.checkShaderErrors = import.meta.env.DEV
     r.outputColorSpace = THREE.LinearSRGBColorSpace
     this.dprMax = Math.min(devicePixelRatio || 1, 1.5)
     this.dpr = Math.min(this.dprMax, 1.25)
@@ -931,10 +942,7 @@ export class EscenaPeru {
     matSuelo.uniforms.uPeru.value = sombra
     const cargador = new THREE.TextureLoader()
     const base = import.meta.env.BASE_URL
-    for (const [archivo, clave] of [
-      ['mapa/mundo.png', 'uMundo'],
-      ['mapa/mundo2.png', 'uMundo2'],
-    ] as const)
+    for (const [archivo, clave] of TEXTURAS_MUNDO)
       cargador.load(base + archivo, (tx) => {
         if (this.destruida) return tx.dispose() // el mapa se cerró mientras cargaba
         tx.flipY = false
@@ -1378,7 +1386,7 @@ export class EscenaPeru {
     this.sucio = true
   }
 
-  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.png (NaN sin la textura). */
+  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.webp (NaN sin la textura). */
   private altitud = (lon: number, lat: number) => {
     const E = this.elevacion
     if (!E) return NaN
@@ -1985,6 +1993,8 @@ export class EscenaPeru {
 
   private formatearAnomalia(a: number) {
     const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(a).toFixed(2).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(a) * 100) + ' %'
@@ -1992,6 +2002,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(v).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'

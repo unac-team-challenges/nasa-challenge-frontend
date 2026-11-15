@@ -19,8 +19,8 @@ export function CampoAniosMalos() {
   const mitades = pts ? aniosMalosPorMitad(pts, variable) : null
   if (!mitades) return null
   const { antes, ahora } = mitades
-  // Lluvia: lo malo es el año seco; temperatura, el caluroso. Los dos salen en el mismo color.
-  const color = `var(${colorDireccion(variable === 'lluvia' ? -1 : 1, variable)})`
+  // Lluvia: lo malo es el año seco; vegetación, el de poco verdor; temperatura, el caluroso. Los dos salen en el mismo color.
+  const color = `var(${colorDireccion(variable === 'temperatura' ? 1 : -1, variable)})`
   const tipo = t.malosPunto[variable]
 
   return (

@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 import { coberturaPaneles } from './apoyo/cobertura'
 
 test.use({ viewport: { width: 390, height: 844 } })

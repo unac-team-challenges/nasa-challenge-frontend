@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 test('el .ico va con su tamaño real y el SVG al final, para que Chrome use el SVG', async ({
   page,

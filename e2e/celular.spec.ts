@@ -46,3 +46,16 @@ test('con todo cerrado, los paneles tapan menos del 25 % del mapa (mejora 3)', a
   await page.goto('/explorar')
   expect(await coberturaPaneles(page)).toBeLessThan(25)
 })
+
+test('al bajar por el informe queda una barra con la zona, y «Mapa» vuelve arriba', async ({
+  page,
+}) => {
+  await page.goto('/zona/20?sinwebgl')
+  await expect(page.locator('#informe')).toContainText('Piura')
+  const mapa = page.getByRole('button', { name: 'Mapa', exact: true })
+  await expect(mapa).toBeHidden()
+  await page.evaluate(() => scrollTo(0, 1600))
+  await expect(mapa).toBeVisible()
+  await mapa.tap()
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(5)
+})

@@ -160,6 +160,8 @@ export const textos = {
     posible_casualidad: 'Posible casualidad',
     pocos_datos: 'Pocos datos',
   } as Record<Estado, string>,
+  /** Barra fija del informe en celular: sube al mapa */
+  verMapa: 'Mapa',
   perDecade: 'por década',
   /** Ficha del 3D al pasar el puntero */
   vsPromedio: 'frente a su promedio',

@@ -25,10 +25,7 @@ export function CampoAnioNormal() {
   const ultimo = pts[pts.length - 1]
 
   return (
-    <section
-      aria-labelledby="normal-h"
-      className="flex flex-col gap-2 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="normal-h" className="flex flex-col gap-2 bloque-ficha">
       <h3 id="normal-h" data-leer className="m-0 text-sm font-semibold">
         {t.normalH}
       </h3>

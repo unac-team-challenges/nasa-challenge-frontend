@@ -20,6 +20,7 @@ import { BotonCompartir } from '@/components/BotonCompartir'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
 import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
+import { BarraZona } from '@/app/rutas/BarraZona'
 import { FRANJA, useInforme } from '@/app/rutas/useInforme'
 import { RETRASO_INFO_S, usePresentacionZona } from '@/app/rutas/usePresentacionZona'
 import { Guia } from '@/features/guia/components/Guia'
@@ -275,7 +276,7 @@ export function Explorador() {
       <aside
         ref={informe}
         data-guia="informe"
-        className={`pointer-events-auto relative flex min-w-0 overflow-hidden border-line bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+        className={`pointer-events-auto relative flex min-w-0 overflow-x-clip border-line min-[901px]:overflow-hidden bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           informeMin ? 'min-[901px]:translate-x-[calc(100%-56px)]' : ''
         }`}
         style={{ transitionDelay: demoraPanel }}
@@ -326,6 +327,10 @@ export function Explorador() {
             className="min-w-0 flex-1 px-4 pt-5.5 pb-7 min-[901px]:overflow-y-auto min-[901px]:px-5.5"
             aria-live="polite"
           >
+            {/* Celular: la zona y su cambio quedan a la vista al bajar por el informe */}
+            {sel && d && !vegetacion && (
+              <BarraZona key={sel} sel={sel} zona={d} variable={variable} idioma={idioma} />
+            )}
             {/* La información entra suave cuando termina la presentación del departamento */}
             <div
               className="entrada"

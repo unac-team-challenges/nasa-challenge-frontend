@@ -24,10 +24,7 @@ export function CausasConsecuencias({ zona: d, perfil }: { zona: Zona; perfil: P
   ]
 
   return (
-    <section
-      aria-labelledby="causas-h"
-      className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="causas-h" className="flex flex-col gap-3 bloque-ficha">
       <h3 id="causas-h" className="m-0 text-sm font-semibold">
         {t.causasH}
       </h3>

@@ -32,7 +32,7 @@ export function PistaContraste({ zona: d }: { zona: Zona }) {
   if (!td) return null
   const fmt = (v: number) => fmtValor(v, variable, idioma)
   return (
-    <div className="flex flex-col gap-2.5 rounded-m border border-line p-3.5">
+    <div className="flex flex-col gap-2.5 bloque-ficha">
       <h3 className="m-0 text-sm font-semibold">{t.clueH}</h3>
       <p className="m-0">
         {t.clue(

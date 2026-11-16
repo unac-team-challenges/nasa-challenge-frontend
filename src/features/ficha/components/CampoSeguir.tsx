@@ -20,10 +20,7 @@ export function CampoSeguir() {
   ]
 
   return (
-    <section
-      aria-labelledby="seguir-h"
-      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="seguir-h" className="flex flex-col gap-2.5 bloque-ficha">
       <h3 id="seguir-h" className="m-0 text-sm font-semibold">
         {t.seguirH}
       </h3>

@@ -182,6 +182,8 @@ const en: Textos = {
     posible_casualidad: 'Possibly chance',
     pocos_datos: 'Not enough data',
   },
+  /** Barra fija del informe en celular: sube al mapa */
+  verMapa: 'Map',
   perDecade: 'per decade',
   vsPromedio: 'vs. its average',
   ic95: '95% CI',

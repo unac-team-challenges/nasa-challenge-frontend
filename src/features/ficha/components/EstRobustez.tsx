@@ -30,10 +30,7 @@ export function EstRobustez() {
   const [cCaso, cPend, cQ, cEstado] = t.robCols
 
   return (
-    <section
-      aria-labelledby="rob-h"
-      className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="rob-h" className="flex flex-col gap-3 bloque-ficha">
       <h3 id="rob-h" className="m-0 text-sm font-semibold">
         {t.robH}
       </h3>

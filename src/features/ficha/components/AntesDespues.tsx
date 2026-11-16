@@ -53,10 +53,7 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
   const mayor = Math.max(v.areaAntes, v.areaDespues, 1)
 
   return (
-    <section
-      aria-labelledby="verde-h"
-      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="verde-h" className="flex flex-col gap-2.5 bloque-ficha">
       {riego ? (
         <>
           <div className="flex flex-col gap-0.5">

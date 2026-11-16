@@ -40,10 +40,7 @@ export function CampoOtraVariable() {
     calor.slope_per_decade > 0
 
   return (
-    <section
-      aria-labelledby="otra-h"
-      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="otra-h" className="flex flex-col gap-2.5 bloque-ficha">
       <h3 id="otra-h" data-leer className="m-0 text-sm font-semibold">
         {t.otraH[variable]}
       </h3>

@@ -55,10 +55,7 @@ export function DosFuentes({ power, imerg, idioma }: Props) {
   const { icono: Sello, color } = SELLO[veredicto]
 
   return (
-    <section
-      aria-labelledby="dos-fuentes-h"
-      className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="dos-fuentes-h" className="flex flex-col gap-3 bloque-ficha">
       <h3 id="dos-fuentes-h" className="m-0 text-sm font-semibold">
         {t.dosH}
       </h3>

@@ -45,4 +45,16 @@ for (const [nombre, viewport] of [
     await page.getByRole('button', { name: 'Ver la guía' }).click()
     await expect(guia).toContainText('1 de 10')
   })
+
+  test(`${nombre}: en la primera visita sale en la portada y sigue en el explorador`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/?lang=es&sinwebgl')
+    const guia = page.getByRole('dialog')
+    await expect(guia).toContainText('1 de 10')
+    await guia.getByRole('button', { name: 'Siguiente' }).click()
+    await expect(page).toHaveURL(/\/explorar/)
+    await expect(guia).toContainText('2 de 10')
+  })
 }

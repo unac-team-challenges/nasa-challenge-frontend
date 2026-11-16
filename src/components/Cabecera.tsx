@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useRef } from 'react'
-import { House, MapPin, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import type { Variable } from '@/data/datos'
 import { ORDEN_PERFILES, TEXTOS } from '@/i18n/textos'
 import { useRuta } from '@/hooks/ruta'
@@ -21,9 +21,9 @@ const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed
 const opcionPerfil = `${opcion} text-accent-text hover:bg-accent-soft hover:text-accent-text aria-pressed:bg-accent aria-pressed:text-accent-fg`
 
 /**
- * Barra superior: marca, variable, perfil, metodología, idioma y tema.
- * En celular (≤ 900 px) queda en 1 fila: marca, selector de variable y menú ☰ (perfil, idioma,
- * tema e inicio en una hoja desde abajo). Los controles de escritorio se ocultan.
+ * Barra superior: marca (lleva al inicio), variable, perfil, idioma y tema.
+ * En celular (≤ 900 px) queda en 1 fila: marca, selector de variable y menú ☰ (perfil, idioma
+ * y tema en una hoja desde abajo). Los controles de escritorio se ocultan.
  */
 export function Cabecera() {
   // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
@@ -31,8 +31,7 @@ export function Cabecera() {
   const alternarTema = useApp((s) => s.alternarTema)
   const enInicio = useRuta() === 'inicio'
   // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=es, #37)
-  const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
-    useBusqueda()
+  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
@@ -50,6 +49,7 @@ export function Cabecera() {
         search={aInicio}
         className="group mr-auto flex min-w-0 items-center gap-2.5 text-fg no-underline sm:gap-3 min-[901px]:mr-0"
         aria-label={t.inicio}
+        aria-current={enInicio ? 'page' : undefined}
       >
         {/* Logo del equipo sin fondo (scripts/logo.py); en oscuro, un contorno claro despega el aro azul */}
         <img
@@ -81,7 +81,7 @@ export function Cabecera() {
                 variant="toggle"
                 size="sm"
                 className={opcion}
-                aria-pressed={!vegetacion && variable === v}
+                aria-pressed={variable === v}
                 title={nombre}
                 onClick={() => setVariable(v)}
               >
@@ -90,18 +90,6 @@ export function Cabecera() {
               </Button>
             )
           })}
-          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos de cerca (Caso 2 y selva) */}
-          <Button
-            variant="toggle"
-            size="sm"
-            className={opcion}
-            aria-pressed={vegetacion}
-            title={t.vegetacionBtn}
-            onClick={() => setVegetacion()}
-          >
-            <MapPin className="size-4" aria-hidden="true" />
-            <span>{t.vegetacionBtn}</span>
-          </Button>
         </div>
         {/* Variables a la izquierda y perfiles a la derecha (ml-auto) */}
         <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">
@@ -126,21 +114,6 @@ export function Cabecera() {
       </div>
 
       <div className="flex flex-none items-center gap-2 max-[900px]:hidden">
-        <Button
-          asChild
-          variant="ghost"
-          data-activa={enInicio || undefined}
-          className="relative rounded-m px-3 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text"
-        >
-          <Link to="/" search={aInicio} aria-current={enInicio ? 'page' : undefined}>
-            <House className="size-4.5" aria-hidden="true" />
-            <span>{t.inicioCorto}</span>
-            {enInicio && (
-              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
-            )}
-          </Link>
-        </Button>
-        <span className="h-6 w-px bg-line" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (
             <Button

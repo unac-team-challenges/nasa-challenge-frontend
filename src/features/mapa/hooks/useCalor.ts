@@ -27,14 +27,14 @@ const LOCAL: Record<CapaCalor, () => Promise<{ default: unknown }>> = {
 
 /**
  * Malla por celda del mapa de color: temperatura (frío → calor), lluvia (seco → azul profundo) o,
- * en el modo Vegetación, el NDVI de MODIS (0,25°). De la API si la sesión la usa; si no, o si
+ * en Vegetación, el NDVI de MODIS (0,25°). De la API si la sesión la usa; si no, o si
  * falla, de la copia local. Se prepara una sola vez y la comparten el 3D, el 2D y la leyenda.
- * `capa` pide una malla fija (el 3D adelanta la de vegetación para que el modo entre sin espera).
+ * `capa` pide una malla fija (el 3D adelanta la de vegetación para que el bosque ya esté plantado).
  */
 export function useCalor(capa?: CapaCalor, activa = true): Calor | null {
-  const { variable, vegetacion } = useBusqueda()
+  const { variable } = useBusqueda()
   const fuente = useApp((s) => s.fuente)
-  const c = capa ?? (vegetacion ? 'vegetacion' : variable)
+  const c = capa ?? variable
   const { data } = useQuery({
     queryKey: ['celdas', c, fuente],
     queryFn: async () =>

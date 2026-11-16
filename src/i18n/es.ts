@@ -523,8 +523,6 @@ export const textos = {
   citarCopiado: 'Copiado',
   citarEnlace: 'Enlace a esta vista exacta',
   reproH: 'Reprodúcelo',
-  reproApi: 'La API devuelve estos mismos números:',
-  reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
   reproRepos: 'Código del cálculo (backend) y de esta página (frontend):',
   // Posibles causas y consecuencias (fuentes en features/ficha/data/causas.ts)
   causasH: 'Posibles causas y consecuencias',

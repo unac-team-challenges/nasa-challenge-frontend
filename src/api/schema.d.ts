@@ -411,6 +411,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Celdas con su valor anual */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -419,6 +420,7 @@ export interface operations {
                     "application/json": components["schemas"]["Malla"];
                 };
             };
+            /** @description Falta `variable`, no es válida o no tiene malla */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -438,6 +440,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Recuadros de selva con su serie de árboles */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -457,6 +460,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Variables con unidad, fuente y rango de años */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -476,6 +480,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Valles con su serie de NDVI y área verde */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -498,6 +503,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Las 25 zonas con su tendencia */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -506,6 +512,7 @@ export interface operations {
                     "application/json": components["schemas"]["Zona"][];
                 };
             };
+            /** @description Falta `variable` o no es válida */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -534,6 +541,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Serie anual y tendencia de la zona */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -542,6 +550,7 @@ export interface operations {
                     "application/json": components["schemas"]["ZonaDetalle"];
                 };
             };
+            /** @description Falta `variable` o no es válida */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -550,6 +559,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorRespuesta"];
                 };
             };
+            /** @description La zona no existe */
             404: {
                 headers: {
                     [name: string]: unknown;

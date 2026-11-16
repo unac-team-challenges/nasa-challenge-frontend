@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Zona } from '@/data/datos'
-import { cifraCampo, listaAnios, miles } from '@/features/ficha/utils/campo'
+import {
+  cambioEnPeriodo,
+  cifraCampo,
+  fraccion,
+  listaAnios,
+  metrosEquivalentes,
+  miles,
+  titularCampo,
+} from '@/features/ficha/utils/campo'
 
 const zona = (z: Partial<Zona>): Zona => ({
   id: '20',
@@ -56,5 +64,75 @@ describe('miles', () => {
     expect(miles(2310.4, 'en').replace(/\s/g, '')).toBe('2,310')
     expect(miles(2310.4, 'es')).toMatch(/^2\D?310$/)
     expect(miles(12, 'es')).toBe('12')
+    // Punto de miles, como la coma decimal del resto de la app; nunca «18,900»
+    expect(miles(18900, 'es')).toBe('18.900')
+  })
+})
+
+describe('fraccion', () => {
+  it('cambios chicos en palabras', () => {
+    expect(fraccion(-1)).toBe('igual')
+    expect(fraccion(3)).toBe('poquito')
+    expect(fraccion(-10)).toBe('poco')
+    expect(fraccion(-19)).toBe('quinto')
+    expect(fraccion(25)).toBe('cuarto')
+    expect(fraccion(-33)).toBe('tercio')
+    expect(fraccion(50)).toBe('mitad')
+  })
+  it('hacia abajo no pasa de «menos de la mitad»; hacia arriba llega al doble y al triple', () => {
+    expect(fraccion(-70)).toBe('masMitad')
+    expect(fraccion(81)).toBe('casiDoble')
+    expect(fraccion(100)).toBe('doble')
+    expect(fraccion(150)).toBe('masDoble')
+    expect(fraccion(200)).toBe('triple')
+    expect(fraccion(300)).toBe('masTriple')
+  })
+})
+
+describe('cambioEnPeriodo y metrosEquivalentes', () => {
+  it('la pendiente por década por las décadas del periodo', () => {
+    expect(cambioEnPeriodo(-8, 2001, 2024)).toBeCloseTo(-18.4)
+  })
+  it('grados en metros de altura, redondeado a decenas', () => {
+    expect(metrosEquivalentes(0.5)).toBe(80) // 76,9 m
+    expect(metrosEquivalentes(-1.1)).toBe(170)
+  })
+})
+
+describe('titularCampo', () => {
+  const rango = { year_start: 2001, year_end: 2024 }
+  it('lluvia con cambio claro: cuánto cambió en todo el periodo, en palabras', () => {
+    const r = titularCampo(zona({ pct_change_per_decade: -8.4 }), 'lluvia', rango, 'es')
+    expect(r.titular).toBe('Desde 2001, llueve como un quinto menos que antes')
+    expect(r.debajo).toBe('Son unos 8 % menos cada 10 años, de 2001 a 2024.')
+    expect(r.metros).toBeNull()
+  })
+  it('calor con cambio claro: grados del periodo y metros de altura', () => {
+    const r = titularCampo(zona({ slope_per_decade: 0.5 }), 'temperatura', rango, 'es')
+    expect(r.titular).toBe('Desde 2001, hace como 1,1 °C más de calor') // 0,5 × 2,3 décadas
+    expect(r.metros).toBe(180)
+  })
+  it('verdor: en palabras frente a su verdor promedio, sin metros', () => {
+    // NDVI promedio 0,5 (recta de Sen en 2012,5); +0,02 por década → +0,046 en el periodo ≈ 9 %
+    const d = zona({ slope_per_decade: 0.02, intercept: 0.5 - 0.002 * 2012.5 })
+    const r = titularCampo(d, 'vegetacion', rango, 'es')
+    expect(r.titular).toBe('Desde 2001, el campo está un poco más verde que antes')
+    expect(r.debajo).toBe('El verdor (NDVI) sube unos 0,020 cada 10 años, de 2001 a 2024.')
+    expect(r.metros).toBeNull()
+  })
+  it('verdor sin recta (intercept null): dice la dirección pero no cuánto', () => {
+    const d = zona({ slope_per_decade: 0.02, intercept: null })
+    expect(titularCampo(d, 'vegetacion', rango, 'es').titular).toBe(
+      'Desde 2001, el campo está más verde que antes',
+    )
+    expect(titularCampo(d, 'vegetacion', rango, 'en').titular).toBe(
+      'Since 2001, the land is greener than before',
+    )
+  })
+  it('sin cambio claro no afirma nada', () => {
+    const r = titularCampo(zona({ status: 'posible_casualidad' }), 'lluvia', rango, 'es')
+    expect(r.titular).toBe('No se ve un cambio claro en la lluvia')
+    expect(r.debajo).toBe('Comparando los años de 2001 a 2024')
+    expect(r.metros).toBeNull()
   })
 })

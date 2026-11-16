@@ -6,8 +6,37 @@ export type Idioma = 'es' | 'en'
 export type Perfil = 'agricultor' | 'estudiante'
 
 type PorVariable<T> = Record<Variable, T>
-/** Si hay más, menos o igual de años malos ahora que antes (ver compararMalos). */
-type Veredicto = 'mas' | 'menos' | 'igual'
+/** Respuesta a «¿hay más años malos?» (ver respuestaMalos en features/ficha/utils/serie.ts). */
+type RespuestaMalos = 'si' | 'no' | 'masSinSeguro' | 'menosSinSeguro' | 'igual'
+/** Cada cuánto viene un año malo (ver frecuencia). */
+type Frecuencia =
+  | { tipo: 'ninguno' }
+  | { tipo: 'casiTodos' }
+  | { tipo: 'dosDeTres' }
+  | { tipo: 'unoSiUnoNo' }
+  | { tipo: 'cada'; cada: number }
+  | { tipo: 'cadaEntre'; de: number; a: number }
+/** Un cambio en %, en palabras de chacra (ver fraccion en features/ficha/utils/campo.ts). */
+type Fraccion =
+  | 'igual'
+  | 'poquito'
+  | 'poco'
+  | 'quinto'
+  | 'cuarto'
+  | 'tercio'
+  | 'mitad'
+  | 'masMitad'
+  | 'casiDoble'
+  | 'doble'
+  | 'masDoble'
+  | 'triple'
+  | 'masTriple'
+/** Cómo fue un año frente a la mitad central de los años (ver comoFue). */
+type ComoFue = 'bajo' | 'normal' | 'alto'
+/** Cuánto cambió el verdor frente a su promedio (ver nivelVerdor). */
+type NivelVerdor = 'apenas' | 'poco' | 'bastante'
+/** Cuánta lluvia faltó (ver cuantoFalto). */
+type Falta = 'cuarto' | 'tercio' | 'mitad' | 'masMitad'
 
 const es = {
   marca: 'Detective del Perú',
@@ -182,22 +211,66 @@ const es = {
   // Ficha: el mismo dato, contado para el agricultor o para el estudiante
   /** Confianza en palabras de campo: [título, explicación] */
   confCampo: {
-    real: ['Cambio claro', 'Es poco probable que sea solo suerte.'],
-    posible_casualidad: [
-      'Puede ser casualidad',
-      'Hay años buenos y años malos, pero todavía no se ve un cambio claro.',
+    real: [
+      'Esto ya viene pasando',
+      'No es cosa de un año suelto: se viene repitiendo año tras año.',
     ],
-    pocos_datos: ['Faltan datos', 'No hay datos suficientes aquí para decir algo.'],
+    posible_casualidad: [
+      'Por ahora, sube y baja nomás',
+      'Hay años buenos y años malos, pero no se ve que vaya para un lado. Un año malo no hace costumbre.',
+    ],
+    pocos_datos: [
+      'Aquí no lo podemos medir',
+      'No hay datos suficientes en esta zona para decir algo.',
+    ],
   } as Record<Estado, [string, string]>,
-  /** valor sin signo: "8 %" o "0,20 °C" */
+  /**
+   * Un cambio en palabras, frente a algo («que antes», «de lo esperado»): «un poco más»,
+   * «como un cuarto menos», «casi el doble».
+   */
+  cuanto: (f: Fraccion, sube: boolean, frente: 'antes' | 'esperado' | null) =>
+    `${
+      sube
+        ? {
+            igual: 'casi igual',
+            poquito: 'un poquito más',
+            poco: 'un poco más',
+            quinto: 'como un quinto más',
+            cuarto: 'como un cuarto más',
+            tercio: 'como un tercio más',
+            mitad: 'como la mitad más',
+            masMitad: 'como la mitad más',
+            casiDoble: 'casi el doble',
+            doble: 'como el doble',
+            masDoble: 'más del doble',
+            triple: 'como el triple',
+            masTriple: 'más del triple',
+          }[f]
+        : {
+            igual: 'casi igual',
+            poquito: 'un poquito menos',
+            poco: 'un poco menos',
+            quinto: 'como un quinto menos',
+            cuarto: 'como un cuarto menos',
+            tercio: 'como un tercio menos',
+            mitad: 'casi la mitad menos',
+            masMitad: 'menos de la mitad',
+            casiDoble: 'menos de la mitad',
+            doble: 'menos de la mitad',
+            masDoble: 'menos de la mitad',
+            triple: 'menos de la mitad',
+            masTriple: 'menos de la mitad',
+          }[f]
+    }${frente === 'antes' ? ' que antes' : frente === 'esperado' ? (f === 'igual' ? ' que lo esperado' : ' de lo esperado') : ''}`,
+  /** Titular del cambio claro. lluvia: cuanto ya armado; temperatura: grados sin signo ("0,5 °C") */
   campoFrase: {
-    lluvia: (valor: string, sube: boolean) =>
-      `Cada 10 años llueve un ${valor} ${sube ? 'más' : 'menos'}`,
-    temperatura: (valor: string, sube: boolean) =>
-      `Cada 10 años hace ${valor} ${sube ? 'más de calor' : 'más de frío'}`,
-    vegetacion: (valor: string, sube: boolean) =>
-      `Cada 10 años el verdor ${sube ? 'sube' : 'baja'} ${valor}`,
-  } as PorVariable<(valor: string, sube: boolean) => string>,
+    lluvia: (desde: number, cuanto: string) => `Desde ${desde}, llueve ${cuanto}`,
+    temperatura: (desde: number, grados: string, sube: boolean) =>
+      `Desde ${desde}, hace como ${grados} más de ${sube ? 'calor' : 'frío'}`,
+    /** nivel: cuánto cambió frente a su verdor promedio (ver nivelVerdor); null = sin decir cuánto */
+    vegetacion: (desde: number, nivel: NivelVerdor | null, sube: boolean) =>
+      `Desde ${desde}, el campo está ${nivel ? `${{ apenas: 'apenas', poco: 'un poco', bastante: 'bastante' }[nivel]} ` : ''}${sube ? 'más' : 'menos'} verde que antes`,
+  },
   /** Titular cuando el cambio no es claro: no se afirma ni dirección ni cifra */
   campoSinCambio: {
     lluvia: 'No se ve un cambio claro en la lluvia',
@@ -205,6 +278,36 @@ const es = {
     vegetacion: 'No se ve un cambio claro en el verdor',
   } as PorVariable<string>,
   campoPeriodo: (a: number, b: number) => `Comparando los años de ${a} a ${b}`,
+  /** cifra sin signo: "8 %" o "0,20 °C" */
+  /** El verdor: cifra del NDVI sin signo ("0,016") */
+  campoRitmoVerde: (cifra: string, sube: boolean, a: number, b: number) =>
+    `El verdor (NDVI) ${sube ? 'sube' : 'baja'} unos ${cifra} cada 10 años, de ${a} a ${b}.`,
+  campoRitmo: (cifra: string, sube: boolean, a: number, b: number) =>
+    `Son unos ${cifra} ${sube ? 'más' : 'menos'} cada 10 años, de ${a} a ${b}.`,
+  /** El calor en metros de altura (ver metrosEquivalentes) */
+  campoAltura: (metros: string, sube: boolean) =>
+    `Es como tener la chacra unos ${metros} más ${sube ? 'abajo' : 'arriba'} en el cerro.`,
+  campoAlturaNota: 'Cuenta aproximada: subiendo 1000 metros, el aire se enfría unos 6,5 °C.',
+  /** «¿Y el calor?»: la otra variable, según la que se está viendo */
+  otraH: {
+    lluvia: '¿Y el calor?',
+    temperatura: '¿Y la lluvia?',
+    vegetacion: '¿Y la lluvia y el calor?',
+  } as PorVariable<string>,
+  /** Botón para pasar a esa variable (la clave es la variable de destino) */
+  otraVer: {
+    lluvia: 'Ver la lluvia',
+    temperatura: 'Ver el calor',
+    vegetacion: 'Ver el verdor',
+  } as PorVariable<string>,
+  /** Solo si los dos cambios son claros: menos lluvia y más calor */
+  // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
+  otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
+  /** Botón para oír la ficha del agricultor */
+  escuchar: 'Escuchar',
+  escucharParar: 'Parar',
+  escucharAria: 'Escuchar este informe en voz alta',
+  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
@@ -261,47 +364,96 @@ const es = {
   cmpUmbral: 'Área verde: píxeles con NDVI anual mayor que 0,3. Tendencia del NDVI con TFPW y Sen.',
   // Ficha del agricultor: años malos, El Niño, año normal, compartir y dónde seguir
   malosH: {
-    lluvia: '¿Los años secos vienen más seguido?',
-    temperatura: '¿Los años calurosos vienen más seguido?',
-    vegetacion: '¿Los años de poco verdor vienen más seguido?',
+    lluvia: '¿Ahora hay más años de seca?',
+    temperatura: '¿Ahora hay más años de calor fuerte?',
+    vegetacion: '¿Ahora hay más años de verdor flojo?',
   } as PorVariable<string>,
-  malosResumen: {
-    lluvia: (v: Veredicto, antes: number, ahora: number) =>
-      v === 'mas'
-        ? `Ahora hay más años secos que antes (${ahora} frente a ${antes}).`
-        : v === 'menos'
-          ? `Ahora hay menos años secos que antes (${ahora} frente a ${antes}).`
-          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-    temperatura: (v: Veredicto, antes: number, ahora: number) =>
-      v === 'mas'
-        ? `Ahora hay más años calurosos que antes (${ahora} frente a ${antes}).`
-        : v === 'menos'
-          ? `Ahora hay menos años calurosos que antes (${ahora} frente a ${antes}).`
-          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-    vegetacion: (v: Veredicto, antes: number, ahora: number) =>
-      v === 'mas'
-        ? `Ahora hay más años de poco verdor que antes (${ahora} frente a ${antes}).`
-        : v === 'menos'
-          ? `Ahora hay menos años de poco verdor que antes (${ahora} frente a ${antes}).`
-          : `Más o menos igual que antes (${ahora} frente a ${antes}).`,
-  } as PorVariable<(v: Veredicto, antes: number, ahora: number) => string>,
+  /** El titular: solo dice «sí» o «no» si la tendencia es un cambio claro y va hacia ese lado */
+  malosRespuesta: {
+    lluvia: {
+      si: 'Sí, la seca está viniendo más seguido que antes.',
+      no: 'No, al revés: ahora la seca viene menos seguido que antes.',
+      masSinSeguro:
+        'Han caído más años secos que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años secos que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: la seca no viene ni más ni menos seguido.',
+    },
+    temperatura: {
+      si: 'Sí, los años de calor fuerte vienen más seguido que antes.',
+      no: 'No, al revés: ahora los años de calor fuerte vienen menos seguido.',
+      masSinSeguro:
+        'Han caído más años de calor fuerte que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años de calor fuerte que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: el calor fuerte no viene ni más ni menos seguido.',
+    },
+    vegetacion: {
+      si: 'Sí, los años de verdor flojo vienen más seguido que antes.',
+      no: 'No, al revés: ahora los años de verdor flojo vienen menos seguido.',
+      masSinSeguro:
+        'Han caído más años de verdor flojo que antes, pero todavía no se puede decir que ya sea costumbre.',
+      menosSinSeguro:
+        'Han caído menos años de verdor flojo que antes, pero todavía no se puede decir que vaya a seguir así.',
+      igual: 'Más o menos como siempre: el verdor flojo no viene ni más ni menos seguido.',
+    },
+  } as PorVariable<Record<RespuestaMalos, string>>,
+  malosFrec: (f: Frecuencia) =>
+    f.tipo === 'ninguno'
+      ? 'Ni uno'
+      : f.tipo === 'casiTodos'
+        ? 'Casi todos los años'
+        : f.tipo === 'dosDeTres'
+          ? '2 de cada 3 años'
+          : f.tipo === 'unoSiUnoNo'
+            ? 'Un año sí y otro no'
+            : f.tipo === 'cada'
+              ? `Uno cada ${f.cada} años`
+              : `Uno cada ${f.de} o ${f.a} años`,
+  malosCuenta: (malos: number, n: number) => `${malos} de ${n} años`,
+  malosRecuerdaLluvia: (anio: number, falta: Falta) =>
+    `¿Te acuerdas de ${anio}? Ese año faltó ${
+      {
+        cuarto: 'como un cuarto',
+        tercio: 'como un tercio',
+        mitad: 'como la mitad',
+        masMitad: 'más de la mitad',
+      }[falta]
+    } de la lluvia de siempre.`,
+  /** grados sin signo: "0,6 °C" */
+  malosRecuerdaCalor: (anio: number, grados: string) =>
+    `¿Te acuerdas de ${anio}? Ese año hizo ${grados} más de calor que lo de siempre.`,
+  malosRecuerdaVerde: (anio: number) =>
+    `¿Te acuerdas de ${anio}? Ese año el campo estuvo menos verde que de costumbre.`,
   malosDef: {
-    lluvia: 'Año seco: llovió 20 % o más por debajo de lo normal de los primeros años del periodo.',
-    temperatura:
-      'Año caluroso: 0,3 °C o más por encima de lo normal de los primeros años del periodo.',
+    lluvia: 'Año de seca: faltó una quinta parte de la lluvia de siempre, o más.',
+    temperatura: 'Año de calor fuerte: 0,3 °C o más por encima de lo de siempre.',
     vegetacion:
-      'Año de poco verdor: NDVI por debajo de lo normal de los primeros años del periodo en 0,01 o en lo que suele variar este departamento, lo que sea mayor.',
+      'Año de verdor flojo: el campo estuvo menos verde que de costumbre, más de lo que suele variar aquí.',
   } as PorVariable<string>,
   malosPunto: {
-    lluvia: 'Año seco',
-    temperatura: 'Año caluroso',
-    vegetacion: 'Año de poco verdor',
+    lluvia: 'Año de seca',
+    temperatura: 'Año de calor fuerte',
+    vegetacion: 'Año de verdor flojo',
   } as PorVariable<string>,
-  malosOtro: 'Otro año',
+  malosOtro: {
+    lluvia: 'Año normal o lluvioso',
+    temperatura: 'Año normal o más fresco',
+    vegetacion: 'Año normal o más verde',
+  } as PorVariable<string>,
   malosAntes: 'Antes',
   malosAhora: 'Ahora',
-  malosDe: (n: number) => `de ${n} años`,
+  malosBase: (a: number, b: number) =>
+    `«Lo de siempre» es un año típico de ${a} a ${b}, sin contar los años de El Niño.`,
   malosLeer: 'Cada casilla es un año: «05» es 2005.',
+  /** La tendencia es clara hacia lo malo, pero los años malos no aumentaron (p. ej. Loreto) */
+  malosAclara: {
+    lluvia: 'Ojo: en promedio llueve menos, pero eso todavía no ha traído más años de seca.',
+    temperatura:
+      'Ojo: en promedio hace más calor, pero eso todavía no ha traído más años de calor fuerte.',
+    vegetacion:
+      'Ojo: en promedio el campo está menos verde, pero eso todavía no ha traído más años de verdor flojo.',
+  } as PorVariable<string>,
   dosVeredicto: {
     coinciden: 'Sí coinciden',
     coincidenDebil: 'Apuntan a lo mismo',
@@ -310,15 +462,16 @@ const es = {
     pocos: 'No se pueden comparar',
   },
   ninoAquiH: '¿Qué trae El Niño aquí?',
-  /** valor sin signo: "81 %" o "0,5 °C" */
-  ninoAqui: {
-    lluvia: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), en ${zona} llovió en promedio ${valor} ${sube ? 'más' : 'menos'} que lo esperado en esos años.`,
-    temperatura: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), ${zona} estuvo en promedio ${valor} ${sube ? 'más caluroso' : 'más frío'} que lo esperado en esos años.`,
-    vegetacion: (zona: string, anios: string, valor: string, sube: boolean) =>
-      `En los años de El Niño (${anios}), ${zona} tuvo en promedio ${valor} ${sube ? 'más' : 'menos'} verdor que lo esperado en esos años.`,
-  } as PorVariable<(zona: string, anios: string, valor: string, sube: boolean) => string>,
+  /** La cifra grande de El Niño en palabras: «Casi el doble de lluvia» (cuanto sin nada enfrente) */
+  ninoGrande: (cuanto: string) => `${cuanto[0].toUpperCase()}${cuanto.slice(1)} de lluvia`,
+  /** Cifra grande cuando El Niño casi no cambia la lluvia aquí */
+  ninoIgual: 'Lo de siempre',
+  /** cuanto: «casi el doble de lo esperado»; cifra con signo: "+81 %" */
+  ninoAquiLluvia: (zona: string, anios: string, cuanto: string, cifra: string) =>
+    `En los años de El Niño (${anios}), en ${zona} llovió ${cuanto} (${cifra}).`,
+  /** grados sin signo: "0,5 °C" */
+  ninoAquiCalor: (zona: string, anios: string, grados: string, sube: boolean) =>
+    `En los años de El Niño (${anios}), en ${zona} hizo como ${grados} más de ${sube ? 'calor' : 'frío'} de lo esperado.`,
   ninoSinAnios: 'Con los años de El Niño quitados, aquí no se puede ver lo que trae.',
   ninoEnfen: 'Ver el estado de alerta de El Niño (ENFEN)',
   normalH: 'Un año normal aquí',
@@ -328,6 +481,16 @@ const es = {
     `${c} de temperatura promedio en el año. La mitad de los años, entre ${bajo} y ${alto}.`,
   normalAgua: (m3: string) => `Esa lluvia son unos ${m3} m³ de agua por hectárea.`,
   normalNota: 'Es el promedio de una zona amplia, no de tu chacra: tu campo puede ser distinto.',
+  /** El último año frente a la mitad central de los años (valor con unidad) */
+  normalUltimo: {
+    lluvia: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Llovió ${valor}: ${como === 'bajo' ? 'menos de lo normal aquí' : como === 'alto' ? 'más de lo normal aquí' : 'dentro de lo normal'}.`,
+    temperatura: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Hizo ${valor} de promedio: ${como === 'bajo' ? 'más fresco que lo normal' : como === 'alto' ? 'más caluroso que lo normal' : 'dentro de lo normal'}.`,
+    // La tarjeta no sale para la vegetación (ver CampoAnioNormal); el texto queda por completitud
+    vegetacion: (anio: number, valor: string, como: ComoFue) =>
+      `¿Y ${anio}? Verdor (NDVI) de ${valor}: ${como === 'bajo' ? 'menos verde que lo normal' : como === 'alto' ? 'más verde que lo normal' : 'dentro de lo normal'}.`,
+  } as PorVariable<(anio: number, valor: string, como: ComoFue) => string>,
   seguirH: 'Dónde seguir',
   seguirSenamhi: 'Pronósticos y avisos del tiempo (SENAMHI)',
   seguirEnfen: 'Comunicados oficiales sobre El Niño (ENFEN)',
@@ -393,8 +556,13 @@ const es = {
     'No encontramos estudios que expliquen este caso con seguridad, así que no lo afirmamos.',
   verdeH: 'No todo cambio es el clima',
   verdeSub: 'La costa que reverdece',
-  verdeCampo: (valle: string, a: number, b: number) =>
-    `En ${valle} hay ${b - a} km² más de campo verde que en 2001. Se explica sobre todo por el riego, no por la lluvia.`,
+  /** Agricultor: el campo verde en hectáreas (miles ya formateados) y cuánto cambió en palabras */
+  verdeHa: (valle: string, haAntes: string, haDespues: string, cuanto: string) =>
+    `En ${valle}, el campo verde pasó de unas ${haAntes} a unas ${haDespues} hectáreas: ${cuanto}.`,
+  verdeRiego: 'Es sobre todo por el riego, no por la lluvia.',
+  verdeBarras: 'Campo verde en el recuadro',
+  /** hectáreas ya formateadas: "18.900" */
+  verdeBarraHa: (ha: string) => `${ha} ha`,
   /** Recuadros sin causa documentada (Olmos): solo las cifras, sin atribuir el cambio */
   verdeNeutro: (valle: string, a: number, b: number, pct: number) =>
     `En ${valle}, el área con vegetación pasó de ${a} km² en 2001 a ${b} km² en 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
@@ -685,17 +853,64 @@ const en: Textos = {
     `Meanwhile, in ${nombre} ${verbo} by ${valor} per decade (${estado}).`,
   clueBtn: (nombre) => `Go to ${nombre}`,
   confCampo: {
-    real: ['Clear change', 'It is unlikely to be just luck.'],
-    posible_casualidad: [
-      'May be chance',
-      'There are good years and bad years, but no clear change yet.',
+    real: [
+      'This is already happening',
+      'It’s not a one-off year: it keeps repeating year after year.',
     ],
-    pocos_datos: ['Not enough data', 'There is not enough data here to say anything.'],
+    posible_casualidad: [
+      'For now, it just goes up and down',
+      'There are good years and bad years, but it isn’t heading one way. One bad year doesn’t make a pattern.',
+    ],
+    pocos_datos: [
+      'We can’t measure it here',
+      'There isn’t enough data in this area to say anything.',
+    ],
+  },
+  cuanto: (f, sube, frente) => {
+    const [palabra, como] = sube
+      ? (
+          {
+            igual: ['about the same', true],
+            poquito: ['a tiny bit more', false],
+            poco: ['a bit more', false],
+            quinto: ['about a fifth more', false],
+            cuarto: ['about a quarter more', false],
+            tercio: ['about a third more', false],
+            mitad: ['about 50 % more', false],
+            masMitad: ['about 50 % more', false],
+            casiDoble: ['almost twice as much', true],
+            doble: ['about twice as much', true],
+            masDoble: ['more than twice as much', true],
+            triple: ['about three times as much', true],
+            masTriple: ['more than three times as much', true],
+          } as const
+        )[f]
+      : (
+          {
+            igual: ['about the same', true],
+            poquito: ['a tiny bit less', false],
+            poco: ['a bit less', false],
+            quinto: ['about a fifth less', false],
+            cuarto: ['about a quarter less', false],
+            tercio: ['about a third less', false],
+            mitad: ['almost half as much', true],
+            masMitad: ['less than half as much', true],
+            casiDoble: ['less than half as much', true],
+            doble: ['less than half as much', true],
+            masDoble: ['less than half as much', true],
+            triple: ['less than half as much', true],
+            masTriple: ['less than half as much', true],
+          } as const
+        )[f]
+    if (!frente) return palabra
+    return `${palabra} ${como ? 'as' : 'than'} ${frente === 'antes' ? 'before' : 'expected'}`
   },
   campoFrase: {
-    lluvia: (valor, sube) => `Every 10 years it rains ${valor} ${sube ? 'more' : 'less'}`,
-    temperatura: (valor, sube) => `Every 10 years it gets ${valor} ${sube ? 'warmer' : 'cooler'}`,
-    vegetacion: (valor, sube) => `Every 10 years greenness ${sube ? 'rises' : 'falls'} ${valor}`,
+    lluvia: (desde, cuanto) => `Since ${desde}, it rains ${cuanto}`,
+    temperatura: (desde, grados, sube) =>
+      `Since ${desde}, it’s about ${grados} ${sube ? 'warmer' : 'cooler'}`,
+    vegetacion: (desde, nivel, sube) =>
+      `Since ${desde}, the land is ${nivel ? `${{ apenas: 'slightly', poco: 'a bit', bastante: 'much' }[nivel]} ` : ''}${sube ? 'greener' : 'less green'} than before`,
   },
   campoSinCambio: {
     lluvia: 'No clear change in rainfall',
@@ -703,6 +918,24 @@ const en: Textos = {
     vegetacion: 'No clear change in greenness',
   },
   campoPeriodo: (a, b) => `Comparing the years ${a} to ${b}`,
+  campoRitmoVerde: (cifra, sube, a, b) =>
+    `Greenness (NDVI) ${sube ? 'rises' : 'falls'} by about ${cifra} every 10 years, from ${a} to ${b}.`,
+  campoRitmo: (cifra, sube, a, b) =>
+    `That’s about ${cifra} ${sube ? 'more' : 'less'} every 10 years, from ${a} to ${b}.`,
+  campoAltura: (metros, sube) =>
+    `It’s like having your field about ${metros} ${sube ? 'lower' : 'higher'} up the mountain.`,
+  campoAlturaNota: 'Rough rule: going up 1000 metres, the air cools by about 6.5 °C.',
+  otraH: {
+    lluvia: 'And the heat?',
+    temperatura: 'And the rain?',
+    vegetacion: 'And the rain and heat?',
+  },
+  otraVer: { lluvia: 'See the rain', temperatura: 'See the heat', vegetacion: 'See greenness' },
+  otraCruce: 'Less rain and more heat at the same time in this area.',
+  escuchar: 'Listen',
+  escucharParar: 'Stop',
+  escucharAria: 'Listen to this report aloud',
+  escucharPararAria: 'Stop reading aloud',
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
@@ -749,42 +982,86 @@ const en: Textos = {
   dosTip: (v, a, b) => `${v} per decade (between ${a} and ${b})`,
   cmpUmbral: 'Green area: pixels with annual NDVI above 0.3. NDVI trend with TFPW and Sen.',
   malosH: {
-    lluvia: 'Are dry years coming more often?',
-    temperatura: 'Are hot years coming more often?',
-    vegetacion: 'Are low-greenness years coming more often?',
+    lluvia: 'Are there more drought years now?',
+    temperatura: 'Are there more scorching years now?',
+    vegetacion: 'Are there more weak-green years now?',
   },
-  malosResumen: {
-    lluvia: (v, antes, ahora) =>
-      v === 'mas'
-        ? `There are more dry years now than before (${ahora} vs ${antes}).`
-        : v === 'menos'
-          ? `There are fewer dry years now than before (${ahora} vs ${antes}).`
-          : `About the same as before (${ahora} vs ${antes}).`,
-    temperatura: (v, antes, ahora) =>
-      v === 'mas'
-        ? `There are more hot years now than before (${ahora} vs ${antes}).`
-        : v === 'menos'
-          ? `There are fewer hot years now than before (${ahora} vs ${antes}).`
-          : `About the same as before (${ahora} vs ${antes}).`,
-    vegetacion: (v, antes, ahora) =>
-      v === 'mas'
-        ? `There are more low-greenness years now than before (${ahora} vs ${antes}).`
-        : v === 'menos'
-          ? `There are fewer low-greenness years now than before (${ahora} vs ${antes}).`
-          : `About the same as before (${ahora} vs ${antes}).`,
+  malosRespuesta: {
+    lluvia: {
+      si: 'Yes, drought is coming more often than before.',
+      no: 'No, the other way round: drought is coming less often than before.',
+      masSinSeguro:
+        'There have been more dry years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer dry years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: drought isn’t coming more or less often.',
+    },
+    temperatura: {
+      si: 'Yes, scorching years are coming more often than before.',
+      no: 'No, the other way round: scorching years are coming less often.',
+      masSinSeguro:
+        'There have been more scorching years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer scorching years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: scorching years aren’t coming more or less often.',
+    },
+    vegetacion: {
+      si: 'Yes, weak-green years are coming more often than before.',
+      no: 'No, the other way round: weak-green years are coming less often.',
+      masSinSeguro:
+        'There have been more weak-green years than before, but we can’t say yet that it’s the new normal.',
+      menosSinSeguro:
+        'There have been fewer weak-green years than before, but we can’t say yet that it will stay that way.',
+      igual: 'Pretty much as always: weak-green years aren’t coming more or less often.',
+    },
   },
+  malosFrec: (f) =>
+    f.tipo === 'ninguno'
+      ? 'Not one'
+      : f.tipo === 'casiTodos'
+        ? 'Almost every year'
+        : f.tipo === 'dosDeTres'
+          ? '2 out of 3 years'
+          : f.tipo === 'unoSiUnoNo'
+            ? 'Every other year'
+            : f.tipo === 'cada'
+              ? `One every ${f.cada} years`
+              : `One every ${f.de} or ${f.a} years`,
+  malosCuenta: (malos, n) => `${malos} of ${n} years`,
+  malosRecuerdaLluvia: (anio, falta) =>
+    `Remember ${anio}? That year about ${
+      { cuarto: 'a quarter', tercio: 'a third', mitad: 'half', masMitad: 'more than half' }[falta]
+    } of the usual rain was missing.`,
+  malosRecuerdaCalor: (anio, grados) =>
+    `Remember ${anio}? That year was ${grados} hotter than usual.`,
+  malosRecuerdaVerde: (anio) => `Remember ${anio}? That year the land was less green than usual.`,
   malosDef: {
-    lluvia: 'Dry year: 20 % or more below the normal rainfall of the first years of the period.',
-    temperatura: 'Hot year: 0.3 °C or more above the normal of the first years of the period.',
+    lluvia: 'Drought year: a fifth or more of the usual rain was missing.',
+    temperatura: 'Scorching year: 0.3 °C or more above usual.',
     vegetacion:
-      'Low-greenness year: NDVI below the normal of the first years of the period by 0.01 or by how much this department usually varies, whichever is larger.',
+      'Weak-green year: the land was less green than usual, more than it usually varies here.',
   },
-  malosPunto: { lluvia: 'Dry year', temperatura: 'Hot year', vegetacion: 'Low-greenness year' },
-  malosOtro: 'Other year',
+  malosPunto: {
+    lluvia: 'Drought year',
+    temperatura: 'Scorching year',
+    vegetacion: 'Weak-green year',
+  },
+  malosOtro: {
+    lluvia: 'Normal or rainy year',
+    temperatura: 'Normal or cooler year',
+    vegetacion: 'Normal or greener year',
+  },
   malosAntes: 'Before',
   malosAhora: 'Now',
-  malosDe: (n) => `of ${n} years`,
+  malosBase: (a, b) =>
+    `“Usual” is a typical year from ${a} to ${b}, leaving out the El Niño years.`,
   malosLeer: 'Each box is a year: “05” is 2005.',
+  malosAclara: {
+    lluvia: 'Note: on average it rains less, but that hasn’t brought more drought years yet.',
+    temperatura: 'Note: on average it’s warmer, but that hasn’t brought more scorching years yet.',
+    vegetacion:
+      'Note: on average the land is less green, but that hasn’t brought more weak-green years yet.',
+  },
   dosVeredicto: {
     coinciden: 'They agree',
     coincidenDebil: 'They point the same way',
@@ -793,14 +1070,12 @@ const en: Textos = {
     pocos: 'Cannot compare',
   },
   ninoAquiH: 'What does El Niño bring here?',
-  ninoAqui: {
-    lluvia: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} rain than expected for those years.`,
-    temperatura: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} was on average ${valor} ${sube ? 'hotter' : 'cooler'} than expected for those years.`,
-    vegetacion: (zona, anios, valor, sube) =>
-      `In El Niño years (${anios}), ${zona} had on average ${valor} ${sube ? 'more' : 'less'} greenness than expected for those years.`,
-  },
+  ninoGrande: (cuanto) => `${cuanto[0].toUpperCase()}${cuanto.slice(1)} rain`,
+  ninoIgual: 'Same as usual',
+  ninoAquiLluvia: (zona, anios, cuanto, cifra) =>
+    `In El Niño years (${anios}), rain in ${zona} was ${cuanto} (${cifra}).`,
+  ninoAquiCalor: (zona, anios, grados, sube) =>
+    `In El Niño years (${anios}), ${zona} was about ${grados} ${sube ? 'hotter' : 'cooler'} than expected.`,
   ninoSinAnios: 'With the El Niño years removed, we cannot show what it brings here.',
   ninoEnfen: 'See the El Niño alert status (ENFEN)',
   normalH: 'A normal year here',
@@ -810,6 +1085,14 @@ const en: Textos = {
     `${c} average temperature over the year. Half of the years, between ${bajo} and ${alto}.`,
   normalAgua: (m3) => `That rain is about ${m3} m³ of water per hectare.`,
   normalNota: 'It is the average of a wide area, not of your field: your farm may differ.',
+  normalUltimo: {
+    lluvia: (anio, valor, como) =>
+      `And ${anio}? It rained ${valor}: ${como === 'bajo' ? 'less than normal here' : como === 'alto' ? 'more than normal here' : 'within normal'}.`,
+    temperatura: (anio, valor, como) =>
+      `And ${anio}? It averaged ${valor}: ${como === 'bajo' ? 'cooler than normal' : como === 'alto' ? 'hotter than normal' : 'within normal'}.`,
+    vegetacion: (anio, valor, como) =>
+      `And ${anio}? Greenness (NDVI) of ${valor}: ${como === 'bajo' ? 'less green than normal' : como === 'alto' ? 'greener than normal' : 'within normal'}.`,
+  },
   seguirH: 'Where to follow up',
   seguirSenamhi: 'Weather forecasts and warnings (SENAMHI)',
   seguirEnfen: 'Official El Niño communiqués (ENFEN)',
@@ -872,8 +1155,11 @@ const en: Textos = {
   causasNada: 'We found no studies that reliably explain this case, so we do not claim one.',
   verdeH: 'Not every change is the climate',
   verdeSub: 'The coast that turns green',
-  verdeCampo: (valle, a, b) =>
-    `${valle} has ${b - a} km² more green farmland than in 2001. It is explained mostly by irrigation, not by the rain.`,
+  verdeHa: (valle, haAntes, haDespues, cuanto) =>
+    `In ${valle}, green fields went from about ${haAntes} to about ${haDespues} hectares: ${cuanto}.`,
+  verdeRiego: 'It’s mostly irrigation, not rain.',
+  verdeBarras: 'Green fields in the box',
+  verdeBarraHa: (ha) => `${ha} ha`,
   verdeNeutro: (valle, a, b, pct) =>
     `In ${valle}, the vegetated area grew from ${a} km² in 2001 to ${b} km² in 2024 (${pct >= 0 ? '+' : '−'}${Math.abs(pct)} %).`,
   verdeEst: (valle, a, b, pct) =>

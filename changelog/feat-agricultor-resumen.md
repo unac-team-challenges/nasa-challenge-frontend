@@ -21,6 +21,14 @@ PR: base `developer`. La ficha del **agricultor** pasa de palabras de estadísti
 - `miles()` usa `es` y no `es-PE` («2,263 mm» se leía como dos coma algo).
 - `useZonasDe(variable)` en `hooks/useZonas.ts`.
 
+## Corregido tras la revisión
+- `frecuencia`: «casi todos los años» se mide sobre la parte de años malos (desde 3 de cada 4). Con el cociente, 3 de 4, 4 de 5 o 9 de 12 salían como «2 de cada 3», menos de lo que fue. El resto de las franjas no cambia.
+- `nivelVerdor`: sin `intercept` (sin recta) devuelve `null` y el titular dice «el campo está más verde que antes» sin «apenas / un poco / bastante». Antes salía siempre «apenas», sin base.
+- `CampoAniosMalos`: si la zona no está en `zonas`, no se dibuja. Antes leía `.status` de `undefined` y rompía toda la ficha.
+- `Escuchar`: la frase que se lee queda en un `useRef`. Chrome podía recolectarla a mitad de lectura (y el botón quedaba en «Parar»), y el `onerror` que dispara `cancel()` en la frase vieja apagaba a la nueva.
+- `otraCruce`: «Menos lluvia y más calor a la vez en esta zona.» Antes decía «la tierra se seca más rápido», un efecto que nuestros datos no miden.
+- Tests nuevos: `frecuencia` cerca de la frontera, titular del verdor sin recta (es y en), y `Escuchar.test.tsx` (lectura y aviso de una frase cancelada).
+
 ## Notas
-- `tsc`, `eslint`, `pnpm test` (168) y `pnpm build` pasan. Comprobado en pantalla contra la API (es y en) en Huánuco, Arequipa, Loreto, Ucayali, Apurímac, La Libertad y Piura.
+- `tsc`, `eslint`, `pnpm test` (183) y `pnpm build` pasan, con `developer` integrado (#81, #84, #85, #87). Comprobado en pantalla contra la API (es y en) en Huánuco, Arequipa, Loreto, Ucayali, Apurímac, La Libertad y Piura.
 - La voz solo se probó interceptando `speechSynthesis`, sin oír el audio.

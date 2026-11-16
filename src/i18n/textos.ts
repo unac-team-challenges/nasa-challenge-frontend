@@ -267,9 +267,9 @@ const es = {
     lluvia: (desde: number, cuanto: string) => `Desde ${desde}, llueve ${cuanto}`,
     temperatura: (desde: number, grados: string, sube: boolean) =>
       `Desde ${desde}, hace como ${grados} más de ${sube ? 'calor' : 'frío'}`,
-    /** nivel: cuánto cambió frente a su verdor promedio (ver nivelVerdor) */
-    vegetacion: (desde: number, nivel: NivelVerdor, sube: boolean) =>
-      `Desde ${desde}, el campo está ${{ apenas: 'apenas', poco: 'un poco', bastante: 'bastante' }[nivel]} ${sube ? 'más' : 'menos'} verde que antes`,
+    /** nivel: cuánto cambió frente a su verdor promedio (ver nivelVerdor); null = sin decir cuánto */
+    vegetacion: (desde: number, nivel: NivelVerdor | null, sube: boolean) =>
+      `Desde ${desde}, el campo está ${nivel ? `${{ apenas: 'apenas', poco: 'un poco', bastante: 'bastante' }[nivel]} ` : ''}${sube ? 'más' : 'menos'} verde que antes`,
   },
   /** Titular cuando el cambio no es claro: no se afirma ni dirección ni cifra */
   campoSinCambio: {
@@ -301,7 +301,8 @@ const es = {
     vegetacion: 'Ver el verdor',
   } as PorVariable<string>,
   /** Solo si los dos cambios son claros: menos lluvia y más calor */
-  otraCruce: 'Menos lluvia y más calor a la vez: la tierra se seca más rápido.',
+  // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
+  otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
   /** Botón para oír la ficha del agricultor */
   escuchar: 'Escuchar',
   escucharParar: 'Parar',
@@ -909,7 +910,7 @@ const en: Textos = {
     temperatura: (desde, grados, sube) =>
       `Since ${desde}, it’s about ${grados} ${sube ? 'warmer' : 'cooler'}`,
     vegetacion: (desde, nivel, sube) =>
-      `Since ${desde}, the land is ${{ apenas: 'slightly', poco: 'a bit', bastante: 'much' }[nivel]} ${sube ? 'greener' : 'less green'} than before`,
+      `Since ${desde}, the land is ${nivel ? `${{ apenas: 'slightly', poco: 'a bit', bastante: 'much' }[nivel]} ` : ''}${sube ? 'greener' : 'less green'} than before`,
   },
   campoSinCambio: {
     lluvia: 'No clear change in rainfall',
@@ -930,7 +931,7 @@ const en: Textos = {
     vegetacion: 'And the rain and heat?',
   },
   otraVer: { lluvia: 'See the rain', temperatura: 'See the heat', vegetacion: 'See greenness' },
-  otraCruce: 'Less rain and more heat at the same time: the soil dries out faster.',
+  otraCruce: 'Less rain and more heat at the same time in this area.',
   escuchar: 'Listen',
   escucharParar: 'Stop',
   escucharAria: 'Listen to this report aloud',

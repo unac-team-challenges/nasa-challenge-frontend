@@ -120,6 +120,15 @@ describe('titularCampo', () => {
     expect(r.debajo).toBe('El verdor (NDVI) sube unos 0,020 cada 10 años, de 2001 a 2024.')
     expect(r.metros).toBeNull()
   })
+  it('verdor sin recta (intercept null): dice la dirección pero no cuánto', () => {
+    const d = zona({ slope_per_decade: 0.02, intercept: null })
+    expect(titularCampo(d, 'vegetacion', rango, 'es').titular).toBe(
+      'Desde 2001, el campo está más verde que antes',
+    )
+    expect(titularCampo(d, 'vegetacion', rango, 'en').titular).toBe(
+      'Since 2001, the land is greener than before',
+    )
+  })
   it('sin cambio claro no afirma nada', () => {
     const r = titularCampo(zona({ status: 'posible_casualidad' }), 'lluvia', rango, 'es')
     expect(r.titular).toBe('No se ve un cambio claro en la lluvia')

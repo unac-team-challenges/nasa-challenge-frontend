@@ -31,10 +31,13 @@ export function CampoAniosMalos() {
   const zonas = useZonas()
   const { serie: pts } = useDetalle(sel)
   const mitades = pts ? aniosMalosPorMitad(pts, variable, ninoEn(rango)) : null
-  if (!mitades || !sel) return null
+  // Sin la zona (todavía no llegó o no existe) no hay tendencia con qué responder: no se dibuja,
+  // en vez de romper toda la ficha al leer su estado
+  const zona = sel ? zonas[sel] : undefined
+  if (!mitades || !sel || !zona) return null
   const { antes, ahora } = mitades
   const lluvia = variable === 'lluvia'
-  const respuesta = respuestaMalos(compararMalos(antes, ahora), zonas[sel], variable)
+  const respuesta = respuestaMalos(compararMalos(antes, ahora), zona, variable)
   const recordar = anioParaRecordar(mitades, variable)
   // Lo malo: el año seco (lluvia), el de verdor flojo (vegetación) o el caluroso (temperatura).
   // Todos salen en el color de «lo malo» de su variable.
@@ -55,7 +58,7 @@ export function CampoAniosMalos() {
         {t.malosRespuesta[variable][respuesta]}
       </p>
       {/* Tendencia clara hacia lo malo sin más años malos (Loreto): que no parezca contradicción */}
-      {tendenciaSinMasMalos(respuesta, zonas[sel], variable) && (
+      {tendenciaSinMasMalos(respuesta, zona, variable) && (
         <p data-leer className="m-0">
           {t.malosAclara[variable]}
         </p>

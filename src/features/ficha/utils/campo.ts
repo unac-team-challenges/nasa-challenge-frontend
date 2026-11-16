@@ -126,16 +126,18 @@ export function titularCampo(d: Zona, variable: Variable, rango: Rango, idioma: 
  * Cuánto cambió el verdor en el periodo frente a su verdor promedio (la recta de Sen en el año
  * central): «apenas» bajo 3 %, «un poco» bajo 10 %, «bastante» desde ahí. El NDVI no trae % y sus
  * pendientes son chicas (0,003–0,016 por década): sin esto, todo cambio sonaría igual.
+ * null si no hay recta (sin `intercept`) o el verdor promedio no es positivo: sin con qué
+ * comparar no se dice cuánto, y el titular queda sin el «apenas / un poco / bastante».
  */
 export function nivelVerdor(
   d: Pick<Zona, 'slope_per_decade' | 'intercept'>,
   desde: number,
   hasta: number,
-): 'apenas' | 'poco' | 'bastante' {
-  const total = Math.abs(cambioEnPeriodo(d.slope_per_decade, desde, hasta))
-  const media =
-    d.intercept != null ? d.intercept + (d.slope_per_decade / 10) * ((desde + hasta) / 2) : 0
-  const pct = media > 0 ? (total / media) * 100 : 0
+): 'apenas' | 'poco' | 'bastante' | null {
+  if (d.intercept == null) return null
+  const media = d.intercept + (d.slope_per_decade / 10) * ((desde + hasta) / 2)
+  if (!(media > 0)) return null
+  const pct = (Math.abs(cambioEnPeriodo(d.slope_per_decade, desde, hasta)) / media) * 100
   return pct < 3 ? 'apenas' : pct < 10 ? 'poco' : 'bastante'
 }
 

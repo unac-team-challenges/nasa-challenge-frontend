@@ -15,6 +15,10 @@ export function Escuchar() {
   const idioma = useApp((s) => s.idioma)
   const t = TEXTOS[idioma]
   const boton = useRef<HTMLButtonElement>(null)
+  // La frase que se está leyendo. Guardarla evita que Chrome la recolecte a mitad de lectura (y
+  // entonces onend no llega y el botón queda en «Parar»), y deja ignorar los avisos de una frase
+  // vieja: cancel() dispara su onerror, que no debe apagar a la nueva
+  const actual = useRef<SpeechSynthesisUtterance | null>(null)
   const [hablando, setHablando] = useState(false)
   const voz = typeof window !== 'undefined' && 'speechSynthesis' in window
 
@@ -25,6 +29,7 @@ export function Escuchar() {
   const alternar = () => {
     const habla = window.speechSynthesis
     if (hablando) {
+      actual.current = null
       habla.cancel()
       setHablando(false)
       return
@@ -46,7 +51,12 @@ export function Escuchar() {
     const frase = new SpeechSynthesisUtterance(partes.join(' '))
     frase.lang = idioma === 'es' ? 'es-PE' : 'en-US'
     frase.rate = 0.95
-    frase.onend = frase.onerror = () => setHablando(false)
+    frase.onend = frase.onerror = () => {
+      if (actual.current !== frase) return
+      actual.current = null
+      setHablando(false)
+    }
+    actual.current = frase
     habla.cancel()
     habla.speak(frase)
     setHablando(true)

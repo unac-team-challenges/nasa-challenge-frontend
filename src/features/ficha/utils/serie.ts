@@ -220,8 +220,10 @@ export type Frecuencia =
 
 export function frecuencia(malos: number, anios: number): Frecuencia {
   if (!malos) return { tipo: 'ninguno' }
+  // «Casi todos» se mide sobre la parte de años malos: desde 3 de cada 4. Con el cociente
+  // (r < 1,25) 3 de 4 o 9 de 12 salían como «2 de cada 3», que es menos de lo que fue
+  if (malos / anios >= 0.75) return { tipo: 'casiTodos' }
   const r = anios / malos
-  if (r < 1.25) return { tipo: 'casiTodos' }
   if (r < 1.75) return { tipo: 'dosDeTres' }
   if (r < 2.25) return { tipo: 'unoSiUnoNo' }
   const resto = r - Math.floor(r)

@@ -228,6 +228,15 @@ describe('frecuencia', () => {
     expect(frecuencia(3, 12)).toEqual({ tipo: 'cada', cada: 4 })
     expect(frecuencia(1, 12)).toEqual({ tipo: 'cada', cada: 12 })
   })
+
+  it('cerca de «casi todos» no baja a «2 de cada 3»', () => {
+    expect(frecuencia(3, 4)).toEqual({ tipo: 'casiTodos' })
+    expect(frecuencia(4, 5)).toEqual({ tipo: 'casiTodos' })
+    expect(frecuencia(9, 12)).toEqual({ tipo: 'casiTodos' })
+    // 2 de 3 sigue siendo «2 de cada 3»; 8 de 12 también (es lo mismo)
+    expect(frecuencia(2, 3)).toEqual({ tipo: 'dosDeTres' })
+    expect(frecuencia(8, 12)).toEqual({ tipo: 'dosDeTres' })
+  })
 })
 
 describe('anioParaRecordar y cuantoFalto', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
@@ -169,8 +170,9 @@ export function Guia() {
     else posicion = { bottom: 16, left: (innerWidth - ancho) / 2 }
   }
 
-  return (
-    <div className="fixed inset-0 z-[70]">
+  // En <body>: el explorador es pointer-events-none y su z-[1] dejaría la cabecera (z-20) encima
+  return createPortal(
+    <div className="pointer-events-auto fixed inset-0 z-[70]">
       {/* Sin hueco cuando el paso no señala nada: toda la pantalla queda oscura */}
       {caja ? (
         <div
@@ -215,6 +217,7 @@ export function Guia() {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

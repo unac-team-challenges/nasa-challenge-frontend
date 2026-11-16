@@ -59,6 +59,7 @@ export function MenuMetodologia() {
           aria-label={activa ? `${t.metodologiaCorto} ${t.paginaActual}` : t.metodologiaCorto}
           title={t.metodologiaCorto}
           data-activa={activa || undefined}
+          data-guia="metodologia"
           className={`vidrio z-40 size-12 rounded-full text-fg hover:bg-panel-2 data-[state=open]:bg-panel-2 data-activa:text-accent-text min-[901px]:fixed min-[901px]:top-auto min-[901px]:right-5 min-[901px]:bottom-5 ${
             // En celular, flotando abajo taparía el texto: va arriba a la derecha del mapa
             activa ? 'fixed right-4 bottom-4' : 'absolute top-3 right-3 max-[900px]:size-11'

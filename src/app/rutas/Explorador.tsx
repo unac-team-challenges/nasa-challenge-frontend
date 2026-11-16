@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { CircleHelp } from 'lucide-react'
 import { NOMBRE, REGION } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
@@ -21,6 +22,9 @@ import { Button } from '@/components/ui/button'
 import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 import { FRANJA, useInforme } from '@/app/rutas/useInforme'
 import { RETRASO_INFO_S, usePresentacionZona } from '@/app/rutas/usePresentacionZona'
+import { Guia } from '@/features/guia/components/Guia'
+import { useGuia } from '@/features/guia/estado'
+import { UI as UI_GUIA } from '@/features/guia/pasos'
 
 const boton = 'bg-panel/92'
 
@@ -67,6 +71,8 @@ export function Explorador() {
   const etiquetaInforme = informeMin ? t.showReport : t.hideReport
   const informe = useInforme(sel, informeMin, modoMapa)
   const { intro, abrirTarde } = usePresentacionZona(sel, informeMin, zonaDesdeMapa)
+  const guiaAbierta = useGuia((s) => s.paso != null)
+  const abrirGuia = useGuia((s) => s.abrir)
 
   const volverAlInicio = () => {
     seleccionar(null)
@@ -141,6 +147,15 @@ export function Explorador() {
         </svg>
       </Button>
       <BotonCompartir className={boton} />
+      <Button
+        size="icon"
+        className={boton}
+        aria-label={UI_GUIA[idioma].ver}
+        title={UI_GUIA[idioma].ver}
+        onClick={abrirGuia}
+      >
+        <CircleHelp className="size-[18px]" aria-hidden="true" />
+      </Button>
     </>
   )
 
@@ -154,6 +169,7 @@ export function Explorador() {
       {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
       <div
         ref={cajaMapa}
+        data-guia="mapa"
         className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:left-0 min-[901px]:right-[var(--tapa)] min-[901px]:h-auto min-[901px]:transition-[right] min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
         style={{ transitionDelay: demoraPanel }}
       >
@@ -196,7 +212,8 @@ export function Explorador() {
                 {vegetacion ? t.mapSubVeg : anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
-            {!vegetacion && <AyudaModo />}
+            {/* La guía explica lo mismo en su paso de la barra de tiempo: no van juntas */}
+            {!vegetacion && !guiaAbierta && <AyudaModo />}
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}
@@ -214,13 +231,17 @@ export function Explorador() {
             {!vegetacion && <BarraTiempo />}
           </div>
           {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
-          <div className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex">
+          <div
+            data-guia="controles"
+            className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex"
+          >
             {controles}
           </div>
           <Popover.Root>
             <Popover.Trigger asChild>
               <Button
                 size="icon"
+                data-guia="controles"
                 className={`${boton} pointer-events-auto absolute right-4 z-[3] min-[901px]:hidden ${
                   anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
                 }`}
@@ -253,6 +274,7 @@ export function Explorador() {
       {/* Informe: en escritorio se desliza sobre el mapa; minimizado deja una franja de 56 px */}
       <aside
         ref={informe}
+        data-guia="informe"
         className={`pointer-events-auto relative flex min-w-0 overflow-hidden border-line bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           informeMin ? 'min-[901px]:translate-x-[calc(100%-56px)]' : ''
         }`}
@@ -314,6 +336,7 @@ export function Explorador() {
           </div>
         )}
       </aside>
+      <Guia />
     </section>
   )
 }

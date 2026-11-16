@@ -6,6 +6,8 @@ import { test as base } from '@playwright/test'
  */
 export const test = base.extend({
   page: async ({ page }, usar) => {
+    // La guía de la primera visita taparía el explorador: se da por vista (e2e/guia.spec.ts la prueba aparte)
+    await page.addInitScript(() => localStorage.setItem('guia-vista', '1'))
     const goto = page.goto.bind(page)
     page.goto = (url, opciones) => {
       const absoluta = /^https?:/.test(url)

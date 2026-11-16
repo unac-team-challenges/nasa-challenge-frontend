@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NOMBRE } from '@/data/datos'
-import { SECCIONES_METODOLOGIA } from '@/i18n/textos'
+import { SECCIONES_METODOLOGIA, TERMINOS } from '@/i18n/textos'
 import { renderRuta } from '@/testing/render'
 import { useApp } from '@/stores/app'
 import { ErrorSerie } from '@/components/Errores'
@@ -169,6 +169,26 @@ describe('otras rutas', () => {
     await screen.findByRole('heading', { level: 1, name: /Metodología/ })
     for (const sec of SECCIONES_METODOLOGIA)
       expect(document.getElementById(`m-${sec}`)).not.toBeNull()
+  })
+
+  it('cada término del glosario tiene su ancla g-<término>', async () => {
+    renderRuta('/metodologia')
+    await screen.findByRole('heading', { name: 'Glosario' })
+    for (const id of TERMINOS) expect(document.getElementById(`g-${id}`)).not.toBeNull()
+  })
+
+  it('un término subrayado de la ficha lleva a su definición y «Volver» regresa a la ficha', async () => {
+    const router = renderRuta('/zona/20?perfil=estudiante')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    const sen = within(informe)
+      .getAllByRole('link', { name: 'Pendiente' })
+      .find((a) => a.getAttribute('href')?.endsWith('#g-sen'))
+    expect(sen).toBeDefined()
+    await userEvent.click(sen!)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/metodologia'))
+    expect(router.state.location.hash).toBe('g-sen')
+    await userEvent.click(await screen.findByRole('button', { name: /Volver/ }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/zona/20'))
   })
 
   it('el selector de idioma resalta el idioma actual', async () => {

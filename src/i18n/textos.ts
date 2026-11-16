@@ -2,6 +2,7 @@
 import type { Estado, Region, Variable } from '@/data/datos'
 import { avisoZonaEn } from '@/i18n/avisoZona'
 import type { frases as frasesEs, textos as textosEs } from '@/i18n/es'
+import { REFERENCIAS } from '@/i18n/referencias'
 import { REPOS } from '@/i18n/repos'
 
 export type Idioma = 'es' | 'en'
@@ -498,8 +499,6 @@ const en: Textos = {
   citarCopiado: 'Copied',
   citarEnlace: 'Link to this exact view',
   reproH: 'Reproduce it',
-  reproApi: 'The API returns these same numbers:',
-  reproSinApi: 'This session uses the local copy; with the project API, the query is:',
   reproRepos: 'Code of the calculation (backend) and of this page (frontend):',
   causasH: 'Possible causes and consequences',
   causasCausa: 'Why might this be happening?',
@@ -635,6 +634,9 @@ const en: Textos = {
   paginaActual: '(current page)',
   metodologiaEnlace: 'How we calculate it and where the data comes from',
   irAlMapa: 'Explore the map',
+  volver: 'Back',
+  /** Título de un término subrayado de la ficha */
+  terminoVer: 'What does it mean? (methodology)',
 }
 
 // El inglés es el idioma por defecto y va en el código; el español (es.ts) se agrega en cargarIdioma().
@@ -856,12 +858,37 @@ export type Enlace = [texto: string, url: string]
 /** Secciones de /metodologia: el id del título es `m-<sección>` (el menú de la cabecera salta a ellas). */
 export const SECCIONES_METODOLOGIA = [
   'fuentes',
+  'mapa',
   'calculo',
   'semaforo',
+  'glosario',
+  'periodos',
+  'zonas',
   'limites',
+  'referencias',
   'creditos',
 ] as const
 export type SeccionMetodologia = (typeof SECCIONES_METODOLOGIA)[number]
+
+/**
+ * Términos del glosario: el ancla es `g-<término>` y la ficha enlaza a ella (`components/Termino.tsx`).
+ * El orden es el de la página.
+ */
+export const TERMINOS = [
+  'mann-kendall',
+  'sen',
+  'ic',
+  'p',
+  'q',
+  'lag1',
+  'celda',
+  'anomalia',
+  'ndvi',
+] as const
+export type Termino = (typeof TERMINOS)[number]
+
+/** [título, texto]: un punto de una lista con su título en negrita */
+type Punto = [titulo: string, texto: string]
 
 export interface Metodologia {
   titulo: string
@@ -877,12 +904,23 @@ export interface Metodologia {
     enlace: Enlace
   }[]
   fuentesNota: string
+  mapaH: string
+  mapa: Punto[]
   calculoH: string
-  pasos: [titulo: string, texto: string][]
+  pasos: Punto[]
   semaforoH: string
   estados: [nombre: string, texto: string][]
+  glosarioH: string
+  glosarioP: string
+  glosario: Record<Termino, Punto>
+  periodosH: string
+  periodos: Punto[]
+  zonasH: string
+  zonas: Punto[]
   limitesH: string
-  limites: [titulo: string, texto: string][]
+  limites: Punto[]
+  referenciasH: string
+  referencias: Enlace[]
   creditosH: string
   creditosP: string
   creditosDatos: Enlace[]
@@ -897,7 +935,7 @@ export const METODOLOGIA = sinEs<Metodologia>({
   en: {
     titulo: 'Methodology, sources and credits',
     intro:
-      'Peru Trend Detective shows how much rainfall and temperature changed in each department and whether that change is real or could be chance. Here we explain how it is calculated, where the data comes from and what its limits are. It shows what has already changed: it is not a forecast or a recommendation.',
+      'Peru Trend Detective shows how much rainfall, temperature and vegetation changed in each department and whether that change is real or could be chance. Here we explain how it is calculated, where the data comes from and what its limits are. It shows what has already changed: it is not a forecast or a recommendation.',
     fuentesH: 'Where the data comes from',
     tablaCols: ['Variable', 'Source', 'Resolution', 'Years'],
     fuentes: [
@@ -924,6 +962,14 @@ export const METODOLOGIA = sinEs<Metodologia>({
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
+        variable: 'Vegetation',
+        fuente:
+          'MODIS MOD13A3 v061 (NASA): monthly NDVI vegetation index, requested with AppEEARS and summarized in 0.25° cells',
+        resolucion: '1 km → ≈ 27 km',
+        anios: '2001–2024',
+        enlace: ['MOD13A3', 'https://lpdaac.usgs.gov/products/mod13a3v061/'],
+      },
+      {
         variable: 'Local copy (plan B)',
         fuente:
           'The same numbers as the API (NASA POWER and, to compare, IMERG). The site uses it when the API does not answer, and always for "without El Niño" and the time machine',
@@ -932,15 +978,17 @@ export const METODOLOGIA = sinEs<Metodologia>({
         enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
       },
       {
-        variable: 'Vegetation (Case 2)',
-        fuente: 'MODIS MOD13A3 (NASA): NDVI vegetation index, requested with AppEEARS',
+        variable: 'Coastal valleys (Case 2)',
+        fuente:
+          'MODIS MOD13A3 v061 (NASA): NDVI of the irrigated valleys (Chavimochic, Ica-Villacurí and Olmos), requested with AppEEARS',
         resolucion: '1 km',
-        anios: '2001 & 2024',
+        anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
       },
       {
         variable: 'Rainforest trees',
-        fuente: 'MODIS MOD44B (NASA): % of the ground covered by trees, requested with AppEEARS',
+        fuente:
+          'MODIS MOD44B v061 (NASA): % of the ground covered by trees, requested with AppEEARS',
         resolucion: '250 m',
         anios: '2001–2024',
         enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
@@ -948,11 +996,38 @@ export const METODOLOGIA = sinEs<Metodologia>({
     ],
     fuentesNota:
       'Each number comes from a single source and the report card says which: we never mix or average sources. These are not measuring stations: each value is the average of a satellite or model grid cell.',
+    mapaH: 'How to read the map',
+    mapa: [
+      [
+        'Height',
+        "Each department rises or sinks with its trend: how much it changed per decade (Sen's slope). In the time machine, height is that year's anomaly: how far it was from the department's own average.",
+      ],
+      [
+        'Fill',
+        'Solid = real change, dotted = possible chance, outline only = too little data (see "How to read the traffic light").',
+      ],
+      [
+        'Color',
+        "Color goes by grid cell, not by department: it shows the value where it is (Lima's coast is around 18 °C, the Puno high plateau around 8 °C). The report card uses the department average, which mixes coast, highlands and rainforest: that is why Lima reads about 14 °C there.",
+      ],
+      [
+        'Units',
+        'Rainfall is shown in mm per year: the NASA daily average (mm/day) times 365. Temperature in °C. Vegetation in NDVI: near 0 is bare ground or desert, 0.8 or more is dense forest.',
+      ],
+      [
+        'Profiles',
+        'Farmer and Student use the same data. Farmer tells it in field words (dry years, a normal year, El Niño); Student adds the detail of the calculation: q-value, likely range, ranking and robustness.',
+      ],
+      [
+        'Characters',
+        'The animals and people on the map are illustrative: they do not come from the data. What their speech bubble says does: it repeats the NASA data of the department where they live.',
+      ],
+    ],
     calculoH: 'How the trend is calculated',
     pasos: [
       [
         'Department average',
-        "All grid cells whose center falls inside the department are averaged, not the capital's point. A year counts only if all 12 months have data.",
+        "All grid cells whose center falls inside the department are averaged, not the capital's point. For rainfall and temperature a year counts only if all 12 months have data. For vegetation 6 valid months are enough (no clouds, snow or water according to MODIS quality): in the rainforest and the Andes there are almost always clouds in some month.",
       ],
       [
         'Trend test',
@@ -986,6 +1061,77 @@ export const METODOLOGIA = sinEs<Metodologia>({
         'Fewer than 20 years of data or fewer than 4 cells in the department: we give no verdict.',
       ],
     ],
+    glosarioH: 'Glossary',
+    glosarioP:
+      'The underlined words in the report card bring you here; the "Back" button at the top returns you to where you were.',
+    glosario: {
+      'mann-kendall': [
+        'Mann-Kendall (with TFPW)',
+        'A test that compares every year with every later year and counts how many times the value went up or down. If one direction clearly dominates, there is a trend. It does not assume the change is a straight line. TFPW (trend-free pre-whitening) first removes how much each year resembles the previous one, so that a run of similar years is not mistaken for a trend.',
+      ],
+      sen: [
+        "Sen's slope",
+        'How much the variable changes per decade. It is the median of the slopes between every pair of years, so one extreme year (such as an El Niño) barely moves it. Positive: it goes up; negative: it goes down.',
+      ],
+      ic: [
+        'Likely range (95 % CI)',
+        "The values between which Sen's slope most likely lies (95 % confidence interval). If the range crosses zero, we cannot be sure whether it goes up or down.",
+      ],
+      p: [
+        'p-value',
+        'How likely it would be to see a trend like this if in reality nothing had changed. The smaller, the harder it is to explain by chance. We publish at least 0.000001: smaller values are shown as "< 0.000001".',
+      ],
+      q: [
+        'q-value (Benjamini-Hochberg)',
+        'The p-value corrected for checking 25 departments at once: with that many tests, some would look significant by luck alone. Benjamini-Hochberg raises the p-values to keep the share of false alarms at 5 %. Below 0.05 counts as significant.',
+      ],
+      lag1: [
+        'Autocorrelation (lag1)',
+        'How much one year resembles the next, from −1 to 1. Above 0.5 a run of similar years can look like a trend, so the change is never marked "real".',
+      ],
+      celda: [
+        'Grid cell',
+        'The smallest square of the satellite or model grid: about 50 × 60 km in NASA POWER, 10 km in IMERG and 27 km in our vegetation grid. Each value is the average of its cell, not a station measurement. With fewer than 4 cells a department gets no verdict.',
+      ],
+      anomalia: [
+        'Anomaly',
+        "How far one year was from the department's own average: in % for rainfall, as a difference for temperature and vegetation. It is what the time machine shows.",
+      ],
+      ndvi: [
+        'NDVI',
+        'Normalized Difference Vegetation Index: compares the red and near-infrared light that plants reflect. Near 0 is bare ground or desert; 0.8 or more is dense forest. In the rainforest it saturates and stops showing forest loss.',
+      ],
+    },
+    periodosH: 'El Niño, periods and the time machine',
+    periodos: [
+      [
+        'Period',
+        'By default the trend runs from 2001 to 2024, the same period for every variable and source so they can be compared. For rainfall and temperature you can choose the long period, 1981–2024 (NASA POWER only). Changing the start year can flip the sign of rainfall in Apurímac, Loreto and Piura: the report card always says from which year it is calculated.',
+      ],
+      [
+        'Without El Niño',
+        'Removes 1983, 1998, 2016, 2017 and 2023: the years of extreme rain on the northern coast caused by El Niño (1982–83, 1997–98, 2015–16) and the Coastal Niño (2017 and 2023). The trend is recalculated without them to see how much they weigh. It only applies to rainfall.',
+      ],
+      [
+        'Time machine',
+        'Shows a single year against the department\'s own average (see "Anomaly"), instead of the trend of the whole period.',
+      ],
+    ],
+    zonasH: 'Areas with special treatment',
+    zonas: [
+      [
+        'Coastal valleys (Case 2)',
+        'Chavimochic (La Libertad), Ica-Villacurí (Ica) and Olmos (Lambayeque) are measured in a box over the irrigated land, not the whole department. Green area = pixels with a yearly NDVI above 0.3. The Olmos box was moved after discarding the first one, which fell on dry forest.',
+      ],
+      [
+        'The rainforest',
+        'There NDVI saturates (0.8–0.9): it says there is vegetation, not how much forest is lost. Departments with a mean NDVI of 0.75 or more carry a warning. For the rainforest we use MODIS MOD44B tree cover (forest = pixels with 30 % or more trees) in La Pampa (Madre de Dios, gold mining) and Iquitos (Loreto, for contrast), each in a box of about 22–28 km per side.',
+      ],
+      [
+        'Ucayali',
+        'Its temperature trend is the highest of the 25 departments. We publish it as it is, with a warning: it depends a lot on 2023 and 2024, and these data cannot tell apart real warming, the extreme heat of those years or a change in the MERRA-2 model. The report card gives the figures.',
+      ],
+    ],
     limitesH: 'What to keep in mind',
     limites: [
       [
@@ -993,12 +1139,8 @@ export const METODOLOGIA = sinEs<Metodologia>({
         'IMERG satellites change in 2014 (from TRMM to GPM) and its trend can be biased downward: with IMERG, rainfall drops in all 25 departments. That is why the map uses POWER rainfall, and IMERG appears in the report card as a second source to check whether they agree. Its traffic light never reaches "real change".',
       ],
       [
-        'El Niño',
-        'Years like 2017 (Coastal Niño) move northern-coast rainfall a lot. The report card lets you remove El Niño years to see how much they weigh.',
-      ],
-      [
-        'The period matters',
-        'Changing the start year can flip the sign of rainfall in Apurímac, Loreto and Piura. The report card always says from which year it is calculated.',
+        'The mountains',
+        'Each MERRA-2 cell (≈ 50 km) has an average elevation: in the Andes, valleys come out colder and peaks milder than at a station (Cusco city is about 12 °C; its cell, about 8 °C).',
       ],
       [
         'The coast',
@@ -1010,20 +1152,26 @@ export const METODOLOGIA = sinEs<Metodologia>({
       ],
       [
         'Complete years',
-        'The last year is 2024: IMERG v07 ends in September 2025, so 2025 will never be complete.',
+        'The last year is 2024 for every variable. NASA POWER already has 2025, but IMERG v07 ends in September 2025 and that year will never be complete; to compare sources over the same period, all of them end in 2024.',
       ],
       [
         'A model, not a station',
         'Values are averages of satellites and models over 10 to 60 km cells. They can fail in the mountains or with very local rain.',
       ],
     ],
+    referenciasH: 'References',
+    referencias: REFERENCIAS,
     creditosH: 'Credits',
     creditosP:
       'Made by the NASA-CHALLENGE-UNAC team for the NASA Space Apps Challenge 2026. NASA data:',
     creditosDatos: [
       ['GPM IMERG: NASA GES DISC', 'https://gpm.nasa.gov/data/imerg'],
       ['MERRA-2: NASA GMAO, delivered by NASA POWER', 'https://power.larc.nasa.gov/'],
-      ['MODIS MOD13A3: NASA LP DAAC, via AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+      [
+        'MODIS MOD13A3: NASA LP DAAC, via AppEEARS',
+        'https://lpdaac.usgs.gov/products/mod13a3v061/',
+      ],
+      ['MODIS MOD44B: NASA LP DAAC, via AppEEARS', 'https://lpdaac.usgs.gov/products/mod44bv061/'],
     ],
     creditosCodigo:
       'Built with React, Vite, three.js, TanStack, Recharts, Tailwind CSS and shadcn/ui. Typefaces: Newsreader and Public Sans. Open source:',
@@ -1031,9 +1179,14 @@ export const METODOLOGIA = sinEs<Metodologia>({
     creditosNasa: 'This project is not an official NASA product and is not endorsed by NASA.',
     menuD: {
       fuentes: 'NASA satellites and datasets',
+      mapa: 'Height, color and units',
       calculo: 'From yearly series to trend',
       semaforo: 'What each colour means',
+      glosario: 'The technical words, one by one',
+      periodos: 'What changes when years are removed',
+      zonas: 'Valleys, rainforest and Ucayali',
       limites: 'How far the data goes',
+      referencias: 'Cited papers and datasets',
       creditos: 'Team, data and open source',
     },
   },

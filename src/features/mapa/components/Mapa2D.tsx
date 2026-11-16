@@ -147,15 +147,20 @@ interface Vista {
   ty: number
 }
 
-/** Mantiene el mapa cubriendo la caja: ni se pasa del zoom máximo ni deja huecos en los bordes. */
-function limitar(v: Vista, w: number, h: number): Vista {
+/** Mantiene el mapa en la caja: ni se pasa del zoom máximo ni deja huecos en los bordes (salvo `holgura`, fracción de la caja). */
+function limitar(v: Vista, w: number, h: number, holgura = 0): Vista {
   const k = Math.min(K_MAX, Math.max(1, v.k))
   return {
     k,
-    tx: Math.min(0, Math.max(w * (1 - k), v.tx)),
-    ty: Math.min(0, Math.max(h * (1 - k), v.ty)),
+    tx: Math.min(w * holgura, Math.max(w * (1 - k - holgura), v.tx)),
+    ty: Math.min(h * holgura, Math.max(h * (1 - k - holgura), v.ty)),
   }
 }
+/**
+ * Con el ratón no hay pellizco: para moverse libremente como en el 3D, el mapa puede correrse hasta
+ * media caja más allá del borde (con los dedos no se sale del borde).
+ */
+const HOLGURA_RATON = 0.5
 
 /** Lado mínimo de un objetivo táctil (px): por debajo, la zona recibe un borde invisible que se toca. */
 const TOQUE_MIN = 44
@@ -223,6 +228,7 @@ export function Mapa2D({ interactivo = true }: Props) {
   const dedos = useRef(new Map<number, { x: number; y: number }>())
   const inicio = useRef<{ v: Vista; mx: number; my: number; d: number } | null>(null)
   const arrastrado = useRef(false)
+  const conRaton = useRef(false)
   const reinicio2d = useApp((x) => x.reinicio2d)
 
   // El suelo se pinta una vez por tema (también si cambia el tema del sistema)
@@ -293,8 +299,9 @@ export function Mapa2D({ interactivo = true }: Props) {
         }).filter((z) => z.trazo > 0)
       : []
 
-  // Gestos táctiles: un dedo arrastra, dos dedos pellizcan. El centro de los dedos es el ancla:
-  // el punto del mapa que estaba bajo ellos sigue bajo ellos. Con ratón no cambia nada.
+  // Gestos: un dedo (o el ratón con el botón derecho) arrastra, dos dedos pellizcan. El centro de
+  // los dedos es el ancla: el punto del mapa que estaba bajo ellos sigue bajo ellos. El clic
+  // izquierdo sigue eligiendo zona.
   const anclar = () => {
     const ps = [...dedos.current.values()]
     if (!ps.length) return (inicio.current = null)
@@ -315,7 +322,11 @@ export function Mapa2D({ interactivo = true }: Props) {
   const gestos = interactivo
     ? {
         onPointerDown: (e: PointerEvent) => {
-          if (e.pointerType !== 'touch') return
+          const derecho = e.pointerType === 'mouse' && e.button === 2
+          if (e.pointerType !== 'touch' && !derecho) return
+          // Con el ratón, el arrastre sigue aunque el puntero salga del mapa
+          if (derecho) e.currentTarget.setPointerCapture(e.pointerId)
+          conRaton.current = derecho
           if (!dedos.current.size) arrastrado.current = false
           dedos.current.set(e.pointerId, aCaja(e))
           if (dedos.current.size > 1) arrastrado.current = true
@@ -344,13 +355,16 @@ export function Mapa2D({ interactivo = true }: Props) {
               },
               tam.w,
               tam.h,
+              conRaton.current ? HOLGURA_RATON : 0,
             ),
           )
         },
-        // Solo los dedos del gesto hacen algo aquí: un toque suelto o el ratón no cambian ningún
-        // estado, así un render no reordena la zona entre «pointerdown» y el «click».
+        // Solo los punteros del gesto hacen algo aquí: un toque suelto o el clic izquierdo no cambian
+        // ningún estado, así un render no reordena la zona entre «pointerdown» y el «click».
         onPointerUp: (e: PointerEvent) => terminarDedo(e),
         onPointerCancel: (e: PointerEvent) => terminarDedo(e),
+        // El botón derecho es para arrastrar: sin el menú del navegador
+        onContextMenu: (e: MouseEvent) => e.preventDefault(),
         // Si el dedo arrastró, el toque que sigue no elige zona
         onClickCapture: (e: MouseEvent) => {
           if (!arrastrado.current) return

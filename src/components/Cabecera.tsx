@@ -131,8 +131,18 @@ export function Cabecera() {
             <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
           </Button>
         </div>
-        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular */}
-        <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">
+        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular.
+            En el inicio no se muestra: la portada ya pregunta el perfil y serían dos botones iguales.
+            inert lo saca del foco y del lector de pantalla; entra al bajar y sale al subir sin saltos
+            (display discreto + @starting-style). La guía salta su paso si está oculto. */}
+        <div
+          className={`${riel} ml-auto transition-[opacity,translate,display] transition-discrete duration-300 ease-out starting:-translate-y-1.5 starting:opacity-0 data-oculto:hidden data-oculto:-translate-y-1.5 data-oculto:opacity-0 data-oculto:duration-200 data-oculto:ease-in motion-reduce:transition-none`}
+          role="group"
+          aria-label={t.perfilLbl}
+          data-guia="perfil"
+          data-oculto={enInicio || undefined}
+          inert={enInicio}
+        >
           {ORDEN_PERFILES.map((p) => {
             const Icono = ICONO_PERFIL[p]
             return (

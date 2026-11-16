@@ -31,8 +31,8 @@ export function MapaSkeleton({
       {explorar && (
         <>
           <Skeleton className="absolute top-3.5 left-4 h-7 w-56 max-w-[60%]" />
-          <Skeleton className="absolute top-3.5 right-4 bottom-[70px] w-[68px] min-[901px]:w-24" />
-          <Skeleton className="absolute bottom-16 left-4 h-24 w-56 min-[901px]:bottom-3.5" />
+          <Skeleton className="absolute top-3.5 right-4 bottom-[70px] w-[68px] escritorio:w-24" />
+          <Skeleton className="absolute bottom-16 left-4 h-24 w-56 escritorio:bottom-3.5" />
           <Skeleton className="absolute right-4 bottom-3.5 h-10 w-32" />
         </>
       )}
@@ -76,10 +76,10 @@ export function FichaSkeleton({ anunciar = true }: { anunciar?: boolean }) {
  */
 export function ExploradorSkeleton() {
   return (
-    <section className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px]">
+    <section className="pointer-events-none relative z-[1] flex flex-1 flex-col escritorio:min-h-[560px]">
       <Estado />
-      <div className={`flex-none ${ALTO_MAPA_CELULAR} min-[901px]:hidden`} />
-      <div className="pointer-events-auto flex-1 bg-panel px-5.5 pt-5.5 min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[clamp(340px,38vw,560px)] min-[901px]:flex-none min-[901px]:border-l min-[901px]:border-line">
+      <div className={`flex-none ${ALTO_MAPA_CELULAR} escritorio:hidden`} />
+      <div className="pointer-events-auto flex-1 bg-panel px-5.5 pt-5.5 escritorio:absolute escritorio:inset-y-0 escritorio:right-0 escritorio:w-[clamp(21.25rem,38vw,35rem)] escritorio:flex-none escritorio:border-l escritorio:border-line">
         <FichaSkeleton anunciar={false} />
       </div>
     </section>

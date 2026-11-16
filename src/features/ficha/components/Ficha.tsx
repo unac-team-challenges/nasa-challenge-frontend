@@ -85,10 +85,7 @@ export const Ficha = memo(function Ficha() {
           {t.kind(REGION[sel])}
           <SelectorZona className="max-w-44 flex-none" />
         </span>
-        <h2
-          data-leer
-          className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]"
-        >
+        <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
           {NOMBRE[sel]}
         </h2>
         <span className="text-[13px] text-muted">{t.src(variable, d.celdas, fuente, !api)}</span>

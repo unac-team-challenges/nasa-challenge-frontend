@@ -15,7 +15,6 @@ import { ComoLoSabemos } from '@/features/ficha/components/ComoLoSabemos'
 import { Confianza } from '@/features/ficha/components/Confianza'
 import { SelectorZona } from '@/features/ficha/components/SelectorZona'
 import { DosFuentes } from '@/features/ficha/components/DosFuentes'
-import { Escuchar } from '@/features/ficha/components/Escuchar'
 import { EstLimitaciones } from '@/features/ficha/components/EstLimitaciones'
 import { EstRanking } from '@/features/ficha/components/EstRanking'
 import { EstRecursos } from '@/features/ficha/components/EstRecursos'
@@ -86,17 +85,12 @@ export const Ficha = memo(function Ficha() {
           {t.kind(REGION[sel])}
           <SelectorZona className="max-w-44 flex-none" />
         </span>
-        <h2
-          data-leer
-          className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]"
-        >
+        <h2 className="m-0 font-display text-[32px] leading-[1.05] font-bold tracking-[-0.015em]">
           {NOMBRE[sel]}
         </h2>
         <span className="text-[13px] text-muted">{t.src(variable, d.celdas, fuente, !api)}</span>
         {nota && <span className="text-[13px] text-muted">{t.notaFija ?? nota}</span>}
       </div>
-      {/* Agricultor: oír la ficha. La key la reinicia (y la calla) al cambiar lo que se lee */}
-      {campo && <Escuchar key={`${sel}-${variable}-${idioma}`} />}
 
       {!pocos && <Tendencia zona={d} perfil={perfil} />}
       {/* El agricultor ve la confianza dentro de la tendencia; sin cifras, aquí sola */}

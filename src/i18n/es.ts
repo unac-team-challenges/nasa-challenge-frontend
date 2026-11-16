@@ -282,10 +282,6 @@ export const textos = {
   // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
   otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
   /** Botón para oír la ficha del agricultor */
-  escuchar: 'Escuchar',
-  escucharParar: 'Parar',
-  escucharAria: 'Escuchar este informe en voz alta',
-  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],

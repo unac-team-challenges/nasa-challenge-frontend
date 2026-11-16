@@ -33,7 +33,7 @@ export function CampoNino() {
       aria-labelledby="nino-aqui-h"
       className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
     >
-      <h3 id="nino-aqui-h" data-leer className="m-0 text-sm font-semibold">
+      <h3 id="nino-aqui-h" className="m-0 text-sm font-semibold">
         {t.ninoAquiH}
       </h3>
       {e ? (
@@ -48,7 +48,7 @@ export function CampoNino() {
                 : t.ninoGrande(t.cuanto(fraccion(e.promedio), e.promedio >= 0, null))
               : `${e.promedio >= 0 ? '+' : '−'}${num(e.promedio, 1, idioma)} °C`}
           </span>
-          <p data-leer className="m-0">
+          <p className="m-0">
             {lluvia
               ? t.ninoAquiLluvia(
                   NOMBRE[sel],
@@ -65,9 +65,7 @@ export function CampoNino() {
           </p>
         </>
       ) : (
-        <p data-leer className="m-0">
-          {t.ninoSinAnios}
-        </p>
+        <p className="m-0">{t.ninoSinAnios}</p>
       )}
       <a
         href={ENFEN}

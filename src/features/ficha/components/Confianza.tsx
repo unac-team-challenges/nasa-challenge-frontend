@@ -42,8 +42,10 @@ export function Confianza({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
       <div className="flex items-start gap-3 rounded-m border-l-4 bg-panel-2 p-3.5" style={borde}>
         <Icono className="mt-0.5 size-6 flex-none" aria-hidden="true" />
         <div className="flex flex-col gap-0.5">
-          <span className="font-semibold">{titulo}</span>
-          <span>{texto}</span>
+          <span data-leer className="font-semibold">
+            {titulo}
+          </span>
+          <span data-leer>{texto}</span>
         </div>
       </div>
     )

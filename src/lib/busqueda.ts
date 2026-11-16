@@ -26,7 +26,7 @@ const esquema = z.object({
     .enum(ORDEN_PERFILES as [Perfil, ...Perfil[]])
     .optional()
     .catch(undefined),
-  /** Idioma: sin él, español. Un enlace compartido en inglés se abre en inglés. */
+  /** Idioma: sin él, inglés. `?lang=es` abre en español. */
   lang: z.enum(['es', 'en']).optional().catch(undefined),
   /** Periodo de la tendencia: sin él, `reciente` (2001–2024). `largo` es 1981–2024. */
   periodo: z

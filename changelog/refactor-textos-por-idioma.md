@@ -1,13 +1,22 @@
 # refactor/textos-por-idioma
 
 ## Cambiado
-- El inglés sale de `i18n/textos.ts` y va en `i18n/en.ts`, un chunk aparte (`en-*.js`: 31 KB, 12 KB gz). El chunk de textos que viaja siempre baja de 73 KB (26 KB gz) a 33 KB (13 KB gz): solo queda el español.
-- Salen a `en.ts` las seis partes en inglés: `TEXTOS`, `FRASES`, `CAUSAS_TEXTOS`, `FAUNA_TEXTOS`, `META` y `METODOLOGIA` (junto con su uso de `avisoZonaEn`).
-- `cargarIdioma(idioma)` (en `textos.ts`) baja el inglés y lo asigna a esos mapas. Los mapas siguen tipados como `Record<Idioma, T>` (`sinEn` agrega el `en` que llega después), así que los ~50 usos de `TEXTOS[idioma]` no cambian.
-- Cuándo se carga: `main.tsx` espera `cargarIdioma` con el idioma de la URL (`?lang=en`) antes de dibujar; el botón de idioma (`setIdioma` del store) cambia de idioma recién cuando el inglés ya está cargado. `testing/setup.ts` carga el inglés con `await` antes de reunir las pruebas (algunas leen `TEXTOS.en` al declarar el `describe`).
+
+- El español sale de `i18n/textos.ts` y va en `i18n/es.ts`, un chunk aparte (`es-*.js`: 38 KB, 13,5 KB gz). El inglés, que es el idioma por defecto, se queda en `textos.ts` y viaja siempre: la mayoría de las visitas (sin `?lang`) no espera ninguna petición extra antes del primer dibujo.
+- Salen a `es.ts` las partes en español: `TEXTOS`, `FRASES`, `CAUSAS_TEXTOS`, `FAUNA_TEXTOS`, `FAUNA_CLIMA`, `META` y `METODOLOGIA`.
+- `cargarIdioma(idioma)` baja el español y lo asigna a esos mapas. Siguen tipados como `Record<Idioma, T>` (`sinEs` agrega el `es` que llega después), así que los usos de `TEXTOS[idioma]` no cambian. Los tipos salen de `es.ts` con imports solo de tipos, que no meten ese archivo en el chunk principal.
+- `REPOS` pasa a `i18n/repos.ts`: así `es.ts` no importa valores de `textos.ts` (que antes era un import circular).
+- Cuándo se carga: `main.tsx` espera `cargarIdioma` con el idioma de la URL (`?lang=es`) antes de dibujar; el botón de idioma (`setIdioma`) cambia recién cuando el español ya está cargado. `testing/setup.ts` carga el español con `await` antes de reunir las pruebas.
+
+## Arreglado (de las revisiones)
+
+- Si el chunk del español no baja, `main.tsx` dibuja en inglés en vez de quedar en blanco, y `setIdioma` no deja un rechazo sin manejar.
+- `setIdioma`: si se pide otro idioma antes de que llegue el anterior, gana el último pedido (antes la UI podía quedar en un idioma y la URL en otro).
+- Los mapas ya no mienten en el tipo para el idioma por defecto: `en` siempre existe; solo `es` llega después.
+- Comentario de `busqueda.ts` corregido: sin `?lang`, inglés.
 
 ## Notas
-- Rama apilada sobre `refactor/datos-locales-diferidos` (#79): los dos tocan `main.tsx` y `testing/setup.ts`.
-- Quien entra en español nunca baja el inglés. Quien cambia a inglés espera una petición pequeña (12 KB gz) antes de ver el cambio; no hay indicador de carga porque es breve.
-- Hay que tener en cuenta: leer `TEXTOS.en` (o cualquier mapa `.en`) antes de `cargarIdioma('en')` da `undefined`.
-- `pnpm lint`, `pnpm build`, `pnpm test` (144 pasan) y e2e `recorrido`, `enlaces`, `selector-zona`, `cabecera-perfil` pasan.
+
+- Quien entra en inglés (la mayoría) no baja el español. Quien cambia a español espera una petición pequeña (13,5 KB gz) antes de ver el cambio; no hay indicador de carga porque es breve.
+- Hay que tener en cuenta: leer `TEXTOS.es` (o cualquier mapa `.es`) antes de `cargarIdioma('es')` da `undefined`.
+- Chunk principal de textos: 18,5 KB gz (antes del cambio llevaba ambos idiomas).

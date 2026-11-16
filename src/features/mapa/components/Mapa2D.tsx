@@ -203,7 +203,7 @@ interface Props {
  * color pleno, punteado o contorno de guiones.
  */
 export function Mapa2D({ interactivo = true }: Props) {
-  const { idioma } = useApp()
+  const idioma = useApp((s) => s.idioma)
   const periodo = usePeriodo()
   const { variable, sel, seleccionar, vegetacion } = useBusqueda()
   const anio = useAnio()

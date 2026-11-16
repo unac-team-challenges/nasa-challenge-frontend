@@ -3,6 +3,7 @@ import { TEXTOS } from '@/i18n/textos'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { anomaliasAnio } from '@/data/datos'
 import { esUbigeo, useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { EscenaPeru, type ModoMapa } from '@/features/mapa/escena/escena'
 import { escenaActiva } from '@/features/mapa/escena/activa'
@@ -23,7 +24,9 @@ export function Mapa3D({ modo }: Props) {
   const contenedor = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
   const escena = useRef<EscenaPeru | null>(null)
-  const { idioma, tema, conWebgl } = useApp()
+  const { idioma, tema, conWebgl } = useApp(
+    useShallow((s) => ({ idioma: s.idioma, tema: s.tema, conWebgl: s.conWebgl })),
+  )
   const periodo = usePeriodo()
   const busqueda = useBusqueda()
   const { variable, sel, vegetacion } = busqueda
@@ -45,12 +48,23 @@ export function Mapa3D({ modo }: Props) {
   // Crear y destruir la escena (solo al montar)
   useEffect(() => {
     if (!conWebgl || !contenedor.current || !capa.current) return
-    const e = new EscenaPeru(contenedor.current, capa.current, {
-      oceano: TEXTOS[useApp.getState().idioma].ocean,
-      modo: modoInicial.current,
-      alElegir: (id) => busquedaRef.current.seleccionar(id, true),
-      alGirar: (g) => useApp.getState().setGirando(g),
-    })
+    // WebGL que se creó pero no funciona (el navegador lo ofrece y luego falla, o se pierde el
+    // contexto): se sigue con el mapa 2D en vez de la pantalla de error
+    const a2d = () => useApp.setState({ conWebgl: false, modoMapa: '2d' })
+    let e: EscenaPeru
+    try {
+      e = new EscenaPeru(contenedor.current, capa.current, {
+        oceano: TEXTOS[useApp.getState().idioma].ocean,
+        modo: modoInicial.current,
+        alElegir: (id) => busquedaRef.current.seleccionar(id, true),
+        alGirar: (g) => useApp.getState().setGirando(g),
+        alPerderContexto: a2d,
+      })
+    } catch (err) {
+      console.error('No se pudo crear la escena 3D; se usa el mapa 2D', err)
+      a2d()
+      return
+    }
     escena.current = e
     escenaActiva.current = e
     e.aplicarTema()

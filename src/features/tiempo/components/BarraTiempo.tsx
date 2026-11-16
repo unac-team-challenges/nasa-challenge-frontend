@@ -5,6 +5,7 @@ import { colorAnomalia } from '@/utils/color'
 import { useAnio, useBusqueda, usePeriodo } from '@/lib/busqueda'
 import { fmtAnomalia } from '@/utils/formato'
 import { useRango } from '@/hooks/useZonas'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
@@ -18,7 +19,13 @@ const PASO_MS = 850
  * el desplazamiento de la página). Las franjas del Perú son el riel; encima va el deslizador.
  */
 export function BarraTiempo() {
-  const { idioma, reproduciendo, setReproduciendo } = useApp()
+  const { idioma, reproduciendo, setReproduciendo } = useApp(
+    useShallow((s) => ({
+      idioma: s.idioma,
+      reproduciendo: s.reproduciendo,
+      setReproduciendo: s.setReproduciendo,
+    })),
+  )
   const periodo = usePeriodo()
   const { variable, setAnio } = useBusqueda()
   const anio = useAnio()

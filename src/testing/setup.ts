@@ -26,6 +26,6 @@ globalThis.ResizeObserver ??= class {
 configure({ asyncUtilTimeout: 5000 })
 
 // datos.ts y textos.ts cargan aparte la copia local y el inglés (import dinámico); main.tsx los espera
-// y las pruebas también, y antes de reunirlas: algunas leen TEXTOS.en al declarar los `describe`
-await Promise.all([cargarPower(), cargarIdioma('en')])
+// y las pruebas también, y antes de reunirlas: algunas leen TEXTOS.es al declarar los `describe`
+await Promise.all([cargarPower(), cargarIdioma('es')])
 afterEach(cleanup)

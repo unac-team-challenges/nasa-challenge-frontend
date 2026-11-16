@@ -14,7 +14,11 @@ const consultas = new QueryClient({
 
 // Las funciones de datos.ts y TEXTOS son síncronas: se dibuja cuando la copia local y el idioma de la
 // URL ya están cargados
-void Promise.all([cargarPower(), cargarIdioma(useApp.getState().idioma)]).then(() =>
+// Si el español (chunk aparte) no baja, se dibuja en inglés, que ya viaja en el código: nunca queda en blanco
+const idiomaInicial = useApp.getState().idioma
+const cargaIdioma = cargarIdioma(idiomaInicial).catch(() => useApp.setState({ idioma: 'en' }))
+
+void Promise.all([cargarPower(), cargaIdioma]).then(() =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <QueryClientProvider client={consultas}>

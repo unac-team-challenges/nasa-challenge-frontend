@@ -289,6 +289,7 @@ export function Leyenda() {
       )}
       <div
         data-cubre-mapa
+        data-guia="leyenda"
         className={`absolute left-3 z-[3] rounded-m border border-line bg-panel/92 text-[13px] shadow-[0_8px_24px_-16px_var(--shadow)] backdrop-blur-sm min-[901px]:bottom-3.5 ${
           abierta ? 'w-[min(300px,calc(100%-24px))]' : 'w-max'
         } ${anual ? 'bottom-[86px]' : 'bottom-[66px]'} ${hoja}`}

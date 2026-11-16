@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/assets/(.*)",
+      "destination": "/assets-no-existe"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -42,6 +42,8 @@ const riel =
 /** Bajo 420 px solo queda "Detective" y bajo 360 px solo el logo: el nombre sigue en el aria-label */
 const resto = 'font-display font-semibold max-[419px]:hidden'
 const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed:shadow-sm'
+/** El perfil va en el rosado del borde superior: se distingue de las variables */
+const opcionPerfil = `${opcion} text-accent-text hover:bg-accent-soft hover:text-accent-text aria-pressed:bg-accent aria-pressed:text-accent-fg`
 /** Al inicio viajan las opciones del mapa y el idioma (no el año ni la zona) */
 const aInicio = (p: Busqueda) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })
 
@@ -95,8 +97,8 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:mx-auto min-[901px]:flex-none min-[901px]:overflow-visible min-[901px]:p-0">
-        <div className={riel} role="group" aria-label={t.variableLbl}>
+      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:flex-1 min-[901px]:overflow-visible min-[901px]:p-0">
+        <div className={riel} role="group" aria-label={t.variableLbl} data-guia="variables">
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
             return (
@@ -129,7 +131,8 @@ export function Cabecera() {
             <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
           </Button>
         </div>
-        <div className={riel} role="group" aria-label={t.perfilLbl}>
+        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular */}
+        <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">
           {ORDEN_PERFILES.map((p) => {
             const Icono = ICONO_PERFIL[p]
             return (
@@ -137,7 +140,7 @@ export function Cabecera() {
                 key={p}
                 variant="toggle"
                 size="sm"
-                className={opcion}
+                className={opcionPerfil}
                 aria-pressed={perfil === p}
                 title={`${t.perfiles[p][0]}: ${t.perfiles[p][1]}`}
                 onClick={() => setPerfil(p)}

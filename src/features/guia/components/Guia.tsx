@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from '@tanstack/react-router'
 import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
@@ -52,10 +53,13 @@ const reducido = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)')
 /**
  * Tour por pasos para quien entra por primera vez: oscurece la pantalla, resalta una parte real
  * (mapa, leyenda, variables, perfil, tiempo, informe, controles, metodología) y la explica en
- * palabras simples. Arranca solo en la primera visita al explorador y se repite con «?».
+ * palabras simples. Arranca sola en la primera visita (portada o explorador) y se repite con «?».
+ * En la portada (`portada`) solo se ve el primer paso, que no señala nada: «Siguiente» lleva al
+ * explorador y el tour sigue allí.
  */
-export function Guia() {
+export function Guia({ portada = false }: { portada?: boolean }) {
   const paso = useGuia((s) => s.paso)
+  const navigate = useNavigate()
   const idioma = useApp((s) => s.idioma)
   const { sel, seleccionar } = useBusqueda()
   const [caja, setCaja] = useState<Caja | null>(null)
@@ -92,6 +96,11 @@ export function Guia() {
   /** Va al paso pedido; salta los que no tienen su ancla en pantalla (la barra de tiempo no
    * existe en el modo vegetación). Pasado el último, cierra. */
   const ir = (destino: number, dir: 1 | -1) => {
+    if (portada) {
+      useGuia.getState().ir(destino)
+      void navigate({ to: '/explorar', search: (s) => s })
+      return
+    }
     let n = destino
     while (n >= 0 && n < PASOS.length) {
       const ancla = PASOS[n].ancla?.(etiquetas)
@@ -179,7 +188,8 @@ export function Guia() {
     return () => removeEventListener('keydown', tecla)
   })
 
-  if (paso == null || !actual) return null
+  // En la portada, pasado el primer paso el tour lo sigue el explorador
+  if (paso == null || !actual || (portada && paso > 0)) return null
   const ui = UI[idioma]
   const { titulo, cuerpo } = actual.texto[idioma]
   const ultimo = paso === PASOS.length - 1

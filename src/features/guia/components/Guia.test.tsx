@@ -93,4 +93,24 @@ describe('guía de la primera visita', () => {
     await user.click(screen.getAllByRole('button', { name: 'Ver la guía' })[0])
     expect(screen.getByRole('dialog', { name: titulo(0) })).toBeVisible()
   })
+
+  it('en la portada sale el primer paso y «Siguiente» sigue el tour en el explorador', async () => {
+    const user = userEvent.setup()
+    const router = renderRuta('/', true)
+    await screen.findByRole('dialog', { name: titulo(0) })
+    expect(localStorage.getItem('guia-vista')).toBe('1')
+
+    await user.click(boton('Siguiente'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(await screen.findByRole('dialog', { name: titulo(1) })).toBeVisible()
+  })
+
+  it('en la portada «Saltar la guía» la cierra sin salir de la portada', async () => {
+    const user = userEvent.setup()
+    const router = renderRuta('/', true)
+    await screen.findByRole('dialog', { name: titulo(0) })
+    await user.click(boton('Saltar la guía'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(router.state.location.pathname).toBe('/')
+  })
 })

@@ -14,6 +14,6 @@
 - Mapa 3D: el lienzo es `role="img"`, sin teclado. La alternativa es la lista de departamentos de la ficha (`SelectorZona`), que #82 dejó oculta a la vista y visible solo con el foco (e2e `selector-zona`). Tras «Saltar al contenido», esa lista se alcanza con `Tab`. No se agregó navegación por teclado dentro del lienzo 3D.
 
 ## Notas
-- Rama apilada sobre `refactor/textos-por-idioma` (#80): el texto nuevo va en `textos.ts` (inglés, siempre cargado) y `es.ts` (español, en su propio chunk). Con `developer` integrado (#82, #89, #91, #92, #93).
+- Base `developer`, ya con #80: el texto nuevo va en `textos.ts` (inglés, siempre cargado) y `es.ts` (español, en su propio chunk). Probado con #82, #89, #91, #92 y #93 adentro.
 - La guía de la primera visita (#91) deja `#root` inerte mientras está abierta: el enlace no se alcanza hasta cerrarla, como el resto de la página.
 - `pnpm lint`, `tsc -b`, `pnpm build` y `pnpm test` (190 pasan, 4 omitidas); e2e completo en local (71 pasan, escritorio y celular).

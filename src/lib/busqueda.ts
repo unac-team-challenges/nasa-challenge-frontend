@@ -35,8 +35,6 @@ const esquema = z.object({
     .catch(undefined),
   /** `1` = tendencia sin los años de El Niño (solo lluvia); sin él, con todos los años. */
   sinnino: z.literal('1').optional().catch(undefined),
-  /** Capa del mapa: «vegetacion» muestra los 5 recuadros con vegetación medida en vez de la variable */
-  capa: z.enum(['vegetacion']).optional().catch(undefined),
   /** Año de la máquina del tiempo (sin él se ve la tendencia) */
   anio: z.coerce.number().int().min(1981).max(2100).optional().catch(undefined),
 })
@@ -58,21 +56,16 @@ export const esUbigeo = (id: string) => /^(0[1-9]|1\d|2[0-5])$/.test(id)
 
 export type Busqueda = z.output<typeof esquema>
 
-export const validarBusqueda = (s: Record<string, unknown>): Busqueda => esquema.parse(s)
+// Los enlaces viejos con ?capa=vegetacion («Lugares medidos», ya quitado) abren la variable Vegetación
+export const validarBusqueda = (s: Record<string, unknown>): Busqueda =>
+  esquema.parse(s.capa === 'vegetacion' ? { ...s, variable: 'vegetacion' } : s)
 
 /**
  * Año de la máquina del tiempo (null = tendencia). Va aparte de useBusqueda a propósito: al
  * arrastrar la barra cambia muchas veces por segundo, y solo deben redibujarse quienes lo usan.
  */
 export function useAnio(): number | null {
-  // En el modo Vegetación no hay máquina del tiempo: un ?anio suelto no se aplica
-  return useSearch({
-    strict: false,
-    select: (s) => {
-      const b = s as Busqueda
-      return b.capa === 'vegetacion' ? null : (b.anio ?? null)
-    },
-  })
+  return useSearch({ strict: false, select: (s) => (s as Busqueda).anio ?? null })
 }
 
 /** Periodo de la tendencia (de la URL; `reciente` por defecto). */
@@ -93,14 +86,15 @@ export function useSinNino(): boolean {
 export function useBusqueda() {
   const variable = useSearch({ strict: false, select: (s) => (s as Busqueda).variable })
   const perfil = useSearch({ strict: false, select: (s) => (s as Busqueda).perfil })
-  const capa = useSearch({ strict: false, select: (s) => (s as Busqueda).capa })
   const id = useParams({ strict: false, select: (p) => (p as { id?: string }).id })
   const navigate = useNavigate()
-  // El modo Vegetación es del explorador: en la portada o en la metodología, ?capa no cambia nada
+  // La vista de verdor es del explorador: en la portada la vegetación va en columnas como las demás
   const enMapa = useRouterState({
     select: (r) => r.location.pathname === '/explorar' || r.location.pathname.startsWith('/zona/'),
   })
-  const vegetacion = enMapa && capa === 'vegetacion'
+  // El 2D no tiene bosque: ahí la vegetación se ve como las demás variables
+  const en3d = useApp((s) => s.modoMapa === '3d')
+  const vegetacion = enMapa && en3d && variable === 'vegetacion'
   const router = useRouter() // sin suscripción: la ruta se lee solo al hacer clic
   const poner = (cambio: Partial<Busqueda>) => {
     // En la metodología la variable y el perfil no tienen dónde verse: se va al mapa con ellos
@@ -116,27 +110,13 @@ export function useBusqueda() {
     variable: variable ?? 'lluvia',
     perfil: perfil ?? 'agricultor',
     sel: id ?? null,
-    /** Modo «Vegetación»: los 5 recuadros medidos (la vegetación no es una variable de los 25) */
+    /**
+     * Vista de verdor: la variable Vegetación en el explorador. El mapa 3D sube cada departamento
+     * según su verdor medio y planta el bosque; el informe sigue con la tendencia (los datos no cambian).
+     */
     vegetacion,
-    // Cambiar de variable quita «sin El Niño» (solo existe para la lluvia) y sale del modo Vegetación
-    // (también se suelta un ?anio que en ese modo no se veía)
-    setVariable: (variable: Variable) =>
-      poner({
-        variable,
-        sinnino: undefined,
-        capa: undefined,
-        ...(capa ? { anio: undefined } : {}),
-      }),
-    /** Entra al modo Vegetación (sin máquina del tiempo); desde la portada, lleva al explorador */
-    setVegetacion: () => {
-      useApp.getState().setReproduciendo(false)
-      return navigate({
-        to: id ? '/zona/$id' : '/explorar',
-        params: id ? { id } : {},
-        search: (p: Busqueda) => ({ ...p, capa: 'vegetacion' as const, anio: undefined }),
-        replace: true,
-      })
-    },
+    // Cambiar de variable quita «sin El Niño» (solo existe para la lluvia)
+    setVariable: (variable: Variable) => poner({ variable, sinnino: undefined }),
     /** Cambiar el periodo detiene la reproducción de la barra de tiempo. */
     setPeriodo: (periodo: Periodo) => {
       useApp.getState().setReproduciendo(false)

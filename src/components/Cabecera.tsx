@@ -5,7 +5,6 @@ import {
   GraduationCap,
   House,
   Leaf,
-  MapPin,
   Moon,
   Sprout,
   Sun,
@@ -57,8 +56,7 @@ export function Cabecera() {
   const alternarTema = useApp((s) => s.alternarTema)
   const enInicio = useRuta() === 'inicio'
   // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=es, #37)
-  const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
-    useBusqueda()
+  const { variable, setVariable, perfil, setPerfil, setIdioma } = useBusqueda()
   const t = TEXTOS[idioma]
   const variables = Object.entries(t.variables) as [Variable, string][]
   const [antes, despues] = t.marca.split('Detective')
@@ -107,7 +105,7 @@ export function Cabecera() {
                 variant="toggle"
                 size="sm"
                 className={opcion}
-                aria-pressed={!vegetacion && variable === v}
+                aria-pressed={variable === v}
                 title={nombre}
                 onClick={() => setVariable(v)}
               >
@@ -117,19 +115,6 @@ export function Cabecera() {
               </Button>
             )
           })}
-          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos de cerca (Caso 2 y selva) */}
-          <Button
-            variant="toggle"
-            size="sm"
-            className={opcion}
-            aria-pressed={vegetacion}
-            title={t.vegetacionBtn}
-            onClick={() => setVegetacion()}
-          >
-            <MapPin className="size-4" aria-hidden="true" />
-            {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
-            <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
-          </Button>
         </div>
         {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular */}
         <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">

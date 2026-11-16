@@ -76,12 +76,12 @@ export const PASOS: Paso[] = [
       es: {
         titulo: '¿Qué quieres mirar?',
         cuerpo:
-          'Elige lluvia o temperatura. «Lugares medidos» muestra 5 sitios donde los satélites vieron si hay más o menos plantas.',
+          'Elige lluvia, temperatura o vegetación. En vegetación, el mapa 3D sube cada departamento según su verdor y planta sus árboles.',
       },
       en: {
         titulo: 'What do you want to see?',
         cuerpo:
-          'Pick rainfall or temperature. "Measured places" shows 5 spots where satellites saw whether there are more or fewer plants.',
+          'Pick rainfall, temperature or vegetation. In vegetation, the 3D map raises each department by its greenness and grows its trees.',
       },
     },
   },

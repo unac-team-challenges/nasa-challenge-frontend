@@ -83,10 +83,7 @@ export function EstRecursos() {
       {/* La zona y la variable en la key: al cambiar, el panel vuelve a todo el periodo */}
       <EstDescargas key={`${sel}-${variable}`} />
 
-      <section
-        aria-labelledby="citar-h"
-        className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-      >
+      <section aria-labelledby="citar-h" className="flex flex-col gap-3 bloque-ficha">
         <h3 id="citar-h" className="m-0 text-sm font-semibold">
           {t.citarH}
         </h3>
@@ -95,10 +92,7 @@ export function EstRecursos() {
         <Copiable etiqueta={`${t.citarEnlace} (${NOMBRE[sel]})`} texto={enlace} />
       </section>
 
-      <section
-        aria-labelledby="repro-h"
-        className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-      >
+      <section aria-labelledby="repro-h" className="flex flex-col gap-3 bloque-ficha">
         <h3 id="repro-h" className="m-0 text-sm font-semibold">
           {t.reproH}
         </h3>

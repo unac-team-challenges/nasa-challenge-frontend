@@ -5,10 +5,7 @@ import { useApp } from '@/stores/app'
 export function EstLimitaciones({ anios }: { anios: number }) {
   const t = TEXTOS[useApp((s) => s.idioma)]
   return (
-    <section
-      aria-labelledby="lim-h"
-      className="flex flex-col gap-2 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="lim-h" className="flex flex-col gap-2 bloque-ficha">
       <h3 id="lim-h" className="m-0 text-sm font-semibold">
         {t.limH}
       </h3>

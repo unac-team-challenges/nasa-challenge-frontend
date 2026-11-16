@@ -84,7 +84,7 @@ export function EstDescargas() {
     <>
       <section
         aria-labelledby="llevar-h"
-        className="flex flex-col gap-3 rounded-m border border-line p-3.5 print:hidden"
+        className="flex flex-col gap-3 bloque-ficha print:hidden"
       >
         <h3 id="llevar-h" className="m-0 text-sm font-semibold">
           {t.llevarH}

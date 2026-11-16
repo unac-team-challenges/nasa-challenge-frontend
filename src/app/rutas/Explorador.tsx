@@ -19,6 +19,7 @@ import { Popover } from 'radix-ui'
 import { BotonCompartir } from '@/components/BotonCompartir'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
+import { BarraZona } from '@/app/rutas/BarraZona'
 import { FRANJA, useInforme } from '@/app/rutas/useInforme'
 import { RETRASO_INFO_S, usePresentacionZona } from '@/app/rutas/usePresentacionZona'
 import { Guia } from '@/features/guia/components/Guia'
@@ -265,7 +266,7 @@ export function Explorador() {
       <aside
         ref={informe}
         data-guia="informe"
-        className={`pointer-events-auto relative flex min-w-0 overflow-hidden border-line bg-panel escritorio:absolute escritorio:inset-y-0 escritorio:right-0 escritorio:w-[var(--ancho-informe)] escritorio:border-l escritorio:shadow-[-12px_0_32px_var(--shadow)] escritorio:transition-transform escritorio:duration-500 escritorio:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+        className={`pointer-events-auto relative flex min-w-0 overflow-x-clip border-line escritorio:overflow-hidden bg-panel escritorio:absolute escritorio:inset-y-0 escritorio:right-0 escritorio:w-[var(--ancho-informe)] escritorio:border-l escritorio:shadow-[-12px_0_32px_var(--shadow)] escritorio:transition-transform escritorio:duration-500 escritorio:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           informeMin ? 'escritorio:translate-x-[calc(100%-56px)]' : ''
         }`}
         style={{ transitionDelay: demoraPanel }}
@@ -316,6 +317,10 @@ export function Explorador() {
             className="min-w-0 flex-1 px-4 pt-5.5 pb-7 escritorio:overflow-y-auto escritorio:px-5.5"
             aria-live="polite"
           >
+            {/* Celular: la zona y su cambio quedan a la vista al bajar por el informe */}
+            {sel && d && !vegetacion && (
+              <BarraZona key={sel} sel={sel} zona={d} variable={variable} idioma={idioma} />
+            )}
             {/* La información entra suave cuando termina la presentación del departamento */}
             <div
               className="entrada"

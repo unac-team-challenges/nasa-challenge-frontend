@@ -421,6 +421,21 @@ h3 {
   box-shadow: 0 8px 28px color-mix(in srgb, var(--shadow) 70%, transparent);
 }
 
+/* Bloques de la ficha: caja con borde en escritorio. En celular, una línea arriba y sin caja:
+   el informe es largo y tantas cajas iguales no dejaban ver qué era lo importante. */
+.bloque-ficha {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 14px;
+}
+@media not all and (min-width: 901px) and (min-height: 560px) {
+  .bloque-ficha {
+    border-width: 1px 0 0;
+    border-radius: 0;
+    padding: 16px 0 0;
+  }
+}
+
 /* Barra que se vacía mientras un aviso se cierra solo */
 @keyframes cuenta-atras {
   from {

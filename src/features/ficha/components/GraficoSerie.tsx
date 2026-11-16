@@ -61,7 +61,7 @@ export function GraficoSerie({ zona: d, variable, pts, sinNino, idioma, color, a
   return (
     <div className="flex flex-col gap-2">
       <div
-        className="aspect-[400/224] w-full"
+        className="aspect-[400/270] w-full min-[480px]:aspect-[400/224]"
         role="img"
         aria-label={`${NOMBRE[d.id]}: ${fmtValor(d.slope_per_decade, variable, idioma)} ${t.perDecade}`}
       >

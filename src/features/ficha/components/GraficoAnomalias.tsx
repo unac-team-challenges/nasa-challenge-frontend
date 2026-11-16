@@ -59,7 +59,11 @@ export function GraficoAnomalias({ id, variable, pts, sinNino, idioma, anio }: P
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="aspect-[400/224] w-full" role="img" aria-label={`${NOMBRE[id]}: ${t.anomH}`}>
+      <div
+        className="aspect-[400/270] w-full min-[480px]:aspect-[400/224]"
+        role="img"
+        aria-label={`${NOMBRE[id]}: ${t.anomH}`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={filas} margin={{ ...MARGEN, top: 30 }} barCategoryGap={1}>
             <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="2 4" />
@@ -78,7 +82,7 @@ export function GraficoAnomalias({ id, variable, pts, sinNino, idioma, anio }: P
                         // Cerca del borde derecho, la etiqueta se alinea a la derecha para no cortarse
                         position: y >= y1 - 2 ? 'insideTopRight' : 'insideTopLeft',
                         offset: 2,
-                        fontSize: 10,
+                        fontSize: 11,
                         fill: 'var(--muted)',
                       }
                     : undefined

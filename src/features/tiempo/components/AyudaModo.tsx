@@ -50,7 +50,7 @@ export function AyudaModo() {
   return (
     <div
       role="status"
-      className="vidrio pointer-events-auto relative hidden max-w-120 animate-in items-start gap-2.5 overflow-hidden rounded-m py-2 pr-1.5 pl-3 text-[13px] leading-snug text-fg fade-in-0 slide-in-from-top-1 motion-reduce:animate-none min-[901px]:flex"
+      className="vidrio pointer-events-auto relative hidden max-w-120 animate-in items-start gap-2.5 overflow-hidden rounded-m py-2 pr-1.5 pl-3 text-[13px] leading-snug text-fg fade-in-0 slide-in-from-top-1 motion-reduce:animate-none escritorio:flex"
     >
       <Info className="mt-0.5 size-4 flex-none text-muted" aria-hidden="true" />
       <span className="flex-1 py-px">{t.timeHelp(b - a + 1)}</span>

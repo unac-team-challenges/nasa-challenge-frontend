@@ -10,6 +10,7 @@ import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 import { MenuCelular, SelectorVariable } from '@/components/CabeceraCelular'
 import { ICONO_PERFIL, ICONO_VARIABLE, IDIOMAS, aInicio } from '@/components/opcionesCabecera'
+import { MQ_CELULAR } from '@/utils/disposicion'
 
 /** Contenedor de opciones (variable, perfil, idioma): un riel con la opción activa resaltada */
 const riel =
@@ -22,7 +23,7 @@ const opcionPerfil = `${opcion} text-accent-text hover:bg-accent-soft hover:text
 
 /**
  * Barra superior: marca (lleva al inicio), variable, perfil, idioma y tema.
- * En celular (≤ 900 px) queda en 1 fila: marca, selector de variable y menú ☰ (perfil, idioma
+ * En celular queda en 1 fila: marca, selector de variable y menú ☰ (perfil, idioma
  * y tema en una hoja desde abajo). Los controles de escritorio se ocultan.
  */
 export function Cabecera() {
@@ -37,17 +38,17 @@ export function Cabecera() {
   const [antes, despues] = t.marca.split('Detective')
   // En celular la cabecera se esconde al bajar por la página y vuelve al subir (más sitio para leer)
   const barra = useRef<HTMLElement>(null)
-  const oculta = useOcultarAlBajar(barra, '(max-width: 900px)')
+  const oculta = useOcultarAlBajar(barra, MQ_CELULAR)
   return (
     <header
       ref={barra}
       data-oculta={oculta}
-      className="sticky top-0 z-20 flex items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md max-[900px]:transition-transform max-[900px]:duration-200 max-[900px]:data-[oculta=true]:-translate-y-full max-[900px]:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+      className="sticky top-0 z-20 flex items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md celular:transition-transform celular:duration-200 celular:data-[oculta=true]:-translate-y-full celular:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
     >
       <Link
         to="/"
         search={aInicio}
-        className="group mr-auto flex min-w-0 items-center gap-2.5 text-fg no-underline sm:gap-3 min-[901px]:mr-0"
+        className="group mr-auto flex min-w-0 items-center gap-2.5 text-fg no-underline sm:gap-3 escritorio:mr-0"
         aria-label={t.inicio}
         aria-current={enInicio ? 'page' : undefined}
       >
@@ -71,7 +72,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="flex flex-1 items-center gap-2 max-[900px]:hidden">
+      <div className="flex flex-1 items-center gap-2 celular:hidden">
         <div className={riel} role="group" aria-label={t.variableLbl} data-guia="variables">
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
@@ -123,7 +124,7 @@ export function Cabecera() {
         </div>
       </div>
 
-      <div className="flex flex-none items-center gap-2 max-[900px]:hidden">
+      <div className="flex flex-none items-center gap-2 celular:hidden">
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (
             <Button
@@ -155,7 +156,7 @@ export function Cabecera() {
       </div>
 
       {/* Celular: variable a la vista y el resto en el menú ☰ */}
-      <div className="flex flex-none items-center gap-2 min-[901px]:hidden">
+      <div className="flex flex-none items-center gap-2 escritorio:hidden">
         <SelectorVariable />
         <MenuCelular />
       </div>

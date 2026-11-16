@@ -6,6 +6,7 @@ import { fmtValor } from '@/utils/formato'
 import { useRango, useZonas } from '@/hooks/useZonas'
 import { escenaActiva } from '@/features/mapa/escena/activa'
 import { Mapa2D } from '@/features/mapa/components/Mapa2D'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { useAnio, useBusqueda, useSinNino } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
@@ -33,8 +34,27 @@ const ANCHO_INFORME = 'clamp(340px, 38vw, 560px)'
  * cámara corre el Perú a la izquierda del informe (setPanel) y todo se anima.
  */
 export function Explorador() {
-  const { idioma, informeMin, setInformeMin, zonaDesdeMapa } = useApp()
-  const { conWebgl, modoMapa, setModoMapa, girando } = useApp()
+  const {
+    idioma,
+    informeMin,
+    setInformeMin,
+    zonaDesdeMapa,
+    conWebgl,
+    modoMapa,
+    setModoMapa,
+    girando,
+  } = useApp(
+    useShallow((s) => ({
+      idioma: s.idioma,
+      informeMin: s.informeMin,
+      setInformeMin: s.setInformeMin,
+      zonaDesdeMapa: s.zonaDesdeMapa,
+      conWebgl: s.conWebgl,
+      modoMapa: s.modoMapa,
+      setModoMapa: s.setModoMapa,
+      girando: s.girando,
+    })),
+  )
   const cajaMapa = useMargenMapa<HTMLDivElement>()
   const { variable, sel, seleccionar, vegetacion } = useBusqueda()
   const anio = useAnio()

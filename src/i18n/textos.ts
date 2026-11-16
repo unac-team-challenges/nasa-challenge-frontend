@@ -1415,151 +1415,203 @@ export const CAUSAS_TEXTOS: Record<
   },
 }
 
-/** Nombre y dato de cada personaje de la fauna del mapa 3D (src/features/mapa/escena/fauna.ts), por especie. */
+/**
+ * Nombre y dato de cada personaje de la fauna del mapa 3D (src/features/mapa/escena/fauna.ts), por
+ * especie. Cada dato une al personaje con el clima y el agua de su zona (lluvia, sequía, deshielo,
+ * El Niño, vegetación), que es de lo que trata el mapa. Debajo del dato, el globo suma la cifra
+ * de la NASA de su departamento (FAUNA_CLIMA).
+ */
 export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
   es: {
     alpaca: [
       'Alpaca · Puno',
-      'Puno cría la mayor cantidad de alpacas del Perú. Las borlas de lana en las orejas son una tradición andina para marcar a cada animal.',
+      'Pasta en los bofedales, humedales de altura que se llenan con la lluvia y el deshielo. Si llueve menos, esos pastos se secan.',
     ],
     vicuna: [
       'Vicuña · Ayacucho',
-      'Animal nacional: está en el escudo del Perú. La Reserva Pampa Galeras ayudó a salvarla de la extinción.',
+      'Vive en la puna, por encima de los 3 800 m. Su pasto depende de la temporada de lluvias: en años secos hay menos que comer.',
     ],
     condor: [
       'Cóndor andino · Arequipa',
-      'Planea sobre el Cañón del Colca aprovechando el aire caliente; sus alas pasan los 3 metros.',
+      'Planea sobre el Colca sin aletear: aprovecha el aire caliente que sube del cañón cuando el sol calienta el suelo.',
     ],
     pastora: [
       'Pastora andina · Cusco',
-      'Pollera y montera: ropa tradicional de las comunidades quechuas del Cusco.',
+      'Llueve sobre todo entre diciembre y marzo. El resto del año su rebaño se alimenta de bofedales y del agua del deshielo.',
     ],
     caballito: [
       'Caballito de totora · La Libertad',
-      'Los pescadores de Huanchaco usan estas balsas de junco desde tiempos preincas.',
+      'Los pescadores salen al mar frío de la corriente de Humboldt. Cuando El Niño calienta el agua, la pesca cambia.',
     ],
     agricultor: [
       'Agricultor · Ica',
-      'El riego convierte el desierto de Ica en viñedos para el pisco y campos de espárragos.',
+      'En Ica casi no llueve: la chacra vive del riego con el agua de los ríos y del subsuelo. Por eso importa cuánto llueve en la sierra.',
     ],
     pinguino: [
       'Pingüino de Humboldt · Ica',
-      'Vive en las islas Ballestas, en el agua fría de la corriente de Humboldt. Es una especie vulnerable.',
+      'Se alimenta de peces del mar frío. Cuando El Niño calienta el agua, el pescado se aleja y su población baja.',
     ],
-    lobo: ['Lobo marino · Callao', 'Forma colonias en las islas Palomino, frente al Callao.'],
+    lobo: [
+      'Lobo marino · Callao',
+      'Vive de los peces de la corriente fría. En los años de El Niño el pescado escasea y las crías la pasan mal.',
+    ],
     pelicano: [
       'Pelícano peruano · costa norte',
-      'Pesca anchoveta en el mar frío de la corriente de Humboldt.',
+      'Sigue los cardúmenes de anchoveta en el mar frío. Cuando el agua del norte se calienta, la anchoveta se va.',
     ],
     delfin: [
       'Delfín rosado · Loreto',
-      'Vive en los ríos amazónicos, como los de la Reserva Pacaya Samiria.',
+      'Cuando el río crece, nada entre los árboles inundados. Cuando baja, se queda en cauces más angostos.',
     ],
     guacamayo: [
       'Guacamayo escarlata · Madre de Dios',
-      'Cientos se reúnen en las collpas, paredes de arcilla junto a los ríos de Tambopata.',
+      'Depende de las frutas del bosque húmedo. Cientos se juntan en las collpas, barrancos de arcilla junto a los ríos de Tambopata.',
     ],
-    jaguar: ['Jaguar · Ucayali', 'El felino más grande de América vive en la selva amazónica.'],
+    jaguar: [
+      'Jaguar · Ucayali',
+      'Vive en un bosque que fabrica parte de su propia lluvia: los árboles devuelven agua al aire. Si se talan, llueve menos.',
+    ],
     gallito: [
       'Gallito de las rocas · San Martín',
-      'Ave nacional del Perú; vive en los bosques nublados.',
+      'Vive en el bosque nublado, donde la neblina da humedad todo el año. Si el clima se calienta, esa franja sube de altura.',
     ],
     mono: [
       'Mono choro de cola amarilla · Amazonas',
-      'Solo existe en el Perú y está en peligro crítico de extinción.',
+      'Solo existe en el bosque nublado del norte del Perú. Está en peligro crítico: sin ese bosque verde y húmedo no tiene dónde vivir.',
     ],
     oso: [
       'Oso de anteojos · Cajamarca',
-      'El único oso de Sudamérica; las manchas claras de su cara son distintas en cada uno.',
+      'Vive en bosques húmedos y páramos. Cuando falta comida, baja a las chacras de maíz.',
     ],
     cocodrilo: [
       'Cocodrilo americano · Tumbes',
-      'El único cocodrilo del Perú vive en los manglares y ríos de Tumbes.',
+      'Su manglar mezcla el agua dulce de los ríos con la del mar. Si llueve menos, el agua se vuelve más salada.',
     ],
     caballo: [
       'Caballo peruano de paso · Lima',
-      'Su andar suave, el «paso llano», es patrimonio cultural de la nación.',
+      'Lima es costa desértica: casi no llueve y los valles verdes viven de los ríos que bajan de los Andes.',
     ],
     shipibo: [
       'Mujer shipibo-konibo · Ucayali',
-      'Pueblo amazónico del río Ucayali. Sus diseños kené, pintados y bordados, son Patrimonio Cultural de la Nación desde 2008.',
+      'Su pueblo vive junto al Ucayali, un río que sube y baja con la lluvia. Esa crecida marca cuándo sembrar y cuándo pescar.',
     ],
     danzante: [
       'Danzante de tijeras · Huancavelica',
-      'El danzaq baila al ritmo de unas tijeras de metal. La UNESCO la declaró Patrimonio Cultural Inmaterial de la Humanidad en 2010.',
+      'Baila en las fiestas de limpieza de acequias, cuando la comunidad agradece el agua que riega sus cultivos. La UNESCO la reconoce desde 2010.',
     ],
   },
   en: {
     alpaca: [
       'Alpaca · Puno',
-      'Puno raises more alpacas than any other region of Peru. The wool tassels on their ears are an Andean tradition to mark each animal.',
+      'It grazes on bofedales, high-altitude wetlands filled by rain and meltwater. When it rains less, those pastures dry out.',
     ],
     vicuna: [
       'Vicuña · Ayacucho',
-      "National animal, shown on Peru's coat of arms. The Pampa Galeras reserve helped save it from extinction.",
+      'It lives on the puna, above 3,800 m. Its grass depends on the rainy season: in dry years there is less to eat.',
     ],
     condor: [
       'Andean condor · Arequipa',
-      'It soars over the Colca Canyon on warm air currents; its wingspan exceeds 3 metres.',
+      'It soars over the Colca without flapping, using the warm air that rises from the canyon when the sun heats the ground.',
     ],
     pastora: [
       'Andean shepherdess · Cusco',
-      "Pollera skirt and montera hat: traditional clothing of Cusco's Quechua communities.",
+      'Rain falls mostly between December and March. The rest of the year her flock lives on bofedales and meltwater.',
     ],
     caballito: [
       'Reed boat · La Libertad',
-      "Huanchaco's fishermen have used these reed boats since pre-Inca times.",
+      "Fishers head out to the Humboldt Current's cold sea. When El Niño warms the water, the catch changes.",
     ],
     agricultor: [
       'Farmer · Ica',
-      "Irrigation turns Ica's desert into vineyards for pisco and asparagus fields.",
+      'It almost never rains in Ica: the field lives on irrigation from rivers and groundwater. That is why rain in the highlands matters.',
     ],
     pinguino: [
       'Humboldt penguin · Ica',
-      'It lives on the Ballestas Islands, in the cold Humboldt Current. It is a vulnerable species.',
+      'It feeds on fish from the cold sea. When El Niño warms the water, the fish move away and its population drops.',
     ],
-    lobo: ['Sea lion · Callao', 'It forms colonies on the Palomino Islands, off Callao.'],
+    lobo: [
+      'Sea lion · Callao',
+      'It lives off fish from the cold current. In El Niño years fish become scarce and the pups suffer.',
+    ],
     pelicano: [
       'Peruvian pelican · north coast',
-      'It fishes for anchovy in the cold Humboldt Current.',
+      'It follows anchovy shoals in the cold sea. When the northern waters warm up, the anchovy leaves.',
     ],
     delfin: [
       'Pink river dolphin · Loreto',
-      'It lives in Amazonian rivers, such as those of the Pacaya Samiria reserve.',
+      'When the river rises, it swims among the flooded trees. When it falls, it stays in narrower channels.',
     ],
     guacamayo: [
       'Scarlet macaw · Madre de Dios',
-      "Hundreds gather at the clay licks along Tambopata's rivers.",
+      "It depends on rainforest fruit. Hundreds gather at the clay licks, clay banks along Tambopata's rivers.",
     ],
-    jaguar: ['Jaguar · Ucayali', 'The largest cat in the Americas lives in the Amazon rainforest.'],
+    jaguar: [
+      'Jaguar · Ucayali',
+      'It lives in a forest that makes part of its own rain: trees return water to the air. If they are cut down, it rains less.',
+    ],
     gallito: [
       'Andean cock-of-the-rock · San Martín',
-      "Peru's national bird; it lives in cloud forests.",
+      'It lives in the cloud forest, where mist keeps the air humid all year. If the climate warms, that belt moves uphill.',
     ],
     mono: [
       'Yellow-tailed woolly monkey · Amazonas',
-      'Found only in Peru and critically endangered.',
+      "Found only in northern Peru's cloud forest. Critically endangered: without that green, humid forest it has nowhere to live.",
     ],
     oso: [
       'Spectacled bear · Cajamarca',
-      "South America's only bear; its pale face markings differ in every individual.",
+      'It lives in humid forests and páramo. When food runs short, it comes down to the cornfields.',
     ],
     cocodrilo: [
       'American crocodile · Tumbes',
-      "Peru's only crocodile lives in Tumbes' mangroves and rivers.",
+      'Its mangrove mixes fresh river water with sea water. When it rains less, the water gets saltier.',
     ],
     caballo: [
       'Peruvian Paso horse · Lima',
-      "Its smooth gait, the 'paso llano', is part of Peru's national heritage.",
+      'Lima is a desert coast: it hardly rains and the green valleys live off rivers coming down from the Andes.',
     ],
     shipibo: [
       'Shipibo-Konibo woman · Ucayali',
-      'An Amazonian people of the Ucayali River. Their kené designs, painted and embroidered, have been National Cultural Heritage of Peru since 2008.',
+      'Her people live beside the Ucayali, a river that rises and falls with the rain. That flood sets when to plant and when to fish.',
     ],
     danzante: [
       'Scissors dancer · Huancavelica',
-      'The danzaq dances to the beat of metal scissors. UNESCO listed it as Intangible Cultural Heritage of Humanity in 2010.',
+      'It dances at the canal-cleaning festivals, when the community gives thanks for the water that irrigates its crops. UNESCO has recognised it since 2010.',
     ],
+  },
+}
+
+/** Última línea del globo de la fauna: el dato de clima del departamento donde vive (lo que el mapa muestra). */
+/** Nombre de cada variable dentro de la frase del globo de la fauna */
+const VARIABLE_EN_FRASE: Record<Idioma, PorVariable<string>> = {
+  es: { lluvia: 'la lluvia', temperatura: 'la temperatura', vegetacion: 'el verdor (NDVI)' },
+  en: { lluvia: 'rainfall', temperatura: 'temperature', vegetacion: 'greenness (NDVI)' },
+}
+
+export const FAUNA_CLIMA: Record<
+  Idioma,
+  {
+    tendencia: (variable: Variable, depto: string, valor: string, estado: Estado) => string
+    anio: (variable: Variable, depto: string, anio: number, anomalia: string) => string
+    pocos: (depto: string) => string
+    /** Modo Vegetación: NDVI medio y su nivel en palabras */
+    verdor: (depto: string, ndvi: string, nivel: string) => string
+  }
+> = {
+  es: {
+    tendencia: (v, d, valor, estado) =>
+      `Datos de la NASA: ${VARIABLE_EN_FRASE.es[v]} de ${d} cambia ${valor} por década. ${estado === 'real' ? 'Es un cambio real.' : 'Puede ser casualidad.'}`,
+    anio: (v, d, anio, a) =>
+      `En ${anio}, ${VARIABLE_EN_FRASE.es[v]} de ${d} fue ${a} frente a su promedio.`,
+    pocos: (d) => `De ${d} hay muy pocos datos: no sacamos conclusiones.`,
+    verdor: (d, ndvi, nivel) => `Datos de la NASA: el verdor (NDVI) de ${d} es ${ndvi}: ${nivel}.`,
+  },
+  en: {
+    tendencia: (v, d, valor, estado) =>
+      `NASA data: ${d}'s ${VARIABLE_EN_FRASE.en[v]} changes ${valor} per decade. ${estado === 'real' ? 'It is a real change.' : 'It may be chance.'}`,
+    anio: (v, d, anio, a) =>
+      `In ${anio}, ${d}'s ${VARIABLE_EN_FRASE.en[v]} was ${a} vs. its average.`,
+    pocos: (d) => `${d} has very little data: we draw no conclusion.`,
+    verdor: (d, ndvi, nivel) => `NASA data: ${d}'s greenness (NDVI) is ${ndvi}: ${nivel}.`,
   },
 }
 

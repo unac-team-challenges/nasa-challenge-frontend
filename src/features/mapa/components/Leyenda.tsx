@@ -56,7 +56,7 @@ function Escala({ calor, extremo }: { calor: Calor; extremo: (x: number) => stri
  * mapa de color, el perfil (agricultor o estudiante), el idioma y el tema (colores por token).
  */
 export function Leyenda() {
-  const { idioma } = useApp()
+  const idioma = useApp((s) => s.idioma)
   const periodo = usePeriodo()
   const { variable, vegetacion, perfil, sel } = useBusqueda()
   const anio = useAnio()

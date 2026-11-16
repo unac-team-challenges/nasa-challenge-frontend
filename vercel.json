@@ -1,11 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets-no-existe"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],

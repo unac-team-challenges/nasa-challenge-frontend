@@ -55,13 +55,13 @@ const COSLAT = Math.cos((LAT0 * Math.PI) / 180)
 /** Desde r155 las luces son físicas: ×π para igualar las intensidades de r128. */
 const LUZ = Math.PI
 /**
- * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z): queda al frente de la
- * cámara de inicio. Es la luz, la sombra del Perú y la de las nubes.
+ * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z). Es la luz, la sombra del
+ * Perú y la de las nubes.
  */
 const DIR_LUZ = new THREE.Vector3(5, 45, -45).normalize()
 /**
- * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: así entra en la franja de
- * cielo de la vista de inicio y su reflejo cruza el mar hacia la cámara (camino de luz).
+ * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: se ve en el cielo y su reflejo
+ * cruza el mar cuando la cámara se inclina hacia el horizonte (camino de luz).
  */
 const DIR_ASTRO = new THREE.Vector3(DIR_LUZ.x, 0, DIR_LUZ.z).normalize().setY(0.07).normalize()
 /** Altura efectiva de la sombra del Perú (calibrada: con DIR_LUZ da el corrimiento de antes). */
@@ -76,8 +76,8 @@ const CLAVE = ['24', '20', '15', '21', '16', '08']
 const CLAVE_CELULAR = ['15', '21', '16', '08']
 const DESPLAZA_ETIQUETA: Record<string, number> = { '24': -30 } // Tumbes queda pegado a Piura
 const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
-  // Más baja que antes: deja una franja de cielo arriba con el sol o la luna
-  inicio: { pos: [8, 19, 72], tgt: [0, 5, 2] },
+  // Casi cenital: el Perú entra completo con sus departamentos, como en el explorador
+  inicio: { pos: [0, 85, 10], tgt: [0, 0, 0] },
   explorar: { pos: [0, 44, 34], tgt: [0, 0, 1] },
 }
 

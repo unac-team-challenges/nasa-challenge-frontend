@@ -77,6 +77,7 @@ export function BarraTiempo() {
       role="group"
       aria-label={t.timeAria}
       data-cubre-mapa
+      data-guia="tiempo"
       className={`absolute inset-x-4 bottom-3.5 z-[3] flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-m border border-line bg-panel/94 px-2 py-1 min-[901px]:inset-x-auto min-[901px]:top-3.5 min-[901px]:right-4 min-[901px]:w-24 min-[901px]:flex-col min-[901px]:flex-nowrap min-[901px]:gap-2 min-[901px]:px-2 min-[901px]:py-2.5 ${
         porAnio ? 'min-[901px]:bottom-[70px]' : 'min-[901px]:bottom-auto'
       }`}
@@ -110,8 +111,8 @@ export function BarraTiempo() {
       </div>
 
       <span
-        className={`order-2 flex-1 font-display leading-[1.1] font-bold tracking-display min-[901px]:flex-none min-[901px]:text-center ${
-          porAnio ? 'text-lg min-[901px]:text-[22px]' : 'text-sm min-[901px]:text-[15px]'
+        className={`order-2 flex-1 font-display whitespace-nowrap leading-[1.1] font-bold tracking-display min-[901px]:flex-none min-[901px]:text-center ${
+          porAnio ? 'text-lg min-[901px]:text-[22px]' : 'text-sm min-[901px]:text-[14px]'
         }`}
         aria-live="polite"
       >

@@ -3,6 +3,10 @@ import { TEXTOS, type Idioma } from '@/i18n/textos'
 import { claveMapa } from '@/utils/direccion'
 import { fmtAnomalia, fmtP, fmtValor } from '@/utils/formato'
 
+/** Nivel de verdor (0 desierto … 4 bosque denso) según el NDVI medio. */
+export const nivelNdvi = (ndvi: number) =>
+  ndvi < 0.15 ? 0 : ndvi < 0.3 ? 1 : ndvi < 0.5 ? 2 : ndvi < 0.7 ? 3 : 4
+
 /**
  * Contenido de la ficha técnica que sale al pasar el puntero (3D y 2D): cambio por década o
  * anomalía del año, estado, rango probable (IC 95 %) frente al cero, q y años.
@@ -65,7 +69,7 @@ export function datosTarjetaVeg(
     .filter(([f]) => f >= 0.05)
     .sort((a, b) => b[0] - a[0])
     .map(([f, nombre]) => `${nombre} ${Math.round(f * 100)} %`)
-  const nivel = ndvi < 0.15 ? 0 : ndvi < 0.3 ? 1 : ndvi < 0.5 ? 2 : ndvi < 0.7 ? 3 : 4
+  const nivel = nivelNdvi(ndvi)
   return {
     nombre: NOMBRE[id],
     valor: idioma === 'es' ? ndvi.toFixed(2).replace('.', ',') : ndvi.toFixed(2),

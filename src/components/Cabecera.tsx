@@ -3,7 +3,6 @@ import { useRef } from 'react'
 import {
   CloudRain,
   GraduationCap,
-  House,
   Leaf,
   MapPin,
   Moon,
@@ -48,7 +47,7 @@ const opcionPerfil = `${opcion} text-accent-text hover:bg-accent-soft hover:text
 const aInicio = (p: Busqueda) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })
 
 /**
- * Barra superior: marca, variable, perfil, metodología, idioma y tema.
+ * Barra superior: marca (lleva al inicio), variable, perfil, idioma y tema.
  * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
  */
 export function Cabecera() {
@@ -76,6 +75,7 @@ export function Cabecera() {
         search={aInicio}
         className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
         aria-label={t.inicio}
+        aria-current={enInicio ? 'page' : undefined}
       >
         {/* Logo del equipo sin fondo (scripts/logo.py); en oscuro, un contorno claro despega el aro azul */}
         <img
@@ -165,23 +165,6 @@ export function Cabecera() {
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
-        {/* Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
-            el logo también lleva al inicio) */}
-        <Button
-          asChild
-          variant="ghost"
-          data-activa={enInicio || undefined}
-          className="relative rounded-m px-2 hover:bg-panel-2 hover:no-underline data-activa:text-accent-text sm:px-3 sm:max-[780px]:hidden"
-        >
-          <Link to="/" search={aInicio} aria-current={enInicio ? 'page' : undefined}>
-            <House className="size-4.5" aria-hidden="true" />
-            <span className="max-[899px]:sr-only">{t.inicioCorto}</span>
-            {enInicio && (
-              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />
-            )}
-          </Link>
-        </Button>
-        <span className="hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (
             <Button

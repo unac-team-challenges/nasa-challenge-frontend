@@ -18,7 +18,6 @@ import type {
 export const textos = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
-  inicioCorto: 'Inicio',
   saltarAlContenido: 'Saltar al contenido',
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
@@ -151,6 +150,9 @@ export const textos = {
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
       : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : variable === 'vegetacion' ? 'verdor (NDVI)' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? (variable === 'vegetacion' ? ' de ~27 km' : ' de ~50 km') : ''}`,
+  /** La API solo trae el periodo completo con El Niño: las demás vistas salen de la copia local */
+  fuenteCopia:
+    'Esta vista sale de la copia local; la API solo trae el periodo completo con El Niño, así que las cifras pueden diferir de la vista principal.',
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
@@ -282,10 +284,6 @@ export const textos = {
   // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
   otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
   /** Botón para oír la ficha del agricultor */
-  escuchar: 'Escuchar',
-  escucharParar: 'Parar',
-  escucharAria: 'Escuchar este informe en voz alta',
-  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
@@ -509,9 +507,29 @@ export const textos = {
     'Describe lo que ya cambió: no es un pronóstico.',
   ],
   llevarH: 'Llévatelo',
-  csvTablaBtn: 'Tabla de los 25 departamentos (CSV)',
   figSvg: 'Figura (SVG)',
   figPng: 'Figura (PNG)',
+  descModoLbl: 'Qué quieres llevarte',
+  descModoZona: 'Una zona, por años',
+  descModoAnio: 'Un año, los 25 departamentos',
+  descDesde: 'Desde',
+  descHasta: 'Hasta',
+  descAnio: 'Año',
+  descTodoPeriodo: 'Todo el periodo (tendencia de cada uno)',
+  descRangoMal: 'El año de inicio no puede ser mayor que el final.',
+  descCsv: 'Tabla (CSV)',
+  descPng: 'Gráfico (PNG)',
+  descPdf: 'Ficha (PDF)',
+  descPdfNota:
+    'El PDF lleva la ficha completa, con todo el periodo. En el cuadro de impresión elige «Guardar como PDF».',
+  descCsvNota: 'El CSV trae la fuente en las primeras líneas, marcadas con «#».',
+  descTituloPng: (zona: string, variable: string, desde: number, hasta: number) =>
+    `${zona} · ${variable}, ${desde}–${hasta}`,
+  descCita: (fuente: string, parametro: string, generado: string, enlace: string) => [
+    `Fuente: ${fuente} (parámetro ${parametro}).`,
+    `Datos generados el ${generado}. Detective del Perú, NASA Space Apps 2026.`,
+    `Vista exacta: ${enlace}`,
+  ],
   citarH: 'Cómo citar',
   citarCopiar: 'Copiar',
   citarCopiado: 'Copiado',

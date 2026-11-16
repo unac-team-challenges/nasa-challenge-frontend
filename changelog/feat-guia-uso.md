@@ -19,7 +19,7 @@ Guía de uso (fix 4): un tour de 10 pasos para quien entra por primera vez y no 
 
 - `src/features/guia/` (nuevo): `pasos.ts` (pasos y textos ES/EN), `estado.ts` (store y clave `guia-vista`), `components/Guia.tsx` y su test.
 - `Explorador.tsx`: monta la guía, agrega el botón «?» a los controles del mapa (en celular va en el menú «⋯») y los `data-guia` del mapa, el informe y los controles. `AyudaModo` no sale mientras la guía está abierta.
-- `Leyenda.tsx` y `MenuMetodologia.tsx`: solo el atributo `data-guia`.
+- `Leyenda.tsx` y `MenuMetodologia.tsx`: solo el atributo `data-guia` (en la leyenda, no en vegetación).
 - `e2e/apoyo/espanol.ts` y `src/testing/render.tsx`: dan la guía por vista, para que no tape las pruebas que ya existían. `e2e/guia.spec.ts` la prueba aparte.
 
 ## Notas
@@ -27,6 +27,8 @@ Guía de uso (fix 4): un tour de 10 pasos para quien entra por primera vez y no 
 - **Arranque:** solo en la primera visita al explorador. Al arrancar marca también `ayuda-modo-tiempo`, porque el paso 6 dice lo mismo que esa pista.
 - **Textos:** van en `pasos.ts` y no en `i18n/textos.ts`, para no chocar con #80 (que parte ese archivo) ni con #82, #86 y #89. Se pueden mover cuando entre #80.
 - **Anclas de la cabecera y la barra de tiempo:** se usan `data-guia="variables" | "perfil" | "tiempo"` si existen (PR de Josué), y si no, el `aria-label` de esos grupos. No se tocan `Cabecera.tsx` ni `BarraTiempo.tsx`.
-- **Pasos sin ancla:** si el ancla no está en pantalla, el paso se salta. Por ejemplo, en vegetación no hay barra de tiempo.
-- **Accesibilidad:** `role="dialog"` con `aria-modal`. Esc cierra y ← → cambian de paso. Con `prefers-reduced-motion` no hay transiciones.
+- **Pasos sin ancla:** si el ancla no está en pantalla, el paso se salta. En vegetación se saltan la leyenda (es otra) y la barra de tiempo (no existe).
+- **Departamento de ejemplo:** al cerrar solo se deshace si sigue a la vista; una zona que ya estaba elegida se respeta.
+- **Rendimiento:** la caja se mide cuadro a cuadro solo durante 1,2 s después de cada cambio de paso; luego, solo con `resize` y `scroll`.
+- **Accesibilidad:** `role="dialog"` con `aria-modal`; mientras está abierta, `#root` queda `inert` y al cerrar el foco vuelve a donde estaba. Esc cierra. El texto de cada paso se anuncia con `aria-live`.
 - **Dependencias:** ninguna nueva.

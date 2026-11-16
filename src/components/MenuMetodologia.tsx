@@ -1,8 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
+  BookA,
   BookOpen,
+  CalendarRange,
   Database,
+  Layers,
+  Library,
+  MapPin,
   Sigma,
   TrafficCone,
   TriangleAlert,
@@ -18,9 +23,14 @@ import { Button } from '@/components/ui/button'
 
 const ICONO: Record<SeccionMetodologia, LucideIcon> = {
   fuentes: Database,
+  mapa: Layers,
   calculo: Sigma,
   semaforo: TrafficCone,
+  glosario: BookA,
+  periodos: CalendarRange,
+  zonas: MapPin,
   limites: TriangleAlert,
+  referencias: Library,
   creditos: Users,
 }
 
@@ -40,9 +50,14 @@ export function MenuMetodologia() {
   const m = METODOLOGIA[idioma]
   const titulo: Record<SeccionMetodologia, string> = {
     fuentes: m.fuentesH,
+    mapa: m.mapaH,
     calculo: m.calculoH,
     semaforo: m.semaforoH,
+    glosario: m.glosarioH,
+    periodos: m.periodosH,
+    zonas: m.zonasH,
     limites: m.limitesH,
+    referencias: m.referenciasH,
     creditos: m.creditosH,
   }
   // Ya en /metodologia el salto se anima, salvo que el sistema pida menos movimiento

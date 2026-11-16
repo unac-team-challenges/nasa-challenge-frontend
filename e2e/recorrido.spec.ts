@@ -13,7 +13,7 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   await expect(page.locator('canvas')).toBeVisible()
 
   // Elegir perfil lleva al explorador
-  // La portada y la cabecera tienen un botón «Agricultor»: este es el de la portada
+  // En la portada solo está el «Agricultor» de la portada (la cabecera esconde el perfil)
   await page
     .locator('main')
     .getByRole('button', { name: /Agricultor/ })

@@ -4,13 +4,12 @@ import { GENERADO, NOMBRE, parametroDe } from '@/data/datos'
 import { REPOS } from '@/i18n/repos'
 import { TEXTOS } from '@/i18n/textos'
 import { useAnio, useBusqueda } from '@/lib/busqueda'
-import { API_URL } from '@/api/cliente'
 import { useVista } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { EstDescargas } from '@/features/ficha/components/EstDescargas'
 import { Button } from '@/components/ui/button'
 
-/** Bloque de texto copiable (cita APA, BibTeX, consulta a la API). */
+/** Bloque de texto copiable (cita APA, BibTeX). */
 function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
   const t = TEXTOS[useApp((s) => s.idioma)]
   const [copiado, setCopiado] = useState(false)
@@ -46,13 +45,13 @@ function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
 
 /**
  * Estudiante: llevarse los datos (EstDescargas), citar (APA y BibTeX, con el enlace a esta vista
- * exacta) y reproducir el cálculo (la consulta a la API y los repositorios).
+ * exacta) y reproducir el cálculo (los repositorios).
  */
 export function EstRecursos() {
   const idioma = useApp((s) => s.idioma)
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
-  const { api, rango } = useVista()
+  const { rango } = useVista()
   // Se suscribe al año para que el enlace copiado no quede con el año anterior al mover la barra.
   useAnio()
   if (!sel) return null
@@ -78,7 +77,6 @@ export function EstRecursos() {
   howpublished = {\\url{${REPOS[0][1]}}},
   note = {Software}
 }`
-  const consulta = `GET ${API_URL || ''}/api/zonas/${sel}?variable=${variable}`
 
   return (
     <>
@@ -98,7 +96,6 @@ export function EstRecursos() {
         <h3 id="repro-h" className="m-0 text-sm font-semibold">
           {t.reproH}
         </h3>
-        <Copiable etiqueta={api ? t.reproApi : t.reproSinApi} texto={consulta} />
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted">{t.reproRepos}</span>
           <ul className="m-0 flex list-none flex-col gap-1 p-0">

@@ -5,6 +5,7 @@ import { useBusqueda, usePeriodo, useSinNino } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtP, fmtValor } from '@/utils/formato'
 import { useApp } from '@/stores/app'
+import { Termino } from '@/components/Termino'
 import { robustez } from '@/features/ficha/utils/estudiante'
 
 const SELLO = {
@@ -46,8 +47,12 @@ export function EstRobustez() {
           <thead>
             <tr className="text-left text-xs text-muted">
               <th className="py-1 pr-2 font-normal">{cCaso}</th>
-              <th className="py-1 pr-2 text-right font-normal">{cPend}</th>
-              <th className="py-1 pr-2 text-right font-normal">{cQ}</th>
+              <th className="py-1 pr-2 text-right font-normal">
+                <Termino id="sen">{cPend}</Termino>
+              </th>
+              <th className="py-1 pr-2 text-right font-normal">
+                <Termino id="q">{cQ}</Termino>
+              </th>
               <th className="py-1 font-normal">{cEstado}</th>
             </tr>
           </thead>

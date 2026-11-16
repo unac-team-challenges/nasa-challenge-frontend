@@ -29,7 +29,7 @@ import { UI as UI_GUIA } from '@/features/guia/pasos'
 const boton = 'bg-panel/92'
 
 /** Ancho del informe abierto en escritorio y de su franja minimizada. */
-const ANCHO_INFORME = 'clamp(340px, 38vw, 560px)'
+const ANCHO_INFORME = 'clamp(21.25rem, 38vw, 35rem)'
 
 /**
  * Explorador: el mapa es el fondo de toda la pantalla y el informe se desliza encima, a la
@@ -164,13 +164,13 @@ export function Explorador() {
       aria-label={t.explorador}
       style={estilo}
       // overflow-x-clip: el informe minimizado se corre a la derecha y no debe ensanchar la página
-      className="pointer-events-none relative z-[1] flex flex-1 flex-col min-[901px]:min-h-[560px] min-[901px]:overflow-x-clip"
+      className="pointer-events-none relative z-[1] flex flex-1 flex-col escritorio:min-h-[560px] escritorio:overflow-x-clip"
     >
       {/* Zona del mapa: en celular, el alto del mapa; en escritorio, todo menos el informe */}
       <div
         ref={cajaMapa}
         data-guia="mapa"
-        className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:left-0 min-[901px]:right-[var(--tapa)] min-[901px]:h-auto min-[901px]:transition-[right] min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
+        className={`relative flex-none ${ALTO_MAPA_CELULAR} escritorio:absolute escritorio:inset-y-0 escritorio:left-0 escritorio:right-[var(--tapa)] escritorio:h-auto escritorio:transition-[right] escritorio:duration-500 escritorio:ease-[cubic-bezier(0.2,0.8,0.2,1)]`}
         style={{ transitionDelay: demoraPanel }}
       >
         {intro && (
@@ -193,16 +193,16 @@ export function Explorador() {
         <div className="entrada-suave">
           <div
             data-cubre-mapa
-            className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 min-[901px]:right-32"
+            className="pointer-events-none absolute top-3.5 right-4 left-4 z-[3] flex flex-col gap-2.5 escritorio:right-32"
           >
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
-              <h2 className="m-0 font-display text-sm font-[650] tracking-display min-[901px]:text-xl">
+              <h2 className="m-0 font-display text-sm font-[650] tracking-display escritorio:text-xl">
                 {t.mapH[variable]} ·{' '}
                 {anio == null
                   ? t.mapModoTendencia(rango.year_start, rango.year_end)
                   : t.mapModoAnio(anio)}
               </h2>
-              <span className="hidden text-[13px] text-muted min-[901px]:inline">
+              <span className="hidden text-[13px] text-muted escritorio:inline">
                 {vegetacion ? t.mapSubVeg : anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
@@ -226,7 +226,7 @@ export function Explorador() {
           {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
           <div
             data-guia="controles"
-            className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 min-[901px]:flex"
+            className="pointer-events-auto absolute right-4 bottom-3.5 z-[3] hidden gap-1.5 escritorio:flex"
           >
             {controles}
           </div>
@@ -235,9 +235,7 @@ export function Explorador() {
               <Button
                 size="icon"
                 data-guia="controles"
-                className={`${boton} pointer-events-auto absolute right-4 z-[3] min-[901px]:hidden ${
-                  anio == null ? 'bottom-[66px]' : 'bottom-[86px]'
-                }`}
+                className={`${boton} pointer-events-auto absolute right-4 bottom-[calc(var(--alto-barra,2.75rem)+1.375rem)] z-[3] escritorio:hidden`}
                 aria-label={t.mapaControles}
                 title={t.mapaControles}
               >
@@ -268,8 +266,8 @@ export function Explorador() {
       <aside
         ref={informe}
         data-guia="informe"
-        className={`pointer-events-auto relative flex min-w-0 overflow-x-clip border-line min-[901px]:overflow-hidden bg-panel min-[901px]:absolute min-[901px]:inset-y-0 min-[901px]:right-0 min-[901px]:w-[var(--ancho-informe)] min-[901px]:border-l min-[901px]:shadow-[-12px_0_32px_var(--shadow)] min-[901px]:transition-transform min-[901px]:duration-500 min-[901px]:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          informeMin ? 'min-[901px]:translate-x-[calc(100%-56px)]' : ''
+        className={`pointer-events-auto relative flex min-w-0 overflow-x-clip border-line escritorio:overflow-hidden bg-panel escritorio:absolute escritorio:inset-y-0 escritorio:right-0 escritorio:w-[var(--ancho-informe)] escritorio:border-l escritorio:shadow-[-12px_0_32px_var(--shadow)] escritorio:transition-transform escritorio:duration-500 escritorio:ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          informeMin ? 'escritorio:translate-x-[calc(100%-56px)]' : ''
         }`}
         style={{ transitionDelay: demoraPanel }}
         aria-label={etiquetaInforme}
@@ -283,7 +281,7 @@ export function Explorador() {
           onClick={() => setInformeMin(!informeMin)}
           className={
             informeMin
-              ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg min-[901px]:h-full min-[901px]:w-14 min-[901px]:flex-none min-[901px]:flex-col min-[901px]:justify-start min-[901px]:px-0 min-[901px]:py-3.5'
+              ? 'flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 border-0 bg-panel px-4 text-fg escritorio:h-full escritorio:w-14 escritorio:flex-none escritorio:flex-col escritorio:justify-start escritorio:px-0 escritorio:py-3.5'
               : 'toque44 presionable absolute top-3 right-3 z-[2] grid size-9 cursor-pointer place-items-center rounded-s border border-line-2 bg-panel text-fg hover:border-fg'
           }
         >
@@ -299,12 +297,12 @@ export function Explorador() {
           </svg>
           {informeMin && (
             <>
-              <span className="font-display text-[15px] font-[650] tracking-display whitespace-nowrap min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]">
+              <span className="font-display text-[15px] font-[650] tracking-display whitespace-nowrap escritorio:rotate-180 escritorio:[writing-mode:vertical-rl]">
                 {sel ? NOMBRE[sel] : t.railHint}
               </span>
               {d && d.status !== 'pocos_datos' && (
                 <span
-                  className="text-[13px] min-[901px]:rotate-180 min-[901px]:[writing-mode:vertical-rl]"
+                  className="text-[13px] escritorio:rotate-180 escritorio:[writing-mode:vertical-rl]"
                   style={{ color: `var(${colorDireccion(d.slope_per_decade, variable)})` }}
                 >
                   {fmtValor(d.slope_per_decade, variable, idioma)}
@@ -316,7 +314,7 @@ export function Explorador() {
         {!informeMin && (
           <div
             id="informe"
-            className="min-w-0 flex-1 px-4 pt-5.5 pb-7 min-[901px]:overflow-y-auto min-[901px]:px-5.5"
+            className="min-w-0 flex-1 px-4 pt-5.5 pb-7 escritorio:overflow-y-auto escritorio:px-5.5"
             aria-live="polite"
           >
             {/* Celular: la zona y su cambio quedan a la vista al bajar por el informe */}

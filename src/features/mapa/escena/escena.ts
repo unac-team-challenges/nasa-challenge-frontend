@@ -25,6 +25,7 @@ import {
 } from '@/features/mapa/utils/calor'
 import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
 import { Bosque, crearLocalizador, REGIONES, resumenPorDepto } from '@/features/mapa/escena/bosque'
+import { MQ_CELULAR } from '@/utils/disposicion'
 import {
   LON0,
   LAT0,
@@ -96,7 +97,7 @@ const PAISES = [
   { es: 'Chile', en: 'Chile', lon: -69.5, lat: -20.6 },
 ]
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
-const celular = () => matchMedia('(max-width: 900px)').matches
+const celular = () => matchMedia(MQ_CELULAR).matches
 /** ¿Esta zona lleva etiqueta fija en esta pantalla? Si no, la elegida usa la etiqueta suelta. */
 const conEtiquetaFija = (id: string) =>
   CLAVE.includes(id) && (!celular() || CLAVE_CELULAR.includes(id))
@@ -285,6 +286,7 @@ export class EscenaPeru {
   private acento = new THREE.Color()
   private idioma: 'es' | 'en' = 'es'
   private observadores: (ResizeObserver | IntersectionObserver)[] = []
+  private abortar = new AbortController()
   private quitarEventos: () => void
   private contenedor: HTMLElement
   private capaEtiquetas: HTMLElement
@@ -569,6 +571,7 @@ export class EscenaPeru {
     })
     io.observe(contenedor)
     this.observadores.push(ro, io)
+    this.vigilarDpr(devicePixelRatio || 1)
     this.redimensionar()
 
     // Puntero: resaltar al pasar y elegir con un toque (sin arrastrar)
@@ -1202,7 +1205,7 @@ export class EscenaPeru {
 
   /** Hacia dónde debe ir el corrimiento según el modo y el ancho. */
   private corrimientoObjetivo() {
-    if (this.ancho <= 900) return 0 // en celular el mapa va arriba y el texto abajo
+    if (celular()) return 0 // en celular el mapa va arriba y el texto abajo
     return this.modo === 'inicio' ? this.ancho * 0.24 : -this.panel / 2
   }
 
@@ -1218,6 +1221,7 @@ export class EscenaPeru {
     this.renderer.setAnimationLoop(null)
     this.quitarEventos()
     this.observadores.forEach((o) => o.disconnect())
+    this.abortar.abort()
     this.controles.dispose()
     for (const m of this.mallas) {
       m.geometry.dispose()
@@ -1443,6 +1447,26 @@ export class EscenaPeru {
       inicio: performance.now(),
       dur,
     }
+  }
+
+  /**
+   * El zoom del navegador (Ctrl +/-) cambia devicePixelRatio: la resolución del lienzo lo sigue.
+   * Se escala en la misma proporción, así el búfer conserva sus píxeles (nítido y igual de rápido);
+   * el ajuste adaptativo (vigilarRendimiento) corrige desde ahí.
+   */
+  private vigilarDpr(previo: number) {
+    matchMedia(`(resolution: ${previo}dppx)`).addEventListener(
+      'change',
+      () => {
+        const actual = devicePixelRatio || 1
+        this.dprMax = Math.min(actual, 1.5)
+        this.dpr = Math.max(0.5, Math.min(this.dprMax, (this.dpr * actual) / previo))
+        this.perf.pendiente = true // se aplica al empezar el próximo cuadro
+        this.sucio = true
+        this.vigilarDpr(actual) // la consulta vieja ya no sirve: se registra la nueva
+      },
+      { once: true, signal: this.abortar.signal },
+    )
   }
 
   private redimensionar() {

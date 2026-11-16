@@ -17,6 +17,7 @@ import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
 import { useBusqueda, type Busqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
+import { MQ_CELULAR } from '@/utils/disposicion'
 
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
@@ -61,17 +62,17 @@ export function Cabecera() {
   const [antes, despues] = t.marca.split('Detective')
   // En celular la cabecera se esconde al bajar por la página y vuelve al subir (más sitio para leer)
   const barra = useRef<HTMLElement>(null)
-  const oculta = useOcultarAlBajar(barra, '(max-width: 900px)')
+  const oculta = useOcultarAlBajar(barra, MQ_CELULAR)
   return (
     <header
       ref={barra}
       data-oculta={oculta}
-      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md max-[900px]:transition-transform max-[900px]:duration-200 max-[900px]:data-[oculta=true]:-translate-y-full max-[900px]:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md celular:transition-transform celular:duration-200 celular:data-[oculta=true]:-translate-y-full celular:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
     >
       <Link
         to="/"
         search={aInicio}
-        className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline min-[901px]:mr-0"
+        className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline escritorio:mr-0"
         aria-label={t.inicio}
         aria-current={enInicio ? 'page' : undefined}
       >
@@ -95,7 +96,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] min-[901px]:order-none min-[901px]:flex-1 min-[901px]:overflow-visible min-[901px]:p-0">
+      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] escritorio:order-none escritorio:flex-1 escritorio:overflow-visible escritorio:p-0">
         <div className={riel} role="group" aria-label={t.variableLbl} data-guia="variables">
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
@@ -116,8 +117,18 @@ export function Cabecera() {
             )
           })}
         </div>
-        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular */}
-        <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">
+        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular.
+            En el inicio no se muestra: la portada ya pregunta el perfil y serían dos botones iguales.
+            invisible (no display: none) guarda su sitio: la cabecera mide lo mismo en todas las
+            páginas y nada salta de fila al entrar o salir. inert lo saca del foco y del lector. */}
+        <div
+          className={`${riel} ml-auto transition-[opacity,translate,visibility] duration-300 ease-out data-oculto:invisible data-oculto:-translate-y-1.5 data-oculto:opacity-0 data-oculto:duration-200 data-oculto:ease-in motion-reduce:transition-none`}
+          role="group"
+          aria-label={t.perfilLbl}
+          data-guia="perfil"
+          data-oculto={enInicio || undefined}
+          inert={enInicio}
+        >
           {ORDEN_PERFILES.map((p) => {
             const Icono = ICONO_PERFIL[p]
             return (

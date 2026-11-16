@@ -104,7 +104,7 @@ export function BarraZona({
   const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches
   return (
     // Envoltura de alto 0 y pegajosa: la barra flota sin empujar el informe
-    <div className="sticky z-[3] -mx-4 h-0 min-[901px]:hidden" style={{ top }}>
+    <div className="sticky z-[3] -mx-4 h-0 escritorio:hidden" style={{ top }}>
       <div
         data-visible={fuera}
         aria-hidden={!fuera}

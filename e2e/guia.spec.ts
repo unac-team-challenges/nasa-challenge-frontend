@@ -25,7 +25,12 @@ for (const [nombre, viewport] of [
     await expect(page).toHaveURL(/\/explorar/)
 
     await page.reload()
-    await expect(page.getByRole('group', { name: 'Perfil' })).toBeVisible()
+    // En celular el perfil vive en el menú ☰; el botón sí se ve
+    await expect(
+      nombre === 'celular'
+        ? page.getByRole('button', { name: 'Menú' })
+        : page.getByRole('group', { name: 'Perfil' }),
+    ).toBeVisible()
     await expect(guia).toBeHidden()
   })
 

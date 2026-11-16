@@ -1,39 +1,16 @@
 import { Link } from '@tanstack/react-router'
 import { useRef } from 'react'
-import {
-  CloudRain,
-  GraduationCap,
-  Leaf,
-  Moon,
-  Sprout,
-  Sun,
-  Thermometer,
-  type LucideIcon,
-} from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import type { Variable } from '@/data/datos'
-import { ORDEN_PERFILES, TEXTOS, type Idioma, type Perfil } from '@/i18n/textos'
+import { ORDEN_PERFILES, TEXTOS } from '@/i18n/textos'
 import { useRuta } from '@/hooks/ruta'
 import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
-import { useBusqueda, type Busqueda } from '@/lib/busqueda'
+import { useBusqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
+import { MenuCelular, SelectorVariable } from '@/components/CabeceraCelular'
+import { ICONO_PERFIL, ICONO_VARIABLE, IDIOMAS, aInicio } from '@/components/opcionesCabecera'
 import { MQ_CELULAR } from '@/utils/disposicion'
-
-const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
-  lluvia: CloudRain,
-  temperatura: Thermometer,
-  vegetacion: Leaf,
-}
-
-const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
-  agricultor: Sprout,
-  estudiante: GraduationCap,
-}
-
-const IDIOMAS = [
-  ['es', 'ES', 'Español'],
-  ['en', 'EN', 'English'],
-] as const satisfies readonly (readonly [Idioma, string, string])[]
 
 /** Contenedor de opciones (variable, perfil, idioma): un riel con la opción activa resaltada */
 const riel =
@@ -43,12 +20,11 @@ const resto = 'font-display font-semibold max-[419px]:hidden'
 const opcion = 'min-h-9 rounded-[8px] px-3 text-muted hover:text-fg aria-pressed:shadow-sm'
 /** El perfil va en el rosado del borde superior: se distingue de las variables */
 const opcionPerfil = `${opcion} text-accent-text hover:bg-accent-soft hover:text-accent-text aria-pressed:bg-accent aria-pressed:text-accent-fg`
-/** Al inicio viajan las opciones del mapa y el idioma (no el año ni la zona) */
-const aInicio = (p: Busqueda) => ({ variable: p.variable, perfil: p.perfil, lang: p.lang })
 
 /**
  * Barra superior: marca (lleva al inicio), variable, perfil, idioma y tema.
- * En celular pasa a 2 filas: la tira de variable y perfil se desliza de lado (v12).
+ * En celular queda en 1 fila: marca, selector de variable y menú ☰ (perfil, idioma
+ * y tema en una hoja desde abajo). Los controles de escritorio se ocultan.
  */
 export function Cabecera() {
   // Selectores sueltos: el estado del mapa (Play, giro) no vuelve a dibujar la cabecera
@@ -67,12 +43,12 @@ export function Cabecera() {
     <header
       ref={barra}
       data-oculta={oculta}
-      className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md celular:transition-transform celular:duration-200 celular:data-[oculta=true]:-translate-y-full celular:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
+      className="sticky top-0 z-20 flex items-center gap-x-2 gap-y-2.5 border-b border-line bg-panel/85 px-3 pt-3 sm:gap-x-4 sm:px-4 pb-2.5 shadow-[0_10px_30px_-20px_var(--shadow)] backdrop-blur-md celular:transition-transform celular:duration-200 celular:data-[oculta=true]:-translate-y-full celular:data-[oculta=true]:focus-within:translate-y-0 motion-reduce:transition-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-[linear-gradient(90deg,var(--up),var(--accent)_50%,var(--down))]"
     >
       <Link
         to="/"
         search={aInicio}
-        className="group mr-auto flex min-w-0 items-center gap-2.5 sm:gap-3 text-fg no-underline escritorio:mr-0"
+        className="group mr-auto flex min-w-0 items-center gap-2.5 text-fg no-underline sm:gap-3 escritorio:mr-0"
         aria-label={t.inicio}
         aria-current={enInicio ? 'page' : undefined}
       >
@@ -96,7 +72,7 @@ export function Cabecera() {
         </span>
       </Link>
 
-      <div className="relative order-3 -mx-1 flex flex-[1_1_100%] flex-nowrap items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] escritorio:order-none escritorio:flex-1 escritorio:overflow-visible escritorio:p-0">
+      <div className="flex flex-1 items-center gap-2 celular:hidden">
         <div className={riel} role="group" aria-label={t.variableLbl} data-guia="variables">
           {variables.map(([v, nombre]) => {
             const Icono = ICONO_VARIABLE[v]
@@ -111,13 +87,12 @@ export function Cabecera() {
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
-                {/* En celular solo el ícono: con tres variables y el perfil, la tira no cabe en 390 px */}
-                <span className="max-[479px]:sr-only">{nombre}</span>
+                <span>{nombre}</span>
               </Button>
             )
           })}
         </div>
-        {/* Variables a la izquierda y perfiles a la derecha (ml-auto), también en la tira del celular.
+        {/* Variables a la izquierda y perfiles a la derecha (ml-auto).
             En el inicio no se muestra: la portada ya pregunta el perfil y serían dos botones iguales.
             invisible (no display: none) guarda su sitio: la cabecera mide lo mismo en todas las
             páginas y nada salta de fila al entrar o salir. inert lo saca del foco y del lector. */}
@@ -142,15 +117,14 @@ export function Cabecera() {
                 onClick={() => setPerfil(p)}
               >
                 <Icono className="size-4" aria-hidden="true" />
-                {/* En celular solo el ícono: con texto, el segundo botón quedaba fuera de la tira */}
-                <span className="max-[479px]:sr-only">{t.perfiles[p][0]}</span>
+                <span>{t.perfiles[p][0]}</span>
               </Button>
             )
           })}
         </div>
       </div>
 
-      <div className="flex flex-none items-center gap-1 sm:gap-2">
+      <div className="flex flex-none items-center gap-2 celular:hidden">
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (
             <Button
@@ -179,6 +153,12 @@ export function Cabecera() {
           <Moon className="size-4.5 oscuro:hidden" aria-hidden="true" />
           <Sun className="hidden size-4.5 oscuro:block" aria-hidden="true" />
         </Button>
+      </div>
+
+      {/* Celular: variable a la vista y el resto en el menú ☰ */}
+      <div className="flex flex-none items-center gap-2 escritorio:hidden">
+        <SelectorVariable />
+        <MenuCelular />
       </div>
     </header>
   )

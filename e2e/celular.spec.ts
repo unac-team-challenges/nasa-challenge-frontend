@@ -32,6 +32,8 @@ test('el idioma muestra cuál está activo y cambiarlo lo deja en la URL (mejora
   page,
 }) => {
   await page.goto('/explorar?sinwebgl&lang=en')
+  // En celular el idioma está en el menú ☰
+  await page.getByRole('button', { name: 'Menu' }).tap()
   const idioma = page.getByRole('group', { name: 'Change language' })
   await expect(idioma.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
   await expect(idioma.getByRole('button', { name: 'ES' })).toHaveAttribute('aria-pressed', 'false')

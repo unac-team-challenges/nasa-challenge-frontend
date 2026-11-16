@@ -72,3 +72,19 @@ test.describe('celular', () => {
     )
   })
 })
+
+test('en el inicio no hay perfil en la cabecera; aparece en el mapa y se va al volver', async ({
+  page,
+}) => {
+  await page.goto('/?sinwebgl')
+  const perfil = page.getByRole('group', { name: 'Perfil' })
+  // La portada ya pregunta el perfil: en la cabecera serían dos botones con la misma acción
+  await expect(perfil).toBeHidden()
+  await page
+    .getByRole('link', { name: 'Explorar el mapa' })
+    .or(page.getByRole('button', { name: 'Explorar el mapa' }))
+    .click()
+  await expect(perfil).toBeVisible()
+  await page.getByRole('link', { name: 'Detective del Perú: inicio' }).click()
+  await expect(perfil).toBeHidden()
+})

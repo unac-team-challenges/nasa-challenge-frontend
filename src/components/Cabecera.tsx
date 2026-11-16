@@ -91,8 +91,18 @@ export function Cabecera() {
             )
           })}
         </div>
-        {/* Variables a la izquierda y perfiles a la derecha (ml-auto) */}
-        <div className={`${riel} ml-auto`} role="group" aria-label={t.perfilLbl} data-guia="perfil">
+        {/* Variables a la izquierda y perfiles a la derecha (ml-auto).
+            En el inicio no se muestra: la portada ya pregunta el perfil y serían dos botones iguales.
+            invisible (no display: none) guarda su sitio: la cabecera mide lo mismo en todas las
+            páginas y nada salta de fila al entrar o salir. inert lo saca del foco y del lector. */}
+        <div
+          className={`${riel} ml-auto transition-[opacity,translate,visibility] duration-300 ease-out data-oculto:invisible data-oculto:-translate-y-1.5 data-oculto:opacity-0 data-oculto:duration-200 data-oculto:ease-in motion-reduce:transition-none`}
+          role="group"
+          aria-label={t.perfilLbl}
+          data-guia="perfil"
+          data-oculto={enInicio || undefined}
+          inert={enInicio}
+        >
           {ORDEN_PERFILES.map((p) => {
             const Icono = ICONO_PERFIL[p]
             return (

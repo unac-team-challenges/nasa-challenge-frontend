@@ -24,7 +24,7 @@ export function listaAnios(anios: number[], idioma: Idioma) {
 /**
  * Número entero con separador de miles del idioma: 18.900 / 18,900 (en español, 4 cifras van
  * juntas: 2310). Es «es» y no «es-PE»: es-PE separa miles con coma, y la app escribe los decimales
- * con coma («0,5 °C»); «2,263 mm» se leería (y se oiría con Escuchar) como dos coma algo.
+ * con coma («0,5 °C»); «2,263 mm» se leería como dos coma algo.
  */
 export function miles(v: number, idioma: Idioma) {
   return new Intl.NumberFormat(idioma === 'es' ? 'es' : 'en-US', {

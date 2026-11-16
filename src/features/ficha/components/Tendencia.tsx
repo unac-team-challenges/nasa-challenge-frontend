@@ -36,21 +36,18 @@ export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span
-            data-leer
             className="font-display text-[28px] leading-[1.1] font-[750] tracking-[-0.015em] min-[521px]:text-[32px]"
             style={{ color: claro ? `var(${color})` : 'var(--muted)' }}
           >
             {titular}
           </span>
-          <span data-leer className="text-[13px] text-muted">
-            {debajo}
-          </span>
+          <span className="text-[13px] text-muted">{debajo}</span>
         </div>
         {/* El calor en metros de altura: solo si el cambio es claro */}
         {metros != null && (
           <div className="flex flex-col gap-1">
             {/* Como la gota de «Un año normal aquí»: el ícono dentro de la misma línea */}
-            <p data-leer className="m-0 flex items-center gap-2 font-semibold">
+            <p className="m-0 flex items-center gap-2 font-semibold">
               <Mountain className="size-5 flex-none text-muted" aria-hidden="true" />
               {t.campoAltura(`${metros} m`, sube)}
             </p>

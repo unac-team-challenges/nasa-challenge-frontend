@@ -16,8 +16,10 @@ interface Caja {
 
 /** Margen del resaltado alrededor del elemento (px) */
 const AIRE = 6
-/** Espacio mínimo para poner la tarjeta encima o debajo del elemento (px) */
-const ALTO_TARJETA = 220
+/** Con menos espacio que esto encima y debajo del elemento, la tarjeta va abajo al centro (px) */
+const MIN_TARJETA = 160
+/** Tras cambiar de paso, cuánto tiempo se sigue al elemento cuadro a cuadro (el informe tarda 500 ms) */
+const SEGUIR_MS = 1200
 
 /** El primer elemento visible del selector. En celular, los controles de escritorio existen pero
  * están ocultos (display: none) y el visible es el botón «⋯». */
@@ -78,11 +80,12 @@ export function Guia() {
   const selector = actual?.ancla?.(etiquetas) ?? null
 
   const cerrar = () => {
-    if (abrioEjemplo.current) {
-      abrioEjemplo.current = false
+    // Solo se deshace el ejemplo si sigue a la vista: una zona elegida por el usuario se respeta
+    if (abrioEjemplo.current && sel === ZONA_EJEMPLO) {
       void seleccionar(null)
       useApp.getState().setInformeMin(true)
     }
+    abrioEjemplo.current = false
     useGuia.getState().cerrar()
   }
 
@@ -123,28 +126,54 @@ export function Guia() {
     else el.scrollIntoView?.({ block: 'nearest', behavior: reducido() ? 'auto' : 'smooth' })
   }, [selector])
 
-  // Sigue al elemento cuadro a cuadro: el informe se desliza, el mapa cambia de tamaño y la
-  // página se desplaza. Solo se actualiza el estado cuando la caja de verdad cambió.
+  // Mide el elemento: cuadro a cuadro justo después de cambiar de paso (el informe se desliza,
+  // la página se desplaza) y después solo al cambiar el tamaño o desplazarse. Así no hay un
+  // bucle permanente al lado del mapa 3D.
   useEffect(() => {
     if (paso == null) return
-    let id = 0
-    const seguir = () => {
+    const actualizar = () => {
       const el = selector ? buscar(selector) : null
       const nueva = el ? medir(el) : null
       setCaja((vieja) => (igual(vieja, nueva) ? vieja : nueva))
-      id = requestAnimationFrame(seguir)
+    }
+    const hasta = performance.now() + SEGUIR_MS
+    let id = 0
+    const seguir = () => {
+      actualizar()
+      if (performance.now() < hasta) id = requestAnimationFrame(seguir)
     }
     id = requestAnimationFrame(seguir)
-    return () => cancelAnimationFrame(id)
+    addEventListener('resize', actualizar)
+    addEventListener('scroll', actualizar, true)
+    return () => {
+      cancelAnimationFrame(id)
+      removeEventListener('resize', actualizar)
+      removeEventListener('scroll', actualizar, true)
+    }
   }, [paso, selector])
 
+  // Mientras está abierta, lo de atrás no recibe foco ni clics (inert) y al cerrar el foco
+  // vuelve a donde estaba (por ejemplo, al botón «?»)
+  const abierta = paso != null
   useEffect(() => {
-    if (paso == null) return
-    siguienteRef.current?.focus()
+    if (!abierta) return
+    const previo = document.activeElement as HTMLElement | null
+    const raiz = document.getElementById('root')
+    raiz?.setAttribute('inert', '')
+    return () => {
+      raiz?.removeAttribute('inert')
+      previo?.focus?.()
+    }
+  }, [abierta])
+
+  useEffect(() => {
+    if (paso != null) siguienteRef.current?.focus()
+  }, [paso])
+
+  useEffect(() => {
+    if (!abierta) return
     const tecla = (e: KeyboardEvent) => {
       if (e.key === 'Escape') cerrar()
-      else if (e.key === 'ArrowRight') ir(paso + 1, 1)
-      else if (e.key === 'ArrowLeft') ir(paso - 1, -1)
     }
     addEventListener('keydown', tecla)
     return () => removeEventListener('keydown', tecla)
@@ -155,19 +184,24 @@ export function Guia() {
   const { titulo, cuerpo } = actual.texto[idioma]
   const ultimo = paso === PASOS.length - 1
 
-  // La tarjeta va debajo del elemento si cabe, si no encima; si el elemento ocupa casi toda la
-  // pantalla (el mapa), abajo al centro.
+  // La tarjeta va del lado del elemento con más espacio (debajo o encima) y nunca más alta que
+  // ese espacio: si no cabe, se desplaza por dentro. Si el elemento ocupa casi toda la pantalla
+  // (el mapa), abajo al centro.
   const ancho = Math.min(360, innerWidth - 32)
+  const alto = innerHeight - 32
   let posicion: CSSProperties
   if (!caja) {
-    posicion = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+    posicion = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxHeight: alto }
   } else {
     const centro = caja.left + caja.width / 2 - ancho / 2
     const left = Math.min(Math.max(centro, 16), innerWidth - ancho - 16)
-    const abajo = innerHeight - (caja.top + caja.height)
-    if (abajo >= ALTO_TARJETA) posicion = { top: caja.top + caja.height + 12, left }
-    else if (caja.top >= ALTO_TARJETA) posicion = { bottom: innerHeight - caja.top + 12, left }
-    else posicion = { bottom: 16, left: (innerWidth - ancho) / 2 }
+    const abajo = innerHeight - (caja.top + caja.height) - 28
+    const arriba = caja.top - 28
+    if (Math.max(abajo, arriba) < MIN_TARJETA)
+      posicion = { bottom: 16, left: (innerWidth - ancho) / 2, maxHeight: alto }
+    else if (abajo >= arriba)
+      posicion = { top: caja.top + caja.height + 12, left, maxHeight: abajo }
+    else posicion = { bottom: innerHeight - caja.top + 12, left, maxHeight: arriba }
   }
 
   // En <body>: el explorador es pointer-events-none y su z-[1] dejaría la cabecera (z-20) encima
@@ -177,7 +211,7 @@ export function Guia() {
       {caja ? (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed rounded-m outline-2 outline-accent motion-safe:transition-all motion-safe:duration-300"
+          className="pointer-events-none fixed rounded-m outline-2 outline-accent"
           style={{ ...caja, boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.6)' }}
         />
       ) : (
@@ -188,16 +222,19 @@ export function Guia() {
         aria-modal="true"
         aria-labelledby="guia-titulo"
         aria-describedby="guia-cuerpo"
-        className="fixed flex flex-col gap-2.5 rounded-m border border-line bg-panel p-4 text-fg shadow-[0_12px_32px_var(--shadow)]"
+        className="fixed flex flex-col gap-2.5 overflow-y-auto rounded-m border border-line bg-panel p-4 text-fg shadow-[0_12px_32px_var(--shadow)]"
         style={{ ...posicion, width: ancho }}
       >
         <p className="m-0 text-xs text-muted">{ui.contador(paso + 1, PASOS.length)}</p>
-        <h2 id="guia-titulo" className="m-0 font-display text-lg font-[650] tracking-display">
-          {titulo}
-        </h2>
-        <p id="guia-cuerpo" className="m-0 text-sm leading-relaxed">
-          {cuerpo}
-        </p>
+        {/* Al cambiar de paso el foco queda en «Siguiente»: el texto nuevo se anuncia aparte */}
+        <div aria-live="polite" className="flex flex-col gap-2.5">
+          <h2 id="guia-titulo" className="m-0 font-display text-lg font-[650] tracking-display">
+            {titulo}
+          </h2>
+          <p id="guia-cuerpo" className="m-0 text-sm leading-relaxed">
+            {cuerpo}
+          </p>
+        </div>
         <div className="mt-1 flex items-center gap-2">
           <Button variant="ghost" size="sm" className="mr-auto px-2 text-muted" onClick={cerrar}>
             {ui.saltar}

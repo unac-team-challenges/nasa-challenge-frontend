@@ -46,12 +46,12 @@ export const PASOS: Paso[] = [
       es: {
         titulo: 'Cada departamento es una columna',
         cuerpo:
-          'Si sube, ahora llueve más (o hace más calor) que antes. Si se hunde, llueve menos. Si queda plana, casi no cambió. Arrastra el mapa con el dedo o el mouse para girarlo.',
+          'Si sube, en estos años llueve más (o hace más calor) que antes. Si se hunde, llueve menos. Si queda plana, casi no cambió. Arrastra el mapa con el dedo o el mouse para girarlo.',
       },
       en: {
         titulo: 'Each department is a column',
         cuerpo:
-          'If it rises, it now rains more (or is warmer) than before. If it sinks, it rains less. If it stays flat, little changed. Drag the map with your finger or mouse to turn it.',
+          'If it rises, over these years it has rained more (or got warmer) than before. If it sinks, it rains less. If it stays flat, little changed. Drag the map with your finger or mouse to turn it.',
       },
     },
   },
@@ -122,12 +122,12 @@ export const PASOS: Paso[] = [
       es: {
         titulo: 'Toca tu departamento',
         cuerpo:
-          'Toca en el mapa el departamento que te interesa y se abre su informe. Para mostrarte, abrimos uno.',
+          'Cuando cierres esta guía, toca en el mapa el departamento que te interesa y se abre su informe. Para mostrarte, ya abrimos uno.',
       },
       en: {
         titulo: 'Tap your department',
         cuerpo:
-          'Tap the department you care about on the map and its report opens. To show you, we opened one.',
+          'When you close this guide, tap the department you care about on the map and its report opens. To show you, we opened one.',
       },
     },
   },
@@ -152,12 +152,12 @@ export const PASOS: Paso[] = [
       es: {
         titulo: 'Botones del mapa',
         cuerpo:
-          'Gira el mapa o detenlo, vuelve al inicio, pásalo a 2D si tu celular va lento y comparte el enlace de lo que estás viendo. El botón «?» repite esta guía.',
+          'Gira el mapa o detenlo, vuelve al inicio, pásalo a 2D si tu celular va lento y comparte el enlace de lo que estás viendo. En el celular están detrás del botón «⋯». El botón «?» repite esta guía.',
       },
       en: {
         titulo: 'Map buttons',
         cuerpo:
-          'Turn the map or stop it, go back to the start, switch to 2D if your phone is slow and share a link to what you are seeing. The "?" button replays this guide.',
+          'Turn the map or stop it, go back to the start, switch to 2D if your phone is slow and share a link to what you are seeing. On a phone they are behind the "⋯" button. The "?" button replays this guide.',
       },
     },
   },

@@ -68,12 +68,17 @@ describe('guía de la primera visita', () => {
     expect(router.state.location.pathname).toBe('/zona/08')
   })
 
-  it('en vegetación salta el paso de la barra de tiempo (no existe)', async () => {
+  it('en vegetación salta la leyenda (es otra) y la barra de tiempo (no existe)', async () => {
     const user = userEvent.setup()
     renderRuta('/explorar?capa=vegetacion', true)
     await screen.findByRole('dialog', { name: titulo(0) })
+    const leyenda = indice('leyenda')
     const tiempo = indice('tiempo')
-    for (let i = 0; i < tiempo; i++) await user.click(boton('Siguiente'))
+    for (let i = 0; i < leyenda - 1; i++) await user.click(boton('Siguiente'))
+    await user.click(boton('Siguiente'))
+    expect(screen.getByRole('dialog', { name: titulo(leyenda + 1) })).toBeVisible()
+    for (let i = leyenda + 1; i < tiempo - 1; i++) await user.click(boton('Siguiente'))
+    await user.click(boton('Siguiente'))
     expect(screen.getByRole('dialog', { name: titulo(tiempo + 1) })).toBeVisible()
   })
 

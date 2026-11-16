@@ -1296,6 +1296,12 @@ export const FAUNA_TEXTOS: Record<Idioma, Record<string, [string, string]>> = {
 }
 
 /** Última línea del globo de la fauna: el dato de clima del departamento donde vive (lo que el mapa muestra). */
+/** Nombre de cada variable dentro de la frase del globo de la fauna */
+const VARIABLE_EN_FRASE: Record<Idioma, PorVariable<string>> = {
+  es: { lluvia: 'la lluvia', temperatura: 'la temperatura', vegetacion: 'el verdor (NDVI)' },
+  en: { lluvia: 'rainfall', temperatura: 'temperature', vegetacion: 'greenness (NDVI)' },
+}
+
 export const FAUNA_CLIMA: Record<
   Idioma,
   {
@@ -1308,17 +1314,17 @@ export const FAUNA_CLIMA: Record<
 > = {
   es: {
     tendencia: (v, d, valor, estado) =>
-      `Datos de la NASA: ${v === 'lluvia' ? 'la lluvia' : 'la temperatura'} de ${d} cambia ${valor} por década. ${estado === 'real' ? 'Es un cambio real.' : 'Puede ser casualidad.'}`,
+      `Datos de la NASA: ${VARIABLE_EN_FRASE.es[v]} de ${d} cambia ${valor} por década. ${estado === 'real' ? 'Es un cambio real.' : 'Puede ser casualidad.'}`,
     anio: (v, d, anio, a) =>
-      `En ${anio}, ${v === 'lluvia' ? 'la lluvia' : 'la temperatura'} de ${d} fue ${a} frente a su promedio.`,
+      `En ${anio}, ${VARIABLE_EN_FRASE.es[v]} de ${d} fue ${a} frente a su promedio.`,
     pocos: (d) => `De ${d} hay muy pocos datos: no sacamos conclusiones.`,
     verdor: (d, ndvi, nivel) => `Datos de la NASA: el verdor (NDVI) de ${d} es ${ndvi}: ${nivel}.`,
   },
   en: {
     tendencia: (v, d, valor, estado) =>
-      `NASA data: ${d}'s ${v === 'lluvia' ? 'rainfall' : 'temperature'} changes ${valor} per decade. ${estado === 'real' ? 'It is a real change.' : 'It may be chance.'}`,
+      `NASA data: ${d}'s ${VARIABLE_EN_FRASE.en[v]} changes ${valor} per decade. ${estado === 'real' ? 'It is a real change.' : 'It may be chance.'}`,
     anio: (v, d, anio, a) =>
-      `In ${anio}, ${d}'s ${v === 'lluvia' ? 'rainfall' : 'temperature'} was ${a} vs. its average.`,
+      `In ${anio}, ${d}'s ${VARIABLE_EN_FRASE.en[v]} was ${a} vs. its average.`,
     pocos: (d) => `${d} has very little data: we draw no conclusion.`,
     verdor: (d, ndvi, nivel) => `NASA data: ${d}'s greenness (NDVI) is ${ndvi}: ${nivel}.`,
   },

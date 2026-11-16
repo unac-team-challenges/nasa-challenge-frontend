@@ -47,6 +47,16 @@ describe('lineaClima', () => {
     )
   })
 
+  it('variable Vegetación fuera del modo Vegetación: nombra el verdor, no la temperatura', () => {
+    const z = zona({ slope_per_decade: 0.01 })
+    const es = lineaClima('17', z, 'vegetacion', 'es', null)
+    expect(es).toContain('el verdor (NDVI) de Madre de Dios')
+    expect(es).not.toContain('temperatura')
+    const en = lineaClima('17', z, 'vegetacion', 'en', { numero: 2015, valor: 0.02 })
+    expect(en).toContain("Madre de Dios's greenness (NDVI) was")
+    expect(en).not.toContain('temperature')
+  })
+
   it('modo Vegetación: habla del verdor, no de la lluvia', () => {
     const t = lineaClima('17', zona(), 'lluvia', 'es', null, 0.74)
     expect(t).toBe('Datos de la NASA: el verdor (NDVI) de Madre de Dios es 0,74: bosque denso.')

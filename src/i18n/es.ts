@@ -107,22 +107,9 @@ export const textos = {
   ] as [[string, string][], [string, string][]],
   legMax: (v: string) => `máx. ${v}`,
   legSeguro: 'Qué tan seguro es',
-  legCuadros: 'Los 5 cuadros: su tendencia',
-  // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
-  vegetacionBtn: 'Lugares medidos',
-  vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
-  mapHVeg: 'Vegetación medida con satélite',
-  mapSubVeg: 'MODIS, 2001–2024 · todo el Perú y 5 lugares',
-  vegSube: 'Más vegetación',
-  vegBaja: 'Menos árboles',
-  vegIgual: 'Sin cambio claro',
-  vegIntroH: 'Vegetación: 5 lugares medidos',
-  vegIntro:
-    'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
+  // Vista de verdor (Vegetación en el mapa 3D): relieve por NDVI medio y bosque
+  mapSubVeg: 'Altura: verdor medio · color: NDVI por celda (MODIS)',
   legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
-  vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
-  vegOtros: 'Otros lugares con vegetación medida',
-  // Relieve, bosque y ficha del modo Vegetación
   legVegAltura: 'Altura: más verde, más alta',
   ndviMedio: 'NDVI medio',
   ndviNivel: [

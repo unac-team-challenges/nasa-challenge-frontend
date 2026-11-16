@@ -125,20 +125,9 @@ const en: Textos = {
   ],
   legMax: (v) => `max. ${v}`,
   legSeguro: 'How sure it is',
-  legCuadros: 'The 5 squares: their trend',
-  vegetacionBtn: 'Measured places',
-  vegConLugar: (lugar) => `measured vegetation: ${lugar}`,
-  mapHVeg: 'Vegetation measured by satellite',
-  mapSubVeg: 'MODIS, 2001–2024 · all of Peru and 5 places',
-  vegSube: 'More vegetation',
-  vegBaja: 'Fewer trees',
-  vegIgual: 'No clear change',
-  vegIntroH: 'Vegetation: 5 measured places',
-  vegIntro:
-    'The background colour is the greenness (NDVI) of all of Peru, measured by the MODIS satellites. The 5 squares are places studied up close: on the coast, irrigation turns the desert green; in the rainforest, mining takes the forest away.',
+  // Vista de verdor (Vegetación en el mapa 3D): relieve por NDVI medio y bosque
+  mapSubVeg: 'Height: average greenness · colour: NDVI per cell (MODIS)',
   legVegMalla: (a, b) => `Background: mean greenness (NDVI) ${a}–${b}`,
-  vegSinDato: (depto) => `${depto} has no measured vegetation. Pick one of the 5 places:`,
-  vegOtros: 'Other places with measured vegetation',
   legVegAltura: 'Height: greener, taller',
   ndviMedio: 'mean NDVI',
   ndviNivel: [

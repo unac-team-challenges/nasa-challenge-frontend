@@ -198,44 +198,6 @@ describe('esperas y errores', () => {
   })
 })
 
-describe('Escuchar (agricultor)', () => {
-  it('lee en voz alta lo marcado de la ficha, sin las casillas de los años', async () => {
-    const speak = vi.fn()
-    const cancel = vi.fn()
-    vi.stubGlobal('speechSynthesis', { speak, cancel })
-    vi.stubGlobal(
-      'SpeechSynthesisUtterance',
-      class {
-        lang = ''
-        rate = 1
-        onend: (() => void) | null = null
-        onerror: (() => void) | null = null
-        text: string
-        constructor(text: string) {
-          this.text = text
-        }
-      },
-    )
-    try {
-      renderRuta('/zona/20?perfil=agricultor')
-      const informe = await screen.findByRole('complementary', { name: /informe/i })
-      await userEvent.click(await within(informe).findByRole('button', { name: /en voz alta/ }))
-      expect(speak).toHaveBeenCalledOnce()
-      const { text, lang } = speak.mock.calls[0][0] as { text: string; lang: string }
-      expect(lang).toBe('es-PE')
-      expect(text).toContain(`${NOMBRE['20']}.`)
-      expect(text).toContain('No se ve un cambio claro en la lluvia.')
-      expect(text).toContain('¿Ahora hay más años de seca?')
-      // Las casillas de los años («05») no se leen
-      expect(text).not.toContain(' 05 ')
-      // El mismo botón pasa a parar la lectura
-      expect(within(informe).getByRole('button', { name: /Parar la lectura/ })).toBeVisible()
-    } finally {
-      vi.unstubAllGlobals()
-    }
-  })
-})
-
 describe('saltar al contenido', () => {
   it('es lo primero al tabular y lleva el foco al contenido sin cambiar la URL', async () => {
     const router = renderRuta('/explorar')

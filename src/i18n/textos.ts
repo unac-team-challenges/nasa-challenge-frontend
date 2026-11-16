@@ -285,10 +285,6 @@ const en: Textos = {
   },
   otraVer: { lluvia: 'See the rain', temperatura: 'See the heat', vegetacion: 'See greenness' },
   otraCruce: 'Less rain and more heat at the same time in this area.',
-  escuchar: 'Listen',
-  escucharParar: 'Stop',
-  escucharAria: 'Listen to this report aloud',
-  escucharPararAria: 'Stop reading aloud',
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],

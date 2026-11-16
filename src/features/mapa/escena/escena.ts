@@ -364,6 +364,9 @@ export class EscenaPeru {
     c.minDistance = 12
     c.maxDistance = 120
     c.autoRotateSpeed = 0.55
+    // Sin desplazamiento: con clic derecho, Ctrl+arrastre, teclado o dos dedos el objetivo
+    // salía del mapa sin límite. Girar y acercar alcanzan; los vuelos mueven el objetivo por código.
+    c.enablePan = false
     this.controles = c
 
     this.escena.add(this.hemi)
@@ -769,7 +772,8 @@ export class EscenaPeru {
       this.setAnimal(null)
     }
     const bajar = (e: PointerEvent) => {
-      abajo = [e.clientX, e.clientY]
+      // Solo el botón principal (o el dedo) elige zona: el clic derecho no hace nada
+      abajo = e.button === 0 ? [e.clientX, e.clientY] : null
     }
     const subir = (e: PointerEvent) => {
       if (!abajo) return

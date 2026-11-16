@@ -30,10 +30,7 @@ export function Selva({ departamento }: { departamento: string }) {
   ]
 
   return (
-    <section
-      aria-labelledby="selva-h"
-      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="selva-h" className="flex flex-col gap-2.5 bloque-ficha">
       <h3 id="selva-h" className="m-0 text-sm font-semibold">
         {t.selvaH}
       </h3>

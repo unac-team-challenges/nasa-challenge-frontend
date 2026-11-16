@@ -5,6 +5,7 @@ import { useBusqueda, usePeriodo, useSinNino } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
 import { fmtP, fmtValor } from '@/utils/formato'
 import { useApp } from '@/stores/app'
+import { Termino } from '@/components/Termino'
 import { robustez } from '@/features/ficha/utils/estudiante'
 
 const SELLO = {
@@ -30,10 +31,7 @@ export function EstRobustez() {
   const [cCaso, cPend, cQ, cEstado] = t.robCols
 
   return (
-    <section
-      aria-labelledby="rob-h"
-      className="flex flex-col gap-3 rounded-m border border-line p-3.5"
-    >
+    <section aria-labelledby="rob-h" className="flex flex-col gap-3 bloque-ficha">
       <h3 id="rob-h" className="m-0 text-sm font-semibold">
         {t.robH}
       </h3>
@@ -49,8 +47,12 @@ export function EstRobustez() {
           <thead>
             <tr className="text-left text-xs text-muted">
               <th className="py-1 pr-2 font-normal">{cCaso}</th>
-              <th className="py-1 pr-2 text-right font-normal">{cPend}</th>
-              <th className="py-1 pr-2 text-right font-normal">{cQ}</th>
+              <th className="py-1 pr-2 text-right font-normal">
+                <Termino id="sen">{cPend}</Termino>
+              </th>
+              <th className="py-1 pr-2 text-right font-normal">
+                <Termino id="q">{cQ}</Termino>
+              </th>
               <th className="py-1 font-normal">{cEstado}</th>
             </tr>
           </thead>

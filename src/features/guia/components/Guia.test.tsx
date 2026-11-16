@@ -68,18 +68,22 @@ describe('guía de la primera visita', () => {
     expect(router.state.location.pathname).toBe('/zona/08')
   })
 
-  it('en vegetación salta la leyenda (es otra) y la barra de tiempo (no existe)', async () => {
+  it('en vegetación con el 3D salta la leyenda (es otra); la barra de tiempo sigue', async () => {
     const user = userEvent.setup()
-    renderRuta('/explorar?capa=vegetacion', true)
-    await screen.findByRole('dialog', { name: titulo(0) })
-    const leyenda = indice('leyenda')
-    const tiempo = indice('tiempo')
-    for (let i = 0; i < leyenda - 1; i++) await user.click(boton('Siguiente'))
-    await user.click(boton('Siguiente'))
-    expect(screen.getByRole('dialog', { name: titulo(leyenda + 1) })).toBeVisible()
-    for (let i = leyenda + 1; i < tiempo - 1; i++) await user.click(boton('Siguiente'))
-    await user.click(boton('Siguiente'))
-    expect(screen.getByRole('dialog', { name: titulo(tiempo + 1) })).toBeVisible()
+    useApp.setState({ modoMapa: '3d' })
+    try {
+      renderRuta('/explorar?variable=vegetacion', true)
+      await screen.findByRole('dialog', { name: titulo(0) })
+      const leyenda = indice('leyenda')
+      const tiempo = indice('tiempo')
+      for (let i = 0; i < leyenda - 1; i++) await user.click(boton('Siguiente'))
+      await user.click(boton('Siguiente'))
+      expect(screen.getByRole('dialog', { name: titulo(leyenda + 1) })).toBeVisible()
+      for (let i = leyenda + 1; i < tiempo; i++) await user.click(boton('Siguiente'))
+      expect(screen.getByRole('dialog', { name: titulo(tiempo) })).toBeVisible()
+    } finally {
+      useApp.setState({ modoMapa: '2d' })
+    }
   })
 
   it('Esc la cierra y el botón «?» la vuelve a abrir desde el primer paso', async () => {
@@ -92,5 +96,25 @@ describe('guía de la primera visita', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Ver la guía' })[0])
     expect(screen.getByRole('dialog', { name: titulo(0) })).toBeVisible()
+  })
+
+  it('en la portada sale el primer paso y «Siguiente» sigue el tour en el explorador', async () => {
+    const user = userEvent.setup()
+    const router = renderRuta('/', true)
+    await screen.findByRole('dialog', { name: titulo(0) })
+    expect(localStorage.getItem('guia-vista')).toBe('1')
+
+    await user.click(boton('Siguiente'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/explorar'))
+    expect(await screen.findByRole('dialog', { name: titulo(1) })).toBeVisible()
+  })
+
+  it('en la portada «Saltar la guía» la cierra sin salir de la portada', async () => {
+    const user = userEvent.setup()
+    const router = renderRuta('/', true)
+    await screen.findByRole('dialog', { name: titulo(0) })
+    await user.click(boton('Saltar la guía'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(router.state.location.pathname).toBe('/')
   })
 })

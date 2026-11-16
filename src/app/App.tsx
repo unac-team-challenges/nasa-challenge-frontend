@@ -36,7 +36,7 @@ export default function App() {
 
   return (
     // En escritorio el explorador ocupa justo la pantalla (el informe se desplaza por dentro)
-    <div className={`flex min-h-full flex-col ${ruta === 'explorar' ? 'min-[901px]:h-full' : ''}`}>
+    <div className={`flex min-h-full flex-col ${ruta === 'explorar' ? 'escritorio:h-full' : ''}`}>
       {/* Primer elemento al tabular: salta la cabecera. Sin #ancla, para no ensuciar la URL compartida */}
       <a
         href="#contenido"
@@ -53,7 +53,7 @@ export default function App() {
         {/* Un solo mapa para la portada y el explorador: al cambiar de pantalla no se recarga */}
         {ruta !== 'metodologia' && (
           <div
-            className={`absolute inset-x-0 top-0 z-0 overflow-hidden ${ALTO_MAPA_CELULAR} min-[901px]:inset-0 min-[901px]:h-auto`}
+            className={`absolute inset-x-0 top-0 z-0 overflow-hidden ${ALTO_MAPA_CELULAR} escritorio:inset-0 escritorio:h-auto`}
           >
             {/* En 2D el mapa lo dibuja el explorador, en la zona que no tapa el informe */}
             {!en2d && (

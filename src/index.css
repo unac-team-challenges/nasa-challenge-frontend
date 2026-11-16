@@ -178,6 +178,12 @@ h3 {
   text-wrap: balance;
 }
 
+/* Escritorio = mapa de fondo + informe lateral. Necesita ancho y alto: con zoom (Ctrl +) el
+   viewport se achica en ambos ejes y el layout pasa al apilado de celular. Mismo valor que
+   MQ_CELULAR (src/utils/disposicion.ts): cambiar ambos juntos */
+@custom-variant escritorio (@media (min-width: 901px) and (min-height: 560px));
+@custom-variant celular (@media not all and (min-width: 901px) and (min-height: 560px));
+
 /* Tema oscuro efectivo: forzado con data-theme o heredado del sistema */
 @custom-variant oscuro {
   :root[data-theme='dark'] & {
@@ -415,6 +421,21 @@ h3 {
   box-shadow: 0 8px 28px color-mix(in srgb, var(--shadow) 70%, transparent);
 }
 
+/* Bloques de la ficha: caja con borde en escritorio. En celular, una línea arriba y sin caja:
+   el informe es largo y tantas cajas iguales no dejaban ver qué era lo importante. */
+.bloque-ficha {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 14px;
+}
+@media not all and (min-width: 901px) and (min-height: 560px) {
+  .bloque-ficha {
+    border-width: 1px 0 0;
+    border-radius: 0;
+    padding: 16px 0 0;
+  }
+}
+
 /* Barra que se vacía mientras un aviso se cierra solo */
 @keyframes cuenta-atras {
   from {
@@ -428,7 +449,7 @@ h3 {
 /* Área de toque de 44 px (guía de Apple) sin agrandar el control: en celular, un borde invisible lo
    hace tocable en 44 px. Solo crece en el eje donde el control mide menos; un control de 44 px o más
    no cambia. El elemento debe estar posicionado (relative o absolute). */
-@media (max-width: 900px) {
+@media not all and (min-width: 901px) and (min-height: 560px) {
   .toque44::after {
     content: '';
     position: absolute;
@@ -492,7 +513,7 @@ h3 {
 .presentacion-nombre {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(36px, 6vw, 84px);
+  font-size: clamp(2.25rem, 1.5rem + 4vw, 5.25rem);
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
@@ -503,7 +524,7 @@ h3 {
 }
 .presentacion-sub {
   margin: 10px 0 0;
-  font-size: clamp(13px, 1.4vw, 16px);
+  font-size: clamp(0.8125rem, 0.7rem + 0.6vw, 1rem);
   font-weight: 650;
   letter-spacing: 0.08em;
   color: var(--fg);
@@ -534,26 +555,6 @@ h3 {
   .saliendo {
     transition: none;
   }
-}
-
-/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
-   departamentos para no competir con el dato del mapa */
-.lbl3d.veg {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 7px 1px 5px;
-}
-.lbl3d.veg::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  /* --veg: color de la tendencia del lugar (lo pone el mapa) */
-  background: var(--veg, var(--map-green));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--veg, var(--map-green)) 35%, transparent);
 }
 
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
@@ -588,6 +589,11 @@ h3 {
 .lbl2d.gestando {
   transition: none;
 }
+/* Arrastrando con el ratón (botón derecho): la mano cerrada, también sobre los departamentos */
+.zoom2d.gestando,
+.zoom2d.gestando * {
+  cursor: grabbing !important;
+}
 /* Etiquetas del 2D: se deslizan con el zoom (las del 3D las mueve la escena cada cuadro) */
 .lbl2d {
   transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -601,7 +607,7 @@ h3 {
 }
 
 /* Deslizador de la máquina del tiempo en celular: va encima del riel de franjas, sin pista propia */
-@media (max-width: 900px) {
+@media not all and (min-width: 901px) and (min-height: 560px) {
   .deslizador-riel {
     appearance: none;
     background: transparent;
@@ -646,7 +652,7 @@ h3 {
   position: relative;
   z-index: 1;
 }
-@media (min-width: 901px) {
+@media (min-width: 901px) and (min-height: 560px) {
   .franja {
     background-image: linear-gradient(
       90deg,
@@ -654,5 +660,85 @@ h3 {
       transparent 55%,
       rgb(0 0 0 / 0.14)
     );
+  }
+}
+
+/*
+ * Imprimir = la ficha de la zona (botón «Ficha (PDF)» del estudiante). Se oculta todo menos el
+ * informe, se suelta de su caja (que en pantalla es fija y con scroll) y se fuerzan los colores
+ * del tema claro: un PDF oscuro gasta tinta y se lee peor.
+ */
+@media print {
+  :root:root:root {
+    --bg: #fff !important;
+    --panel: #fff !important;
+    --panel-2: #f3efe8 !important;
+    --line: #c9c2b8 !important;
+    --line-2: #8f867a !important;
+    --fg: #1c1612 !important;
+    --muted: #4d4036 !important;
+    --up: #1f5287 !important;
+    --up-soft: #c6d6e6 !important;
+    --down: #713f15 !important;
+    --down-soft: #e4cdb0 !important;
+    --green: #20553a !important;
+    --green-soft: #b3d2bf !important;
+    --map-up: #2f6fa8 !important;
+    --map-down: #a5652a !important;
+    --accent-text: #8e1f4b !important;
+    --nino: #ebdfbe !important;
+    color-scheme: light;
+  }
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #informe,
+  #informe * {
+    visibility: visible;
+  }
+  /* Los contenedores del informe dejan de ser cajas fijas con scroll */
+  #root > div,
+  #contenido,
+  #contenido > section,
+  [data-guia='informe'] {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  #informe {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  /* Lo de pantalla que no sirve en papel: los botones de acción (shadcn), los selectores y las
+     animaciones. Los <button> sueltos, como las filas del ranking, son contenido y se quedan. */
+  #informe [data-slot='button'],
+  #informe select {
+    display: none !important;
+  }
+  /* Las etiquetas del mapa 3D flotan sobre la página y, impresas, taparían el texto */
+  .lbl3d,
+  .tip3d,
+  .ficha3d {
+    display: none !important;
+  }
+  #informe * {
+    animation: none !important;
+    transition: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

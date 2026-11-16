@@ -37,6 +37,12 @@ describe('validarBusqueda (lo que va en la URL)', () => {
   it('ignora lo inválido en vez de romper', () => {
     expect(validarBusqueda({ variable: 'viento', perfil: 'rey', anio: 'x' })).toEqual({})
   })
+  it('un enlace viejo de «Lugares medidos» (?capa=vegetacion) abre la variable Vegetación', () => {
+    expect(validarBusqueda(parseSearch('?capa=vegetacion&variable=lluvia&anio=2017'))).toEqual({
+      variable: 'vegetacion',
+      anio: 2017,
+    })
+  })
 })
 
 describe('esUbigeo (el id de /zona/:id)', () => {

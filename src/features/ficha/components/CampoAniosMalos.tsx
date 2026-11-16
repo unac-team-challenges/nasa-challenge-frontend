@@ -45,33 +45,27 @@ export function CampoAniosMalos() {
   const tipo = t.malosPunto[variable]
 
   return (
-    <section
-      aria-labelledby="malos-h"
-      className="flex flex-col gap-3.5 rounded-m border border-line p-3.5"
-    >
-      <h3 id="malos-h" data-leer className="m-0 text-sm font-semibold">
+    <section aria-labelledby="malos-h" className="flex flex-col gap-3.5 bloque-ficha">
+      <h3 id="malos-h" className="m-0 text-sm font-semibold">
         {t.malosH[variable]}
       </h3>
 
       {/* La respuesta, en una frase */}
-      <p data-leer className="m-0 font-semibold">
-        {t.malosRespuesta[variable][respuesta]}
-      </p>
+      <p className="m-0 font-semibold">{t.malosRespuesta[variable][respuesta]}</p>
       {/* Tendencia clara hacia lo malo sin más años malos (Loreto): que no parezca contradicción */}
       {tendenciaSinMasMalos(respuesta, zona, variable) && (
-        <p data-leer className="m-0">
-          {t.malosAclara[variable]}
-        </p>
+        <p className="m-0">{t.malosAclara[variable]}</p>
       )}
 
       {/* Cada cuánto venía un año malo antes y cada cuánto viene ahora */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         {[antes, ahora].map((m, i) => (
-          <div key={m.desde} data-leer className={`flex flex-col gap-1 ${i ? 'col-start-3' : ''}`}>
+          <div key={m.desde} className={`flex flex-col gap-1 ${i ? 'col-start-3' : ''}`}>
             <span className="text-xs text-muted">
               {i ? t.malosAhora : t.malosAntes} · {m.desde}–{m.hasta}
             </span>
-            <span className="font-display text-[22px] leading-[1.1] font-[750] tracking-[-0.01em]">
+            {/* En celular a 19 px: a 22 px «Uno cada 2 o 3 años» se partía en 3 líneas */}
+            <span className="font-display text-[19px] leading-[1.1] font-[750] tracking-[-0.01em] text-balance min-[420px]:text-[22px]">
               {t.malosFrec(frecuencia(m.malos, m.anios.length))}
             </span>
             <span className="text-xs text-muted tabular-nums">
@@ -84,7 +78,7 @@ export function CampoAniosMalos() {
 
       {/* Un año malo para ubicarse: el peor de los recientes */}
       {recordar && (
-        <p data-leer className="m-0">
+        <p className="m-0">
           {lluvia
             ? t.malosRecuerdaLluvia(recordar.y, cuantoFalto(recordar.a))
             : variable === 'vegetacion'

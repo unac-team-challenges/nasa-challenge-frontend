@@ -25,7 +25,12 @@ for (const [nombre, viewport] of [
     await expect(page).toHaveURL(/\/explorar/)
 
     await page.reload()
-    await expect(page.getByRole('group', { name: 'Perfil' })).toBeVisible()
+    // En celular el perfil vive en el menú ☰; el botón sí se ve
+    await expect(
+      nombre === 'celular'
+        ? page.getByRole('button', { name: 'Menú' })
+        : page.getByRole('group', { name: 'Perfil' }),
+    ).toBeVisible()
     await expect(guia).toBeHidden()
   })
 
@@ -39,5 +44,17 @@ for (const [nombre, viewport] of [
     if (nombre === 'celular') await page.getByRole('button', { name: 'Controles del mapa' }).click()
     await page.getByRole('button', { name: 'Ver la guía' }).click()
     await expect(guia).toContainText('1 de 10')
+  })
+
+  test(`${nombre}: en la primera visita sale en la portada y sigue en el explorador`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/?lang=es&sinwebgl')
+    const guia = page.getByRole('dialog')
+    await expect(guia).toContainText('1 de 10')
+    await guia.getByRole('button', { name: 'Siguiente' }).click()
+    await expect(page).toHaveURL(/\/explorar/)
+    await expect(guia).toContainText('2 de 10')
   })
 }

@@ -40,11 +40,8 @@ export function CampoOtraVariable() {
     calor.slope_per_decade > 0
 
   return (
-    <section
-      aria-labelledby="otra-h"
-      className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-    >
-      <h3 id="otra-h" data-leer className="m-0 text-sm font-semibold">
+    <section aria-labelledby="otra-h" className="flex flex-col gap-2.5 bloque-ficha">
+      <h3 id="otra-h" className="m-0 text-sm font-semibold">
         {t.otraH[variable]}
       </h3>
       {filas.map(({ v, d }) => {
@@ -54,7 +51,6 @@ export function CampoOtraVariable() {
         return (
           <p
             key={v}
-            data-leer
             className="m-0 font-semibold"
             style={claro ? { color: `var(${colorDireccion(d.slope_per_decade, v)})` } : undefined}
           >
@@ -62,11 +58,7 @@ export function CampoOtraVariable() {
           </p>
         )
       })}
-      {cruce && (
-        <p data-leer className="m-0">
-          {t.otraCruce}
-        </p>
-      )}
+      {cruce && <p className="m-0">{t.otraCruce}</p>}
       <div className="flex flex-wrap gap-2">
         {filas.map(({ v }) => (
           <Button key={v} onClick={() => setVariable(v)}>

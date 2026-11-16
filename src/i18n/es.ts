@@ -1,5 +1,6 @@
 /** Textos de la interfaz en español. Va en su propio chunk: solo se baja si se usa el español (cargarIdioma en textos.ts). El inglés, que es el idioma por defecto, va en textos.ts. */
 import type { Estado, Region, Variable } from '@/data/datos'
+import { REFERENCIAS } from '@/i18n/referencias'
 import { REPOS } from '@/i18n/repos'
 import type {
   ComoFue,
@@ -18,11 +19,14 @@ import type {
 export const textos = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
-  inicioCorto: 'Inicio',
   saltarAlContenido: 'Saltar al contenido',
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
+  menu: 'Menú',
+  cerrarMenu: 'Cerrar el menú',
+  idiomaLbl: 'Idioma',
+  temaLbl: 'Tema',
   variableLbl: 'Variable',
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
@@ -108,22 +112,9 @@ export const textos = {
   ] as [[string, string][], [string, string][]],
   legMax: (v: string) => `máx. ${v}`,
   legSeguro: 'Qué tan seguro es',
-  legCuadros: 'Los 5 cuadros: su tendencia',
-  // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
-  vegetacionBtn: 'Lugares medidos',
-  vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
-  mapHVeg: 'Vegetación medida con satélite',
-  mapSubVeg: 'MODIS, 2001–2024 · todo el Perú y 5 lugares',
-  vegSube: 'Más vegetación',
-  vegBaja: 'Menos árboles',
-  vegIgual: 'Sin cambio claro',
-  vegIntroH: 'Vegetación: 5 lugares medidos',
-  vegIntro:
-    'El color de fondo es el verdor (NDVI) de todo el Perú, medido con los satélites MODIS. Los 5 cuadros son lugares estudiados de cerca: en la costa, el riego hace reverdecer el desierto; en la selva, la minería se lleva el bosque.',
+  // Vista de verdor (Vegetación en el mapa 3D): relieve por NDVI medio y bosque
+  mapSubVeg: 'Altura: verdor medio · color: NDVI por celda (MODIS)',
   legVegMalla: (a: number, b: number) => `Fondo: verdor (NDVI) promedio ${a}–${b}`,
-  vegSinDato: (depto: string) => `${depto} no tiene vegetación medida. Elige uno de los 5 lugares:`,
-  vegOtros: 'Otros lugares con vegetación medida',
-  // Relieve, bosque y ficha del modo Vegetación
   legVegAltura: 'Altura: más verde, más alta',
   ndviMedio: 'NDVI medio',
   ndviNivel: [
@@ -151,6 +142,9 @@ export const textos = {
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
       : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : variable === 'vegetacion' ? 'verdor (NDVI)' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? (variable === 'vegetacion' ? ' de ~27 km' : ' de ~50 km') : ''}`,
+  /** La API solo trae el periodo completo con El Niño: las demás vistas salen de la copia local */
+  fuenteCopia:
+    'Esta vista sale de la copia local; la API solo trae el periodo completo con El Niño, así que las cifras pueden diferir de la vista principal.',
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
@@ -160,6 +154,8 @@ export const textos = {
     posible_casualidad: 'Posible casualidad',
     pocos_datos: 'Pocos datos',
   } as Record<Estado, string>,
+  /** Barra fija del informe en celular: sube al mapa */
+  verMapa: 'Mapa',
   perDecade: 'por década',
   /** Ficha del 3D al pasar el puntero */
   vsPromedio: 'frente a su promedio',
@@ -282,10 +278,6 @@ export const textos = {
   // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
   otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
   /** Botón para oír la ficha del agricultor */
-  escuchar: 'Escuchar',
-  escucharParar: 'Parar',
-  escucharAria: 'Escuchar este informe en voz alta',
-  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],
@@ -509,16 +501,34 @@ export const textos = {
     'Describe lo que ya cambió: no es un pronóstico.',
   ],
   llevarH: 'Llévatelo',
-  csvTablaBtn: 'Tabla de los 25 departamentos (CSV)',
   figSvg: 'Figura (SVG)',
   figPng: 'Figura (PNG)',
+  descModoLbl: 'Qué quieres llevarte',
+  descModoZona: 'Una zona, por años',
+  descModoAnio: 'Un año, los 25 departamentos',
+  descDesde: 'Desde',
+  descHasta: 'Hasta',
+  descAnio: 'Año',
+  descTodoPeriodo: 'Todo el periodo (tendencia de cada uno)',
+  descRangoMal: 'El año de inicio no puede ser mayor que el final.',
+  descCsv: 'Tabla (CSV)',
+  descPng: 'Gráfico (PNG)',
+  descPdf: 'Ficha (PDF)',
+  descPdfNota:
+    'El PDF lleva la ficha completa, con todo el periodo. En el cuadro de impresión elige «Guardar como PDF».',
+  descCsvNota: 'El CSV trae la fuente en las primeras líneas, marcadas con «#».',
+  descTituloPng: (zona: string, variable: string, desde: number, hasta: number) =>
+    `${zona} · ${variable}, ${desde}–${hasta}`,
+  descCita: (fuente: string, parametro: string, generado: string, enlace: string) => [
+    `Fuente: ${fuente} (parámetro ${parametro}).`,
+    `Datos generados el ${generado}. Detective del Perú, NASA Space Apps 2026.`,
+    `Vista exacta: ${enlace}`,
+  ],
   citarH: 'Cómo citar',
   citarCopiar: 'Copiar',
   citarCopiado: 'Copiado',
   citarEnlace: 'Enlace a esta vista exacta',
   reproH: 'Reprodúcelo',
-  reproApi: 'La API devuelve estos mismos números:',
-  reproSinApi: 'Esta sesión usa la copia local; con la API del proyecto, la consulta es:',
   reproRepos: 'Código del cálculo (backend) y de esta página (frontend):',
   // Posibles causas y consecuencias (fuentes en features/ficha/data/causas.ts)
   causasH: 'Posibles causas y consecuencias',
@@ -666,6 +676,9 @@ export const textos = {
   paginaActual: '(página actual)',
   metodologiaEnlace: 'Cómo lo calculamos y de dónde salen los datos',
   irAlMapa: 'Explorar el mapa',
+  volver: 'Volver',
+  /** Título de un término subrayado de la ficha */
+  terminoVer: '¿Qué significa? (metodología)',
 }
 
 export const frases = {
@@ -845,7 +858,7 @@ export const meta: Record<Pagina, { titulo: string; descripcion: string }> = {
 export const metodologia: Metodologia = {
   titulo: 'Metodología, fuentes y créditos',
   intro:
-    'Detective del Perú muestra cuánto cambiaron la lluvia y la temperatura de cada departamento y si ese cambio es real o pudo ser casualidad. Aquí explicamos cómo se calcula, de dónde salen los datos y qué límites tienen. Muestra lo que ya cambió: no es un pronóstico ni una recomendación.',
+    'Detective del Perú muestra cuánto cambiaron la lluvia, la temperatura y la vegetación de cada departamento y si ese cambio es real o pudo ser casualidad. Aquí explicamos cómo se calcula, de dónde salen los datos y qué límites tienen. Muestra lo que ya cambió: no es un pronóstico ni una recomendación.',
   fuentesH: 'De dónde salen los datos',
   tablaCols: ['Variable', 'Fuente', 'Resolución', 'Años'],
   fuentes: [
@@ -872,6 +885,14 @@ export const metodologia: Metodologia = {
       enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
     },
     {
+      variable: 'Vegetación',
+      fuente:
+        'MODIS MOD13A3 v061 (NASA): índice de vegetación NDVI mensual, pedido con AppEEARS y resumido en celdas de 0,25°',
+      resolucion: '1 km → ≈ 27 km',
+      anios: '2001–2024',
+      enlace: ['MOD13A3', 'https://lpdaac.usgs.gov/products/mod13a3v061/'],
+    },
+    {
       variable: 'Copia local (plan B)',
       fuente:
         'Los mismos números que la API (NASA POWER y, para comparar, IMERG). La web la usa si la API no responde, y siempre para «sin El Niño» y la máquina del tiempo',
@@ -880,15 +901,16 @@ export const metodologia: Metodologia = {
       enlace: ['NASA POWER', 'https://power.larc.nasa.gov/'],
     },
     {
-      variable: 'Vegetación (Caso 2)',
-      fuente: 'MODIS MOD13A3 (NASA): índice de vegetación NDVI, pedido con AppEEARS',
+      variable: 'Valles de la costa (Caso 2)',
+      fuente:
+        'MODIS MOD13A3 v061 (NASA): NDVI de los valles irrigados (Chavimochic, Ica-Villacurí y Olmos), pedido con AppEEARS',
       resolucion: '1 km',
-      anios: '2001 y 2024',
+      anios: '2001–2024',
       enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
     },
     {
       variable: 'Árboles de la selva',
-      fuente: 'MODIS MOD44B (NASA): % del suelo cubierto por árboles, pedido con AppEEARS',
+      fuente: 'MODIS MOD44B v061 (NASA): % del suelo cubierto por árboles, pedido con AppEEARS',
       resolucion: '250 m',
       anios: '2001–2024',
       enlace: ['AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
@@ -896,11 +918,38 @@ export const metodologia: Metodologia = {
   ],
   fuentesNota:
     'Cada número viene de una sola fuente y la ficha dice cuál: no mezclamos ni promediamos fuentes. No son estaciones de medición: cada valor es el promedio de una celda de satélite o de modelo.',
+  mapaH: 'Cómo leer el mapa',
+  mapa: [
+    [
+      'Altura',
+      'Cada departamento sube o se hunde según su tendencia: cuánto cambió por década (pendiente de Sen). En la máquina del tiempo, la altura es la anomalía de ese año: cuánto se alejó del promedio del propio departamento.',
+    ],
+    [
+      'Relleno',
+      'Pleno = cambio real, punteado = posible casualidad, solo contorno = pocos datos (ver «Cómo leer el semáforo»).',
+    ],
+    [
+      'Color',
+      'El color va por celda y no por departamento: muestra el valor donde está (la costa de Lima ronda 18 °C, el altiplano de Puno 8 °C). La ficha usa el promedio del departamento, que mezcla costa, sierra y selva: por eso Lima da unos 14 °C en la ficha.',
+    ],
+    [
+      'Unidades',
+      'La lluvia se muestra en mm al año: el promedio diario de la NASA (mm/día) por 365. La temperatura, en °C. La vegetación, en NDVI: cerca de 0 es suelo desnudo o desierto; 0,8 o más, bosque denso.',
+    ],
+    [
+      'Perfiles',
+      'Agricultor y Estudiante usan los mismos datos. Agricultor los cuenta en palabras de campo (años secos, año normal, El Niño); Estudiante añade el detalle del cálculo: valor q, rango probable, ranking y robustez.',
+    ],
+    [
+      'Personajes',
+      'Los animales y personas del mapa son ilustrativos: no salen de los datos. Lo que dicen en su globo sí: repite el dato de la NASA del departamento donde viven.',
+    ],
+  ],
   calculoH: 'Cómo se calcula la tendencia',
   pasos: [
     [
       'Promedio por departamento',
-      'Se promedian todas las celdas cuyo centro cae dentro del departamento, no el punto de la capital. Un año cuenta solo si tiene los 12 meses con dato.',
+      'Se promedian todas las celdas cuyo centro cae dentro del departamento, no el punto de la capital. En lluvia y temperatura un año cuenta solo si tiene los 12 meses con dato. En vegetación bastan 6 meses válidos (sin nubes, nieve ni agua según la calidad de MODIS): en la selva y los Andes casi siempre hay nubes algún mes.',
     ],
     [
       'Prueba de tendencia',
@@ -934,6 +983,77 @@ export const metodologia: Metodologia = {
       'Menos de 20 años de datos o menos de 4 celdas en el departamento: no damos veredicto.',
     ],
   ],
+  glosarioH: 'Glosario',
+  glosarioP:
+    'Las palabras subrayadas de la ficha te traen aquí; el botón «Volver» de arriba te regresa a donde estabas.',
+  glosario: {
+    'mann-kendall': [
+      'Mann-Kendall (con TFPW)',
+      'Prueba que compara cada año con todos los años siguientes y cuenta cuántas veces el valor subió o bajó. Si un sentido domina con claridad, hay tendencia. No supone que el cambio sea una línea recta. El TFPW (prewhitening sin tendencia) quita antes cuánto se parece cada año al anterior, para no confundir una racha de años parecidos con una tendencia.',
+    ],
+    sen: [
+      'Pendiente de Sen',
+      'Cuánto cambia la variable por década. Es la mediana de las pendientes entre todos los pares de años, así que un año extremo (como un El Niño) casi no la mueve. Positiva: sube; negativa: baja.',
+    ],
+    ic: [
+      'Rango probable (IC 95 %)',
+      'Valores entre los que lo más probable es que esté la pendiente de Sen (intervalo de confianza al 95 %). Si el rango cruza el cero, no se puede asegurar si sube o baja.',
+    ],
+    p: [
+      'Valor p',
+      'Qué tan probable sería ver una tendencia así si en realidad nada hubiera cambiado. Cuanto más chico, más difícil explicarla por azar. Publicamos como mínimo 0,000001: lo menor se muestra como «< 0,000001».',
+    ],
+    q: [
+      'Valor q (Benjamini-Hochberg)',
+      'El valor p corregido por mirar 25 departamentos a la vez: con tantas pruebas, alguno saldría significativo solo por suerte. Benjamini-Hochberg sube los valores p para que las falsas alarmas no pasen del 5 %. Menos de 0,05 cuenta como significativo.',
+    ],
+    lag1: [
+      'Autocorrelación (lag1)',
+      'Cuánto se parece un año al siguiente, de −1 a 1. Por encima de 0,5 una racha de años parecidos puede parecer tendencia, así que el cambio nunca se marca «real».',
+    ],
+    celda: [
+      'Celda',
+      'El cuadrito más pequeño de la malla del satélite o del modelo: unos 50 × 60 km en NASA POWER, 10 km en IMERG y 27 km en nuestra malla de vegetación. Cada valor es el promedio de su celda, no la medida de una estación. Con menos de 4 celdas no damos veredicto.',
+    ],
+    anomalia: [
+      'Anomalía',
+      'Cuánto se alejó un año del promedio del propio departamento: en % en la lluvia y como diferencia en la temperatura y la vegetación. Es lo que muestra la máquina del tiempo.',
+    ],
+    ndvi: [
+      'NDVI',
+      'Índice de vegetación de diferencia normalizada: compara la luz roja y la infrarroja cercana que reflejan las plantas. Cerca de 0 es suelo desnudo o desierto; 0,8 o más, bosque denso. En la selva se satura y deja de mostrar la pérdida de bosque.',
+    ],
+  },
+  periodosH: 'El Niño, los periodos y la máquina del tiempo',
+  periodos: [
+    [
+      'Periodo',
+      'Por defecto la tendencia va de 2001 a 2024: el mismo periodo para todas las variables y fuentes, para poder compararlas. En lluvia y temperatura se puede elegir el periodo largo, 1981–2024 (solo NASA POWER). Cambiar el año de inicio puede cambiar el signo de la lluvia en Apurímac, Loreto y Piura: la ficha siempre dice desde qué año se calcula.',
+    ],
+    [
+      'Sin El Niño',
+      'Quita 1983, 1998, 2016, 2017 y 2023: los años de lluvias extremas en la costa norte por El Niño (1982–83, 1997–98, 2015–16) y El Niño Costero (2017 y 2023). La tendencia se recalcula sin ellos para ver cuánto pesan. Solo se aplica a la lluvia.',
+    ],
+    [
+      'Máquina del tiempo',
+      'Muestra un solo año frente al promedio del propio departamento (ver «Anomalía»), en vez de la tendencia de todo el periodo.',
+    ],
+  ],
+  zonasH: 'Zonas con trato especial',
+  zonas: [
+    [
+      'Valles de la costa (Caso 2)',
+      'Chavimochic (La Libertad), Ica-Villacurí (Ica) y Olmos (Lambayeque) se miden en un recuadro sobre las tierras de riego, no en todo el departamento. Área verde = píxeles con NDVI anual mayor que 0,3. El recuadro de Olmos se movió después de descartar el primero, que caía sobre bosque seco.',
+    ],
+    [
+      'La selva',
+      'Ahí el NDVI se satura (0,8–0,9): dice que hay vegetación, no cuánto bosque se pierde. Los departamentos con NDVI medio de 0,75 o más llevan un aviso. Para la selva usamos la cobertura de árboles de MODIS MOD44B (bosque = píxeles con 30 % o más de árboles) en La Pampa (Madre de Dios, minería de oro) e Iquitos (Loreto, para contrastar), cada una en un recuadro de unos 22–28 km de lado.',
+    ],
+    [
+      'Ucayali',
+      'Su tendencia de temperatura es la más alta de los 25 departamentos. La publicamos tal cual, con un aviso: depende mucho de 2023 y 2024, y estos datos no permiten separar un calentamiento real, el calor extremo de esos años o un cambio en el modelo MERRA-2. La ficha da las cifras.',
+    ],
+  ],
   limitesH: 'Lo que debes tener en cuenta',
   limites: [
     [
@@ -941,12 +1061,8 @@ export const metodologia: Metodologia = {
       'Los satélites de IMERG cambian en 2014 (de TRMM a GPM) y su tendencia puede salir sesgada a la baja: con IMERG, la lluvia baja en los 25 departamentos. Por eso el mapa usa la lluvia de POWER, e IMERG aparece en la ficha como segunda fuente para ver si coinciden. Su semáforo nunca llega a «cambio real».',
     ],
     [
-      'El Niño',
-      'Años como 2017 (Niño Costero) mueven mucho la lluvia de la costa norte. La ficha deja quitar los años de El Niño para ver cuánto pesan.',
-    ],
-    [
-      'El periodo importa',
-      'Cambiar el año de inicio puede cambiar el signo de la lluvia en Apurímac, Loreto y Piura. La ficha siempre dice desde qué año se calcula.',
+      'La montaña',
+      'Cada celda de MERRA-2 (≈ 50 km) tiene una altura media: en los Andes los valles salen más fríos y las cumbres más templadas que en una estación (Cusco ciudad ronda 12 °C; su celda, 8 °C).',
     ],
     [
       'La costa',
@@ -958,20 +1074,23 @@ export const metodologia: Metodologia = {
     ],
     [
       'Años completos',
-      'El último año es 2024: IMERG v07 termina en septiembre de 2025, así que 2025 nunca estará completo.',
+      'El último año es 2024 para todas las variables. NASA POWER ya tiene 2025, pero IMERG v07 termina en septiembre de 2025 y ese año nunca estará completo; para comparar las fuentes en el mismo periodo, todas terminan en 2024.',
     ],
     [
       'Es un modelo, no una estación',
       'Los valores son promedios de satélites y modelos en celdas de 10 a 60 km. Pueden fallar en la montaña o con lluvias muy locales.',
     ],
   ],
+  referenciasH: 'Referencias',
+  referencias: REFERENCIAS,
   creditosH: 'Créditos',
   creditosP:
     'Hecho por el equipo NASA-CHALLENGE-UNAC para el NASA Space Apps Challenge 2026. Datos de la NASA:',
   creditosDatos: [
     ['GPM IMERG: NASA GES DISC', 'https://gpm.nasa.gov/data/imerg'],
     ['MERRA-2: NASA GMAO, entregado por NASA POWER', 'https://power.larc.nasa.gov/'],
-    ['MODIS MOD13A3: NASA LP DAAC, vía AppEEARS', 'https://appeears.earthdatacloud.nasa.gov/'],
+    ['MODIS MOD13A3: NASA LP DAAC, vía AppEEARS', 'https://lpdaac.usgs.gov/products/mod13a3v061/'],
+    ['MODIS MOD44B: NASA LP DAAC, vía AppEEARS', 'https://lpdaac.usgs.gov/products/mod44bv061/'],
   ],
   creditosCodigo:
     'Hecho con React, Vite, three.js, TanStack, Recharts, Tailwind CSS y shadcn/ui. Tipografías: Newsreader y Public Sans. Código abierto:',
@@ -979,9 +1098,14 @@ export const metodologia: Metodologia = {
   creditosNasa: 'Este proyecto no es un producto oficial de la NASA ni cuenta con su respaldo.',
   menuD: {
     fuentes: 'Satélites y bases de datos de la NASA',
+    mapa: 'Altura, color y unidades',
     calculo: 'De la serie de años a la tendencia',
     semaforo: 'Qué significa cada color',
+    glosario: 'Las palabras técnicas, una por una',
+    periodos: 'Qué cambia al quitar años',
+    zonas: 'Valles, selva y Ucayali',
     limites: 'Hasta dónde llegan los datos',
+    referencias: 'Artículos y datos citados',
     creditos: 'Equipo, datos y código abierto',
   },
 }

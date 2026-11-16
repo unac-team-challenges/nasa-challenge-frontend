@@ -147,7 +147,8 @@ test('un toque simple sigue eligiendo la zona, y el botón de recentrar deshace 
   await expect(page).toHaveURL(/\/zona\/08/)
 })
 
-test('con ratón no hay gestos: arrastrar no mueve el mapa', async ({ page }) => {
+// El arrastre con el botón derecho está en mapa2d-raton.spec.ts
+test('con el botón izquierdo del ratón arrastrar no mueve el mapa', async ({ page }) => {
   const c = (await page.getByRole('group', { name: 'Mapa del Perú en 2D' }).boundingBox())!
   // bajo el centro: el aviso «sin 3D» y la leyenda tapan el mapa en otras alturas y los eventos no llegan
   const [cx, cy] = [c.x + c.width / 2, c.y + c.height * 0.7]

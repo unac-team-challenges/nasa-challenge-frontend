@@ -1,8 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
+  BookA,
   BookOpen,
+  CalendarRange,
   Database,
+  Layers,
+  Library,
+  MapPin,
   Sigma,
   TrafficCone,
   TriangleAlert,
@@ -18,9 +23,14 @@ import { Button } from '@/components/ui/button'
 
 const ICONO: Record<SeccionMetodologia, LucideIcon> = {
   fuentes: Database,
+  mapa: Layers,
   calculo: Sigma,
   semaforo: TrafficCone,
+  glosario: BookA,
+  periodos: CalendarRange,
+  zonas: MapPin,
   limites: TriangleAlert,
+  referencias: Library,
   creditos: Users,
 }
 
@@ -40,9 +50,14 @@ export function MenuMetodologia() {
   const m = METODOLOGIA[idioma]
   const titulo: Record<SeccionMetodologia, string> = {
     fuentes: m.fuentesH,
+    mapa: m.mapaH,
     calculo: m.calculoH,
     semaforo: m.semaforoH,
+    glosario: m.glosarioH,
+    periodos: m.periodosH,
+    zonas: m.zonasH,
     limites: m.limitesH,
+    referencias: m.referenciasH,
     creditos: m.creditosH,
   }
   // Ya en /metodologia el salto se anima, salvo que el sistema pida menos movimiento
@@ -60,9 +75,9 @@ export function MenuMetodologia() {
           title={t.metodologiaCorto}
           data-activa={activa || undefined}
           data-guia="metodologia"
-          className={`vidrio z-40 size-12 rounded-full text-fg hover:bg-panel-2 data-[state=open]:bg-panel-2 data-activa:text-accent-text min-[901px]:fixed min-[901px]:top-auto min-[901px]:right-5 min-[901px]:bottom-5 ${
+          className={`vidrio z-40 size-12 rounded-full text-fg hover:bg-panel-2 data-[state=open]:bg-panel-2 data-activa:text-accent-text escritorio:fixed escritorio:top-auto escritorio:right-5 escritorio:bottom-5 ${
             // En celular, flotando abajo taparía el texto: va arriba a la derecha del mapa
-            activa ? 'fixed right-4 bottom-4' : 'absolute top-3 right-3 max-[900px]:size-11'
+            activa ? 'fixed right-4 bottom-4' : 'absolute top-3 right-3 celular:size-11'
           }`}
         >
           <BookOpen className="size-5" aria-hidden="true" />

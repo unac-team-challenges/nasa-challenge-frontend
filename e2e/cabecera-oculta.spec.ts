@@ -52,7 +52,7 @@ test.describe('celular', () => {
     await abrir(page, '/metodologia')
     await irA(page, 700)
     await expect.poll(() => bordeAbajo(page)).toBeLessThanOrEqual(1)
-    await page.locator('body > div header').first().getByRole('button', { name: 'Lluvia' }).focus()
+    await page.locator('body > div header').first().getByRole('button', { name: 'Menú' }).focus()
     await expect.poll(() => bordeAbajo(page)).toBeGreaterThan(40)
   })
 })

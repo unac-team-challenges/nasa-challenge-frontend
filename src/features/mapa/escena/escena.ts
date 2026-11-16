@@ -13,6 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
+import { lineaClima } from '@/features/mapa/utils/faunaClima'
 import { datosTarjeta, datosTarjetaVeg } from '@/features/mapa/utils/tarjeta'
 import {
   dibujarCalor,
@@ -54,13 +55,13 @@ const COSLAT = Math.cos((LAT0 * Math.PI) / 180)
 /** Desde r155 las luces son físicas: ×π para igualar las intensidades de r128. */
 const LUZ = Math.PI
 /**
- * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z): queda al frente de la
- * cámara de inicio. Es la luz, la sombra del Perú y la de las nubes.
+ * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z). Es la luz, la sombra del
+ * Perú y la de las nubes.
  */
 const DIR_LUZ = new THREE.Vector3(5, 45, -45).normalize()
 /**
- * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: así entra en la franja de
- * cielo de la vista de inicio y su reflejo cruza el mar hacia la cámara (camino de luz).
+ * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: se ve en el cielo y su reflejo
+ * cruza el mar cuando la cámara se inclina hacia el horizonte (camino de luz).
  */
 const DIR_ASTRO = new THREE.Vector3(DIR_LUZ.x, 0, DIR_LUZ.z).normalize().setY(0.07).normalize()
 /** Altura efectiva de la sombra del Perú (calibrada: con DIR_LUZ da el corrimiento de antes). */
@@ -75,8 +76,8 @@ const CLAVE = ['24', '20', '15', '21', '16', '08']
 const CLAVE_CELULAR = ['15', '21', '16', '08']
 const DESPLAZA_ETIQUETA: Record<string, number> = { '24': -30 } // Tumbes queda pegado a Piura
 const VISTAS: Record<ModoMapa, { pos: number[]; tgt: number[] }> = {
-  // Más baja que antes: deja una franja de cielo arriba con el sol o la luna
-  inicio: { pos: [8, 19, 72], tgt: [0, 5, 2] },
+  // Casi cenital: el Perú entra completo con sus departamentos, como en el explorador
+  inicio: { pos: [0, 85, 10], tgt: [0, 0, 0] },
   explorar: { pos: [0, 44, 34], tgt: [0, 0, 1] },
 }
 
@@ -219,6 +220,8 @@ export interface OpcionesEscena {
   alElegir?: (id: string) => void
   /** Se llama cuando cambia el giro automático. */
   alGirar?: (girando: boolean) => void
+  /** Se llama si el navegador pierde el contexto WebGL (memoria de la tarjeta, cambio de pestaña en celular). */
+  alPerderContexto?: () => void
 }
 
 const proyectar = ([lon, lat]: number[]) =>
@@ -811,6 +814,10 @@ export class EscenaPeru {
     r.domElement.style.height = '100%'
     r.domElement.style.touchAction = 'none'
     contenedor.prepend(r.domElement)
+    r.domElement.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault()
+      op.alPerderContexto?.()
+    })
     this.renderer = r
 
     const c = new OrbitControls(this.camara, r.domElement)
@@ -1630,11 +1637,37 @@ export class EscenaPeru {
 
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
-    if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
+    if (this.animalHover) this.llenarTip(this.animalHover)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.textosVeg()
     this.sucio = true
+  }
+
+  /**
+   * Globo del personaje: nombre, dato curioso y, al final, lo que dicen los datos de la NASA de su
+   * departamento (variable y año que se ven en el mapa). Todo como texto, nunca HTML.
+   */
+  private llenarTip(a: Animal) {
+    const { nombre, dato, dept } = this.fauna.texto(a, this.idioma)
+    const anio = this.anio && this.numeroAnio != null
+      ? { numero: this.numeroAnio, valor: this.anio.valores[dept] }
+      : null
+    // En el modo Vegetación el mapa muestra el verdor, no la lluvia: el globo habla de lo mismo
+    const k = this.veg ? DEPARTAMENTOS.findIndex((z) => z.id === dept) : -1
+    const ndvi = this.veg ? (k >= 0 ? (this.ndvi?.media[k] ?? null) : null) : undefined
+    const clima = lineaClima(dept, this.zonas?.[dept], this.variable, this.idioma, anio, ndvi)
+    const linea = (clase: string, texto: string) => {
+      const s = document.createElement('span')
+      s.className = clase
+      s.textContent = texto
+      return s
+    }
+    this.tip.replaceChildren(
+      linea('tip3d-nombre', nombre),
+      linea('tip3d-dato', dato),
+      ...(clima ? [linea('tip3d-clima', clima)] : []),
+    )
   }
 
   /** Personaje bajo el puntero: salta y muestra su dato (como texto, nunca HTML). */
@@ -1648,7 +1681,7 @@ export class EscenaPeru {
       return
     }
     const b = this.contenedor.getBoundingClientRect()
-    this.tip.textContent = this.fauna.texto(a, this.idioma)
+    this.llenarTip(a)
     this.tip.style.transform = `translate(${(x - b.left).toFixed(0)}px, ${(y - b.top).toFixed(0)}px) translate(-50%, calc(-100% - 14px))`
     this.tip.hidden = false
     this.renderer.domElement.style.cursor = 'pointer'

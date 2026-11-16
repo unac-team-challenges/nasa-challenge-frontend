@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
-import { afterEach, beforeAll } from 'vitest'
+import { afterEach } from 'vitest'
 import { cargarPower } from '@/data/datos'
+import { cargarIdioma } from '@/i18n/textos'
 
 // jsdom no trae matchMedia, scrollTo, Element.animate ni ResizeObserver (la app los usa al montar)
 window.matchMedia ??= (consulta: string) =>
@@ -24,6 +25,7 @@ globalThis.ResizeObserver ??= class {
 // va bien, no se nota.
 configure({ asyncUtilTimeout: 5000 })
 
-// datos.ts carga la copia local aparte (import dinámico); main.tsx la espera y las pruebas también
-beforeAll(cargarPower)
+// datos.ts y textos.ts cargan aparte la copia local y el inglés (import dinámico); main.tsx los espera
+// y las pruebas también, y antes de reunirlas: algunas leen TEXTOS.es al declarar los `describe`
+await Promise.all([cargarPower(), cargarIdioma('es')])
 afterEach(cleanup)

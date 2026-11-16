@@ -7,6 +7,7 @@ import { useVegetacion } from '@/hooks/useVegetacion'
 import { TEXTOS, type Perfil } from '@/i18n/textos'
 import { CAUSA_VERDE } from '@/features/ficha/data/causas'
 import { FuentesCitadas } from '@/features/ficha/components/FuentesCitadas'
+import { fraccion, miles } from '@/features/ficha/utils/campo'
 import { useApp } from '@/stores/app'
 
 const etiqueta =
@@ -19,6 +20,9 @@ const etiqueta =
  * de «No todo cambio es el clima»: el verde creció por el riego, no por la lluvia, con su fuente.
  * Donde no (Olmos mezcla riego y bosque seco, y pesa El Niño), solo da las cifras y su aviso.
  * En la selva, donde el NDVI se satura, muestra en su lugar los árboles (MOD44B, <Selva>).
+ * Al agricultor se le cuenta en hectáreas (la unidad con que mide su campo) con dos barras, 2001 y
+ * 2024. No en niveles de NDVI: el promedio del recuadro mezcla el campo con el desierto de alrededor
+ * y subestima el riego (Ica: 0,14 → 0,20).
  */
 export function AntesDespues({ departamento, perfil }: { departamento: string; perfil: Perfil }) {
   const idioma = useApp((s) => s.idioma)
@@ -37,6 +41,16 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
   // Solo donde el riego está documentado se dice «no es la lluvia, es el riego»
   const riego = !!CAUSA_VERDE[departamento]
   const src = (anio: number) => `${import.meta.env.BASE_URL}caso2/${v.imagen}_${anio}.png`
+  const campo = perfil === 'agricultor'
+  // 1 km² = 100 ha
+  const ha = (km2: number) => miles(km2 * 100, idioma)
+  const fraseHa = t.verdeHa(
+    v.nombre,
+    ha(v.areaAntes),
+    ha(v.areaDespues),
+    t.cuanto(fraccion(pct), pct >= 0, null),
+  )
+  const mayor = Math.max(v.areaAntes, v.areaDespues, 1)
 
   return (
     <section
@@ -52,11 +66,14 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
             </h3>
             <span className="text-xs text-muted">{t.verdeSub}</span>
           </div>
-          <p className="m-0 font-semibold">
-            {perfil === 'agricultor'
-              ? t.verdeCampo(v.nombre, v.areaAntes, v.areaDespues)
-              : t.verdeEst(v.nombre, v.areaAntes, v.areaDespues, pct)}
+          <p data-leer className="m-0 font-semibold">
+            {campo ? fraseHa : t.verdeEst(v.nombre, v.areaAntes, v.areaDespues, pct)}
           </p>
+          {campo && (
+            <p data-leer className="m-0">
+              {t.verdeRiego}
+            </p>
+          )}
           {t.verdeCausa[departamento] && <p className="m-0">{t.verdeCausa[departamento]}</p>}
         </>
       ) : (
@@ -64,8 +81,35 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
           <h3 id="verde-h" className="m-0 text-sm font-semibold">
             {t.verdeSub}
           </h3>
-          <p className="m-0">{t.verdeNeutro(v.nombre, v.areaAntes, v.areaDespues, pct)}</p>
+          <p data-leer className="m-0">
+            {campo ? fraseHa : t.verdeNeutro(v.nombre, v.areaAntes, v.areaDespues, pct)}
+          </p>
         </>
+      )}
+      {/* Agricultor: el campo verde de 2001 y de 2024 en dos barras, con las hectáreas */}
+      {campo && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted">{t.verdeBarras}</span>
+          {(
+            [
+              [2001, v.areaAntes],
+              [2024, v.areaDespues],
+            ] as const
+          ).map(([anio, km2]) => (
+            <div key={anio} className="flex items-center gap-2 text-xs">
+              <span className="w-9 flex-none text-muted tabular-nums">{anio}</span>
+              <span className="h-2.5 flex-1 rounded-full bg-panel-2">
+                <span
+                  className="block h-full rounded-full bg-green"
+                  style={{ width: `${(km2 / mayor) * 100}%` }}
+                />
+              </span>
+              <span className="w-20 flex-none text-right font-semibold tabular-nums">
+                {t.verdeBarraHa(ha(km2))}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
       {/* El aviso del recuadro va siempre a la vista, en los dos perfiles (Olmos: pesa El Niño) */}
       <Aviso texto={aviso} idioma={idioma} />

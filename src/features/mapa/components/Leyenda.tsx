@@ -159,7 +159,7 @@ export function Leyenda() {
   const contenidoVariable = (
     <>
       {/* En celular el título del mapa va en una línea; lo que se pinta se dice aquí */}
-      <div className="grid gap-0.5 text-xs min-[901px]:hidden">
+      <div className="grid gap-0.5 text-xs escritorio:hidden">
         <span className="font-semibold text-fg">{anual ? t.mapSubAnio : t.mapSub}</span>
         <span className="text-muted">{t.timeHelp(rango.year_end - rango.year_start + 1)}</span>
       </div>
@@ -273,7 +273,7 @@ export function Leyenda() {
 
   // En celular, abierta es una hoja pegada al borde de abajo del mapa; tocar el mapa la cierra
   const hoja = abierta
-    ? 'max-[900px]:inset-x-0 max-[900px]:bottom-0 max-[900px]:z-[5] max-[900px]:w-auto max-[900px]:max-h-[70%] max-[900px]:overflow-y-auto max-[900px]:rounded-b-none max-[900px]:border-x-0 max-[900px]:border-b-0'
+    ? 'celular:inset-x-0 celular:bottom-0 celular:z-[5] celular:w-auto celular:max-h-[70%] celular:overflow-y-auto celular:rounded-b-none celular:border-x-0 celular:border-b-0'
     : ''
 
   return (
@@ -284,16 +284,16 @@ export function Leyenda() {
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => setAbierta(false)}
-          className="absolute inset-0 z-[4] cursor-default border-0 bg-fg/10 min-[901px]:hidden"
+          className="absolute inset-0 z-[4] cursor-default border-0 bg-fg/10 escritorio:hidden"
         />
       )}
       <div
         data-cubre-mapa
         // La guía explica lleno / punteado / borde: en vegetación la leyenda es otra y ese paso se salta
         data-guia={vegetacion ? undefined : 'leyenda'}
-        className={`absolute left-3 z-[3] rounded-m border border-line bg-panel/92 text-[13px] shadow-[0_8px_24px_-16px_var(--shadow)] backdrop-blur-sm min-[901px]:bottom-3.5 ${
+        className={`absolute left-3 z-[3] rounded-m border border-line bg-panel/92 text-[13px] shadow-[0_8px_24px_-16px_var(--shadow)] backdrop-blur-sm escritorio:bottom-3.5 ${
           abierta ? 'w-[min(300px,calc(100%-24px))]' : 'w-max'
-        } ${anual ? 'bottom-[86px]' : 'bottom-[66px]'} ${hoja}`}
+        } bottom-[calc(var(--alto-barra,2.75rem)+1.375rem)] ${hoja}`}
       >
         <details
           className="group"
@@ -337,7 +337,7 @@ export function Leyenda() {
               />
             </svg>
           </summary>
-          <div className="grid max-h-[min(52vh,400px)] gap-2.5 overflow-y-auto overscroll-contain px-3 pt-0.5 pb-3 max-[900px]:max-h-none">
+          <div className="grid max-h-[min(52vh,400px)] gap-2.5 overflow-y-auto overscroll-contain px-3 pt-0.5 pb-3 celular:max-h-none">
             {vegetacion ? contenidoVegetacion : contenidoVariable}
           </div>
         </details>

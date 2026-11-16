@@ -11,7 +11,7 @@ const celda =
   'max-sm:p-0 max-sm:before:mb-0.5 max-sm:before:block max-sm:before:text-xs max-sm:before:text-muted max-sm:before:content-[attr(data-etiqueta)]'
 
 const h2 =
-  'm-0 scroll-mt-36 min-[901px]:scroll-mt-24 font-display text-2xl font-bold tracking-display'
+  'm-0 scroll-mt-36 escritorio:scroll-mt-24 font-display text-2xl font-bold tracking-display'
 
 function Ext({ a: [texto, url] }: { a: [string, string] }) {
   return (
@@ -37,7 +37,7 @@ export function Metodologia() {
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-9 px-4 py-10">
       <header className="flex flex-col gap-3">
-        <h1 className="m-0 font-display text-[clamp(30px,4vw,44px)] leading-[1.05] font-bold tracking-[-0.02em]">
+        <h1 className="m-0 font-display text-[clamp(1.875rem,1.25rem+2vw,2.75rem)] leading-[1.05] font-bold tracking-[-0.02em]">
           {m.titulo}
         </h1>
         <p className="m-0 text-lg text-muted">{m.intro}</p>

@@ -44,19 +44,19 @@ export function Portada() {
       className={`pointer-events-none relative z-[1] flex flex-1 flex-col ${saliendo ? 'saliendo' : ''}`}
     >
       {/* En celular el mapa va arriba: este espacio lo deja ver */}
-      <div className={`relative flex-none ${ALTO_MAPA_CELULAR} min-[901px]:hidden`}>
+      <div className={`relative flex-none ${ALTO_MAPA_CELULAR} escritorio:hidden`}>
         {conWebgl && (
           <p className="vidrio absolute right-4 bottom-3 left-4 m-0 rounded-s px-3 py-1.5 text-[12px] text-muted">
             {t.heroCap(a, b)}
           </p>
         )}
       </div>
-      <div className="flex flex-1 items-center px-4 py-6 min-[901px]:px-8">
+      <div className="flex flex-1 items-center px-4 py-6 escritorio:px-8">
         <div className="pointer-events-auto flex w-full max-w-136 flex-col gap-3">
           <div className="vidrio vidrio-suave entrada rounded-l px-5 py-5">
             <h1
               id="home-h"
-              className="m-0 font-display text-[clamp(32px,4vw,54px)] leading-[1.02] font-bold tracking-[-0.02em]"
+              className="m-0 font-display text-[clamp(2rem,1.25rem+2.5vw,3.375rem)] leading-[1.02] font-bold tracking-[-0.02em]"
             >
               {t.heroH}
             </h1>
@@ -132,7 +132,7 @@ export function Portada() {
       </div>
       {/* "Arrastra para girar" solo tiene sentido en 3D */}
       {conWebgl && (
-        <p className="vidrio absolute right-20 bottom-5 m-0 hidden max-w-[44%] rounded-s px-3 py-1.5 text-[13px] text-muted min-[901px]:block">
+        <p className="vidrio absolute right-20 bottom-5 m-0 hidden max-w-[44%] rounded-s px-3 py-1.5 text-[13px] text-muted escritorio:block">
           {t.heroCap(a, b)}
         </p>
       )}

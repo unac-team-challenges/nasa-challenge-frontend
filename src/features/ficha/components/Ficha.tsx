@@ -40,6 +40,7 @@ export const Ficha = memo(function Ficha() {
   const t = TEXTOS[idioma]
   const zonas = useZonas()
   const { api, fuente } = useVista()
+  const sesionApi = useApp((s) => s.fuente === 'api')
   const { nota } = useDetalle(sel)
   const imerg = useSegundaFuente()
   const raiz = useRef<HTMLDivElement>(null)
@@ -89,6 +90,8 @@ export const Ficha = memo(function Ficha() {
           {NOMBRE[sel]}
         </h2>
         <span className="text-[13px] text-muted">{t.src(variable, d.celdas, fuente, !api)}</span>
+        {/* La sesión usa la API, pero esta vista (otro periodo o «sin El Niño») sale de la copia local */}
+        {sesionApi && !api && <span className="text-[13px] text-muted">{t.fuenteCopia}</span>}
         {nota && <span className="text-[13px] text-muted">{t.notaFija ?? nota}</span>}
       </div>
 

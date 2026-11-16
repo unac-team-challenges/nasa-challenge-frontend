@@ -166,6 +166,8 @@ const en: Textos = {
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : variable === 'vegetacion' ? 'greenness (NDVI)' : 'temperature'} averaged over ${celdas} ${local ? (variable === 'vegetacion' ? '~27 km ' : '~50 km ') : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+  fuenteCopia:
+    'This view comes from the local copy; the API only covers the full period with El Niño, so figures may differ from the main view.',
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
   avisoFijo: (_variable, lag1, motivo) =>

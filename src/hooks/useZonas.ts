@@ -9,7 +9,7 @@ import {
 } from '@/api/consultas'
 import imergLocal from '@/data/imerg.json'
 import {
-  FUENTE_LOCAL,
+  fuenteLocal,
   PERIODOS,
   serie,
   zonasDe,
@@ -66,11 +66,15 @@ export function useVista(v?: Variable): { api: DatosApi | null; rango: Rango; fu
   const sinNino = useSinNino()
   const decidida = useApp((s) => s.fuente)
   const { data } = useDatosApi()
+  // El NDVI (MODIS) empieza en 2001 y no depende de El Niño: periodo y «sin El Niño» no le cambian nada
+  const veg = variable === 'vegetacion'
   const api =
-    decidida === 'api' && periodo === 'reciente' && !sinNino ? (data?.[variable] ?? null) : null
+    decidida === 'api' && (veg || (periodo === 'reciente' && !sinNino))
+      ? (data?.[variable] ?? null)
+      : null
   return api
     ? { api, rango: api.rango, fuente: api.fuente }
-    : { api: null, rango: PERIODOS[periodo], fuente: FUENTE_LOCAL }
+    : { api: null, rango: PERIODOS[veg ? 'reciente' : periodo], fuente: fuenteLocal(variable) }
 }
 
 /** Años de la tendencia que se ve. */
@@ -80,10 +84,14 @@ export function useRango(v?: Variable): Rango {
 
 /** Estadística por zona de la variable elegida: API si está completa; si no, copia local. */
 export function useZonas(): Record<string, Zona> {
-  const { variable } = useBusqueda()
+  return useZonasDe(useBusqueda().variable)
+}
+
+/** Lo mismo para una variable dada (p. ej. la que no se está viendo, para «¿Y el calor?»). */
+export function useZonasDe(variable: Variable): Record<string, Zona> {
   const periodo = usePeriodo()
   const sinNino = useSinNino()
-  const { api } = useVista()
+  const { api } = useVista(variable)
   const local = useMemo(() => zonasDe(variable, periodo, sinNino), [variable, periodo, sinNino])
   return api?.zonas ?? local
 }

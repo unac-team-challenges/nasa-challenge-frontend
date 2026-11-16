@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anomaliasAnio, anomaliasPeru, ninoEn, PERIODOS, serie } from '@/data/datos'
+import { anomaliasAnio, anomaliasPeru, ninoEn, PERIODOS, serie, zonasDe } from '@/data/datos'
 
 const API = { year_start: 2001, year_end: 2024 }
 
@@ -32,5 +32,16 @@ describe('datos locales por rango', () => {
     const s = serie('20', 'lluvia', API, true)
     expect(s[0].y).toBe(2001)
     expect(s.some((p) => p.y === 2016)).toBe(false)
+  })
+
+  it('la vegetación local trae las 25 zonas y su serie 2001–2024, sin importar el periodo', () => {
+    for (const periodo of ['reciente', 'largo'] as const) {
+      const zonas = zonasDe('vegetacion', periodo)
+      expect(Object.keys(zonas)).toHaveLength(25)
+      expect(zonas['16'].year_end).toBe(2024)
+    }
+    expect(serie('16', 'vegetacion', PERIODOS.largo).map((p) => p.y)).toEqual(
+      Array.from({ length: 24 }, (_, i) => 2001 + i),
+    )
   })
 })

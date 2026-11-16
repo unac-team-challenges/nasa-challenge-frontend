@@ -5,6 +5,7 @@ import {
   GraduationCap,
   House,
   Leaf,
+  MapPin,
   Moon,
   Sprout,
   Sun,
@@ -17,12 +18,12 @@ import { useRuta } from '@/hooks/ruta'
 import { useOcultarAlBajar } from '@/hooks/useOcultarAlBajar'
 import { useBusqueda, type Busqueda } from '@/lib/busqueda'
 import { useApp } from '@/stores/app'
-import { MenuMetodologia } from '@/components/MenuMetodologia'
 import { Button } from '@/components/ui/button'
 
 const ICONO_VARIABLE: Record<Variable, LucideIcon> = {
   lluvia: CloudRain,
   temperatura: Thermometer,
+  vegetacion: Leaf,
 }
 
 const ICONO_PERFIL: Record<Perfil, LucideIcon> = {
@@ -53,7 +54,7 @@ export function Cabecera() {
   const idioma = useApp((s) => s.idioma)
   const alternarTema = useApp((s) => s.alternarTema)
   const enInicio = useRuta() === 'inicio'
-  // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=en, #37)
+  // setIdioma de useBusqueda: el idioma también queda en la URL (?lang=es, #37)
   const { variable, setVariable, perfil, setPerfil, setIdioma, vegetacion, setVegetacion } =
     useBusqueda()
   const t = TEXTOS[idioma]
@@ -105,14 +106,16 @@ export function Cabecera() {
                 size="sm"
                 className={opcion}
                 aria-pressed={!vegetacion && variable === v}
+                title={nombre}
                 onClick={() => setVariable(v)}
               >
                 <Icono className="size-4" aria-hidden="true" />
-                {nombre}
+                {/* En celular solo el ícono: con tres variables y el perfil, la tira no cabe en 390 px */}
+                <span className="max-[479px]:sr-only">{nombre}</span>
               </Button>
             )
           })}
-          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos */}
+          {/* No es una variable de los 25 departamentos: muestra los 5 lugares medidos de cerca (Caso 2 y selva) */}
           <Button
             variant="toggle"
             size="sm"
@@ -121,7 +124,7 @@ export function Cabecera() {
             title={t.vegetacionBtn}
             onClick={() => setVegetacion()}
           >
-            <Leaf className="size-4" aria-hidden="true" />
+            <MapPin className="size-4" aria-hidden="true" />
             {/* En celular solo el ícono: con texto, la tira se ensanchaba y empujaba el perfil fuera de la pantalla */}
             <span className="max-[479px]:sr-only">{t.vegetacionBtn}</span>
           </Button>
@@ -149,7 +152,7 @@ export function Cabecera() {
       </div>
 
       <div className="flex flex-none items-center gap-1 sm:gap-2">
-        {/* Como Metodología. Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
+        {/* Solo icono bajo 900 px y oculto entre 640 y 779 px (ahí no cabe en 2 filas;
             el logo también lleva al inicio) */}
         <Button
           asChild
@@ -165,7 +168,6 @@ export function Cabecera() {
             )}
           </Link>
         </Button>
-        <MenuMetodologia />
         <span className="hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <div className={riel} role="group" aria-label={t.cambiarIdioma}>
           {IDIOMAS.map(([i, corto, nombre]) => (

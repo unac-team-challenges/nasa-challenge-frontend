@@ -62,7 +62,9 @@ export function GraficoRanking({ orden, id, variable, idioma, ir }: Props) {
             tick={{ fill: 'var(--muted)', fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: 'var(--line)' }}
-            tickFormatter={(v: number) => numConSigno(v, temp ? 2 : 0, idioma)}
+            tickFormatter={(v: number) =>
+              numConSigno(v, variable === 'vegetacion' ? 3 : temp ? 2 : 0, idioma)
+            }
             label={{
               value: `${t.unitAxis[variable]} / ${t.perDecade}`,
               position: 'insideBottomRight',

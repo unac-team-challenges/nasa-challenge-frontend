@@ -1,26 +1,47 @@
 import { ArrowRight } from 'lucide-react'
+import { ninoEn } from '@/data/datos'
 import { TEXTOS } from '@/i18n/textos'
 import { useBusqueda } from '@/lib/busqueda'
 import { colorDireccion } from '@/utils/direccion'
-import { useDetalle } from '@/hooks/useZonas'
+import { num } from '@/utils/formato'
+import { useDetalle, useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
-import { aniosMalosPorMitad, compararMalos } from '@/features/ficha/utils/serie'
+import {
+  anioParaRecordar,
+  aniosMalosPorMitad,
+  compararMalos,
+  cuantoFalto,
+  frecuencia,
+  respuestaMalos,
+  tendenciaSinMasMalos,
+} from '@/features/ficha/utils/serie'
 
 /**
- * Agricultor: «¿los años malos vienen más seguido?». Arriba, la respuesta en dos cifras (antes →
- * ahora). Abajo, cada año como una casilla con su número, como un calendario: los años secos (o
- * calurosos) van pintados, así se ve cuáles fueron sin leer un gráfico.
+ * Agricultor: «¿ahora hay más años de seca?» (o de calor fuerte). Primero la respuesta en una
+ * frase, que solo dice «sí» o «no» si la tendencia es un cambio claro: si no, no contradice a la
+ * tarjeta de confianza. Luego cada cuánto venían antes y cada cuánto vienen ahora («uno cada 5
+ * años»), un año malo que el agricultor recuerde y cada año como una casilla con su número, como
+ * un calendario. «Lo de siempre» es un año típico de la primera mitad, sin los años de El Niño.
  */
 export function CampoAniosMalos() {
   const idioma = useApp((s) => s.idioma)
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
+  const { rango } = useVista()
+  const zonas = useZonas()
   const { serie: pts } = useDetalle(sel)
-  const mitades = pts ? aniosMalosPorMitad(pts, variable) : null
-  if (!mitades) return null
+  const mitades = pts ? aniosMalosPorMitad(pts, variable, ninoEn(rango)) : null
+  // Sin la zona (todavía no llegó o no existe) no hay tendencia con qué responder: no se dibuja,
+  // en vez de romper toda la ficha al leer su estado
+  const zona = sel ? zonas[sel] : undefined
+  if (!mitades || !sel || !zona) return null
   const { antes, ahora } = mitades
-  // Lluvia: lo malo es el año seco; temperatura, el caluroso. Los dos salen en el mismo color.
-  const color = `var(${colorDireccion(variable === 'lluvia' ? -1 : 1, variable)})`
+  const lluvia = variable === 'lluvia'
+  const respuesta = respuestaMalos(compararMalos(antes, ahora), zona, variable)
+  const recordar = anioParaRecordar(mitades, variable)
+  // Lo malo: el año seco (lluvia), el de verdor flojo (vegetación) o el caluroso (temperatura).
+  // Todos salen en el color de «lo malo» de su variable.
+  const color = `var(${colorDireccion(variable === 'temperatura' ? 1 : -1, variable)})`
   const tipo = t.malosPunto[variable]
 
   return (
@@ -28,30 +49,49 @@ export function CampoAniosMalos() {
       aria-labelledby="malos-h"
       className="flex flex-col gap-3.5 rounded-m border border-line p-3.5"
     >
-      <h3 id="malos-h" className="m-0 text-sm font-semibold">
+      <h3 id="malos-h" data-leer className="m-0 text-sm font-semibold">
         {t.malosH[variable]}
       </h3>
 
-      {/* La respuesta: cuántos años malos antes y ahora */}
+      {/* La respuesta, en una frase */}
+      <p data-leer className="m-0 font-semibold">
+        {t.malosRespuesta[variable][respuesta]}
+      </p>
+      {/* Tendencia clara hacia lo malo sin más años malos (Loreto): que no parezca contradicción */}
+      {tendenciaSinMasMalos(respuesta, zona, variable) && (
+        <p data-leer className="m-0">
+          {t.malosAclara[variable]}
+        </p>
+      )}
+
+      {/* Cada cuánto venía un año malo antes y cada cuánto viene ahora */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         {[antes, ahora].map((m, i) => (
-          <div key={m.desde} className={`flex flex-col ${i ? 'col-start-3' : ''}`}>
+          <div key={m.desde} data-leer className={`flex flex-col gap-1 ${i ? 'col-start-3' : ''}`}>
             <span className="text-xs text-muted">
               {i ? t.malosAhora : t.malosAntes} · {m.desde}–{m.hasta}
             </span>
-            <span className="font-display text-[30px] leading-none font-[750] tabular-nums">
-              {m.malos}
-              <span className="ml-1 font-sans text-sm font-normal text-muted">
-                {t.malosDe(m.anios.length)}
-              </span>
+            <span className="font-display text-[22px] leading-[1.1] font-[750] tracking-[-0.01em]">
+              {t.malosFrec(frecuencia(m.malos, m.anios.length))}
+            </span>
+            <span className="text-xs text-muted tabular-nums">
+              {t.malosCuenta(m.malos, m.anios.length)}
             </span>
           </div>
         ))}
         <ArrowRight className="col-start-2 row-start-1 size-5 text-muted" aria-hidden="true" />
       </div>
-      <p className="m-0 font-semibold">
-        {t.malosResumen[variable](compararMalos(antes, ahora), antes.malos, ahora.malos)}
-      </p>
+
+      {/* Un año malo para ubicarse: el peor de los recientes */}
+      {recordar && (
+        <p data-leer className="m-0">
+          {lluvia
+            ? t.malosRecuerdaLluvia(recordar.y, cuantoFalto(recordar.a))
+            : variable === 'vegetacion'
+              ? t.malosRecuerdaVerde(recordar.y)
+              : t.malosRecuerdaCalor(recordar.y, `${num(Math.abs(recordar.a), 1, idioma)} °C`)}
+        </p>
+      )}
 
       {/* Cada año, una casilla con su número */}
       <div className="flex flex-col gap-2">
@@ -91,10 +131,12 @@ export function CampoAniosMalos() {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-[3px] border border-line" />
-          {t.malosOtro}
+          {t.malosOtro[variable]}
         </span>
       </div>
-      <p className="m-0 text-xs text-muted">{t.malosLeer}</p>
+      <p className="m-0 text-xs text-muted">
+        {t.malosBase(antes.desde, antes.hasta)} {t.malosLeer}
+      </p>
     </section>
   )
 }

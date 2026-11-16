@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 test('recorrido completo: portada → perfil → explorador → zona → informe', async ({ page }) => {
   const errores: string[] = []
@@ -63,7 +64,7 @@ test('recorrido completo: portada → perfil → explorador → zona → informe
   // Idioma y tema
   await page.getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible()
-  await expect(page).toHaveURL(/lang=en/)
+  await expect(page).not.toHaveURL(/lang=/) // inglés = idioma por defecto
   await page.getByRole('button', { name: /Change theme/ }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', /dark|light/)
 

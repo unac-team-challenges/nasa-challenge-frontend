@@ -1,8 +1,10 @@
 import { Link, useNavigate } from '@tanstack/react-router'
+import { ArrowRight, Satellite } from 'lucide-react'
 import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { ORDEN_PERFILES, TEXTOS, type Perfil } from '@/i18n/textos'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { useVista } from '@/hooks/useZonas'
+import { useShallow } from 'zustand/react/shallow'
 import { useApp } from '@/stores/app'
 import { Button } from '@/components/ui/button'
 
@@ -16,7 +18,9 @@ const SALIDA_MS = 320
  * El mapa lo dibuja App y es el mismo del explorador: al entrar, la cámara vuela sin recargar.
  */
 export function Portada() {
-  const { idioma, conWebgl } = useApp()
+  const { idioma, conWebgl } = useApp(
+    useShallow((s) => ({ idioma: s.idioma, conWebgl: s.conWebgl })),
+  )
   const navigate = useNavigate()
   const t = TEXTOS[idioma]
   // La portada habla de la lluvia: sus años y su fuente
@@ -49,7 +53,7 @@ export function Portada() {
       </div>
       <div className="flex flex-1 items-center px-4 py-6 min-[901px]:px-8">
         <div className="pointer-events-auto flex w-full max-w-136 flex-col gap-3">
-          <div className="vidrio entrada rounded-l px-5 py-5">
+          <div className="vidrio vidrio-suave entrada rounded-l px-5 py-5">
             <h1
               id="home-h"
               className="m-0 font-display text-[clamp(32px,4vw,54px)] leading-[1.02] font-bold tracking-[-0.02em]"
@@ -59,7 +63,7 @@ export function Portada() {
             <p className="m-0 mt-3 max-w-120 text-[17px] text-muted">{t.heroLead(a, b)}</p>
           </div>
           <div
-            className="vidrio entrada flex flex-col gap-2.5 rounded-l px-4 py-3.5"
+            className="vidrio vidrio-suave entrada flex flex-col gap-2.5 rounded-l px-4 py-3.5"
             style={{ '--retraso': '0.08s' } as CSSProperties}
           >
             <h2 className="m-0 text-[15px] font-semibold">{t.whoH}</h2>
@@ -70,7 +74,7 @@ export function Portada() {
                   <button
                     key={p}
                     type="button"
-                    className="presionable flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-m border border-line-2 bg-panel px-3.5 py-3 text-left transition-colors hover:border-accent"
+                    className="presionable flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-m border border-line-2 bg-panel/45 px-3.5 py-3 text-left transition-colors hover:border-accent"
                     onClick={() => explorar(p)}
                   >
                     <b className="text-[15px]">{nombre}</b>
@@ -81,10 +85,14 @@ export function Portada() {
             </div>
           </div>
           <div
-            className="vidrio entrada flex flex-wrap items-center gap-x-4 gap-y-2 rounded-l px-4 py-3"
+            className="vidrio vidrio-suave entrada flex flex-col gap-3 rounded-l p-4"
             style={{ '--retraso': '0.16s' } as CSSProperties}
           >
-            <Button asChild variant="default">
+            <Button
+              asChild
+              variant="default"
+              className="group h-12 justify-between gap-3 rounded-m px-5 text-[15px] shadow-[0_6px_18px_-6px_var(--accent)] hover:no-underline min-[521px]:self-start"
+            >
               <Link
                 to="/explorar"
                 search={(s) => s}
@@ -96,22 +104,35 @@ export function Portada() {
                 }}
               >
                 {t.exploreBtn}
+                <ArrowRight
+                  className="size-4.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
               </Link>
             </Button>
-            <span className="text-[13px] text-muted">{t.fuenteReal(fuente)}</span>
-            <Link
-              to="/metodologia"
-              search={(p) => ({ lang: p.lang })}
-              className="text-[13px] text-accent-text"
-            >
-              {t.metodologiaEnlace}
-            </Link>
+            <div className="flex flex-col gap-1.5 border-t border-line pt-3 text-[13px]">
+              <span className="inline-flex items-center gap-1.5 text-muted">
+                <Satellite className="size-4 flex-none" aria-hidden="true" />
+                {t.fuenteReal(fuente)}
+              </span>
+              <Link
+                to="/metodologia"
+                search={(p) => ({ lang: p.lang })}
+                className="group inline-flex items-center gap-1 self-start font-medium text-accent-text no-underline hover:underline"
+              >
+                {t.metodologiaEnlace}
+                <ArrowRight
+                  className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
       {/* "Arrastra para girar" solo tiene sentido en 3D */}
       {conWebgl && (
-        <p className="vidrio absolute right-4 bottom-3.5 m-0 hidden max-w-[44%] rounded-s px-3 py-1.5 text-[13px] text-muted min-[901px]:block">
+        <p className="vidrio absolute right-20 bottom-5 m-0 hidden max-w-[44%] rounded-s px-3 py-1.5 text-[13px] text-muted min-[901px]:block">
           {t.heroCap(a, b)}
         </p>
       )}

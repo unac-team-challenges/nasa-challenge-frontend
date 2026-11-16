@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { test } from './apoyo/espanol'
 
 /** Baja o sube la página y espera a que el cuadro de animación procese el desplazamiento. */
 const irA = async (page: Page, y: number) => {

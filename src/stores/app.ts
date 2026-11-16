@@ -5,11 +5,15 @@ import { SIN_MARGEN, type Margen } from '@/utils/margenMapa'
 
 export type Tema = 'claro' | 'oscuro'
 
+/** Último idioma que se pidió con setIdioma (ver ahí) */
+let idiomaPedido: Idioma | null = null
+
 function idiomaInicial(): Idioma {
   try {
-    return new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'es'
+    // Inglés por defecto; ?lang=es abre en español
+    return new URLSearchParams(location.search).get('lang') === 'es' ? 'es' : 'en'
   } catch {
-    return 'es'
+    return 'en'
   }
 }
 
@@ -77,8 +81,16 @@ export const useApp = create<EstadoApp>((set, get) => ({
   setGirando: (girando) => set({ girando }),
   fuente: null,
   fijarFuente: (fuente) => set((s) => (s.fuente ? {} : { fuente })),
-  // El inglés es un chunk aparte: el idioma cambia cuando ya está cargado
-  setIdioma: (idioma) => void cargarIdioma(idioma).then(() => set({ idioma })),
+  // El español es un chunk aparte: el idioma cambia cuando ya está cargado. Si piden otro idioma antes de
+  // que llegue, gana el último pedido; si la carga falla, se queda en el idioma actual.
+  setIdioma: (idioma) => {
+    idiomaPedido = idioma
+    cargarIdioma(idioma)
+      .then(() => {
+        if (idiomaPedido === idioma) set({ idioma })
+      })
+      .catch(() => {})
+  },
   setInformeMin: (informeMin) => set({ informeMin }),
   alternarTema: () => {
     const actual = get().tema ?? temaDelSistema()

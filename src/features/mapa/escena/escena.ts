@@ -13,6 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DEPARTAMENTOS, NOMBRE, type Variable, type Zona } from '@/data/datos'
 import { colorAnomalia, cssVar, esTemaClaro, hexMix } from '@/utils/color'
 import { claveMapa } from '@/utils/direccion'
+import { lineaClima } from '@/features/mapa/utils/faunaClima'
 import { datosTarjeta, datosTarjetaVeg } from '@/features/mapa/utils/tarjeta'
 import {
   dibujarCalor,
@@ -219,6 +220,8 @@ export interface OpcionesEscena {
   alElegir?: (id: string) => void
   /** Se llama cuando cambia el giro automático. */
   alGirar?: (girando: boolean) => void
+  /** Se llama si el navegador pierde el contexto WebGL (memoria de la tarjeta, cambio de pestaña en celular). */
+  alPerderContexto?: () => void
 }
 
 const proyectar = ([lon, lat]: number[]) =>
@@ -229,7 +232,18 @@ const proyectar = ([lon, lat]: number[]) =>
  * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
  * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
  */
-const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.png
+const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.webp
+const TEXTURAS_MUNDO = [
+  ['mapa/mundo.webp', 'uMundo'],
+  ['mapa/mundo2.webp', 'uMundo2'],
+] as const
+// Las texturas (~1 MB) empiezan a bajar apenas llega este módulo, sin esperar a que se arme la
+// escena (~1 s después). El TextureLoader (y el 2D) reutilizan la misma descarga: mismo modo CORS.
+for (const [archivo] of TEXTURAS_MUNDO) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = import.meta.env.BASE_URL + archivo
+}
 /** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
 const RELIEVE = 1.8
 /** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
@@ -435,7 +449,8 @@ function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number
   const S = 256
   const c = document.createElement('canvas')
   c.width = c.height = S
-  const g = c.getContext('2d')!
+  // Se lee con getImageData: canvas en CPU, sin esperar a que la GPU devuelva los píxeles
+  const g = c.getContext('2d', { willReadFrequently: true })!
   g.fillStyle = '#000'
   g.fillRect(0, 0, S, S)
   g.fillStyle = '#fff'
@@ -643,9 +658,6 @@ interface Vuelo {
   dur: number
 }
 
-/** Escena viva (una sola por página): la usan los botones de girar y recentrar del explorador. */
-export const escenaActiva: { current: EscenaPeru | null } = { current: null }
-
 export class EscenaPeru {
   private renderer: THREE.WebGLRenderer
   private escena = new THREE.Scene()
@@ -695,7 +707,7 @@ export class EscenaPeru {
   private etiquetasVeg: { id: string; el: HTMLDivElement }[] = []
   /** Altura de la cara superior de cada departamento (la leen las plantas en la GPU). */
   private topes = new Float32Array(DEPARTAMENTOS.length)
-  /** Altitud del suelo (canal R de mundo2.png: 0..255 = 0..6000 m), para saber qué planta crece. */
+  /** Altitud del suelo (canal R de mundo2.webp: 0..255 = 0..6000 m), para saber qué planta crece. */
   private elevacion: Uint8ClampedArray | null = null
   private vuelo: Vuelo | null = null
   private fueraDePantalla = false
@@ -791,6 +803,8 @@ export class EscenaPeru {
     this.alGirar = op.alGirar
 
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    // Sin chequeo síncrono de shaders en producción: frena el primer frame
+    r.debug.checkShaderErrors = import.meta.env.DEV
     r.outputColorSpace = THREE.LinearSRGBColorSpace
     this.dprMax = Math.min(devicePixelRatio || 1, 1.5)
     this.dpr = Math.min(this.dprMax, 1.25)
@@ -800,6 +814,10 @@ export class EscenaPeru {
     r.domElement.style.height = '100%'
     r.domElement.style.touchAction = 'none'
     contenedor.prepend(r.domElement)
+    r.domElement.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault()
+      op.alPerderContexto?.()
+    })
     this.renderer = r
 
     const c = new OrbitControls(this.camara, r.domElement)
@@ -931,10 +949,7 @@ export class EscenaPeru {
     matSuelo.uniforms.uPeru.value = sombra
     const cargador = new THREE.TextureLoader()
     const base = import.meta.env.BASE_URL
-    for (const [archivo, clave] of [
-      ['mapa/mundo.png', 'uMundo'],
-      ['mapa/mundo2.png', 'uMundo2'],
-    ] as const)
+    for (const [archivo, clave] of TEXTURAS_MUNDO)
       cargador.load(base + archivo, (tx) => {
         if (this.destruida) return tx.dispose() // el mapa se cerró mientras cargaba
         tx.flipY = false
@@ -1378,7 +1393,7 @@ export class EscenaPeru {
     this.sucio = true
   }
 
-  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.png (NaN sin la textura). */
+  /** Altitud (m) en un punto, interpolada entre los píxeles de mundo2.webp (NaN sin la textura). */
   private altitud = (lon: number, lat: number) => {
     const E = this.elevacion
     if (!E) return NaN
@@ -1622,11 +1637,37 @@ export class EscenaPeru {
 
   setIdioma(idioma: 'es' | 'en') {
     this.idioma = idioma
-    if (this.animalHover) this.tip.textContent = this.fauna.texto(this.animalHover, idioma)
+    if (this.animalHover) this.llenarTip(this.animalHover)
     this.llenarTarjeta()
     for (const p of this.etiquetasPais) p.el.textContent = idioma === 'en' ? p.en : p.es
     this.textosVeg()
     this.sucio = true
+  }
+
+  /**
+   * Globo del personaje: nombre, dato curioso y, al final, lo que dicen los datos de la NASA de su
+   * departamento (variable y año que se ven en el mapa). Todo como texto, nunca HTML.
+   */
+  private llenarTip(a: Animal) {
+    const { nombre, dato, dept } = this.fauna.texto(a, this.idioma)
+    const anio = this.anio && this.numeroAnio != null
+      ? { numero: this.numeroAnio, valor: this.anio.valores[dept] }
+      : null
+    // En el modo Vegetación el mapa muestra el verdor, no la lluvia: el globo habla de lo mismo
+    const k = this.veg ? DEPARTAMENTOS.findIndex((z) => z.id === dept) : -1
+    const ndvi = this.veg ? (k >= 0 ? (this.ndvi?.media[k] ?? null) : null) : undefined
+    const clima = lineaClima(dept, this.zonas?.[dept], this.variable, this.idioma, anio, ndvi)
+    const linea = (clase: string, texto: string) => {
+      const s = document.createElement('span')
+      s.className = clase
+      s.textContent = texto
+      return s
+    }
+    this.tip.replaceChildren(
+      linea('tip3d-nombre', nombre),
+      linea('tip3d-dato', dato),
+      ...(clima ? [linea('tip3d-clima', clima)] : []),
+    )
   }
 
   /** Personaje bajo el puntero: salta y muestra su dato (como texto, nunca HTML). */
@@ -1640,7 +1681,7 @@ export class EscenaPeru {
       return
     }
     const b = this.contenedor.getBoundingClientRect()
-    this.tip.textContent = this.fauna.texto(a, this.idioma)
+    this.llenarTip(a)
     this.tip.style.transform = `translate(${(x - b.left).toFixed(0)}px, ${(y - b.top).toFixed(0)}px) translate(-50%, calc(-100% - 14px))`
     this.tip.hidden = false
     this.renderer.domElement.style.cursor = 'pointer'
@@ -1985,6 +2026,8 @@ export class EscenaPeru {
 
   private formatearAnomalia(a: number) {
     const signo = a > 0 ? '+' : a < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(a).toFixed(2).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(a).toFixed(1).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(a) * 100) + ' %'
@@ -1992,6 +2035,8 @@ export class EscenaPeru {
 
   private formatear(v: number) {
     const signo = v > 0 ? '+' : v < 0 ? '−' : ''
+    if (this.variable === 'vegetacion')
+      return signo + Math.abs(v).toFixed(3).replace('.', ',') + ' NDVI'
     return this.variable === 'temperatura'
       ? signo + Math.abs(v).toFixed(2).replace('.', ',') + ' °C'
       : signo + Math.round(Math.abs(v)) + ' mm'

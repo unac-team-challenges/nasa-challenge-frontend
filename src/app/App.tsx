@@ -2,6 +2,7 @@ import { Outlet, useRouterState } from '@tanstack/react-router'
 import { lazy, Suspense, useEffect } from 'react'
 import { Cabecera } from '@/components/Cabecera'
 import { MapaSkeleton } from '@/components/Esperas'
+import { MenuMetodologia } from '@/components/MenuMetodologia'
 import { ALTO_MAPA_CELULAR } from '@/utils/disposicion'
 import { useMeta } from '@/hooks/meta'
 import { useRuta } from '@/hooks/ruta'
@@ -9,10 +10,10 @@ import { useDecidirFuente } from '@/hooks/useZonas'
 import { TEXTOS } from '@/i18n/textos'
 import { useApp } from '@/stores/app'
 
-// three.js se descarga aparte (React.lazy)
-const Mapa3D = lazy(() =>
-  import('@/features/mapa/components/Mapa3D').then((m) => ({ default: m.Mapa3D })),
-)
+// three.js se descarga aparte (React.lazy), pero empieza a bajar al cargar este módulo,
+// sin esperar al primer render
+const cargaMapa3D = import('@/features/mapa/components/Mapa3D')
+const Mapa3D = lazy(() => cargaMapa3D.then((m) => ({ default: m.Mapa3D })))
 
 /** Diseño común de todas las pantallas: cabecera arriba y la ruta activa debajo. */
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
           </div>
         )}
         <Outlet />
+        <MenuMetodologia />
       </main>
     </div>
   )

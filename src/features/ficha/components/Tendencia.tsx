@@ -1,3 +1,4 @@
+import { Mountain } from 'lucide-react'
 import { useBusqueda } from '@/lib/busqueda'
 import { TEXTOS, type Perfil } from '@/i18n/textos'
 import type { Zona } from '@/data/datos'
@@ -5,13 +6,17 @@ import { colorDireccion } from '@/utils/direccion'
 import { fmtPct, fmtValor } from '@/utils/formato'
 import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
+import { Confianza } from '@/features/ficha/components/Confianza'
 import { MedidorTendencia } from '@/features/ficha/components/MedidorTendencia'
 import { escalaTendencia } from '@/features/ficha/utils/serie'
-import { cifraCampo } from '@/features/ficha/utils/campo'
+import { titularCampo } from '@/features/ficha/utils/campo'
 
 /**
- * El cambio por década. Agricultor: una frase («Cada 10 años llueve un 8 % menos») y el medidor
- * con palabras. Estudiante: la pendiente con su unidad, el rango probable y el medidor con valores.
+ * El cambio. Agricultor: cuánto cambió en todo el periodo, en palabras de chacra («Desde 2001,
+ * llueve como un quinto menos que antes»; el calor, también en metros de altura), el medidor con
+ * palabras y, en la misma tarjeta, qué tan seguro es: así el titular y su confianza no se leen
+ * como dos bloques que dicen lo mismo. Estudiante: la pendiente con su unidad, el rango probable y
+ * el medidor con valores (la confianza va aparte, con la prueba).
  */
 export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
   const idioma = useApp((s) => s.idioma)
@@ -26,21 +31,32 @@ export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
   const escala = escalaTendencia(Object.values(zonas), variable)
 
   if (perfil === 'agricultor') {
-    const claro = d.status === 'real'
-    const cifra = cifraCampo(d, variable, idioma)
+    const { claro, titular, debajo, metros } = titularCampo(d, variable, rango, idioma)
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span
+            data-leer
             className="font-display text-[28px] leading-[1.1] font-[750] tracking-[-0.015em] min-[521px]:text-[32px]"
             style={{ color: claro ? `var(${color})` : 'var(--muted)' }}
           >
-            {claro ? t.campoFrase[variable](cifra, sube) : t.campoSinCambio[variable]}
+            {titular}
           </span>
-          <span className="text-[13px] text-muted">
-            {t.campoPeriodo(rango.year_start, rango.year_end)}
+          <span data-leer className="text-[13px] text-muted">
+            {debajo}
           </span>
         </div>
+        {/* El calor en metros de altura: solo si el cambio es claro */}
+        {metros != null && (
+          <div className="flex flex-col gap-1">
+            {/* Como la gota de «Un año normal aquí»: el ícono dentro de la misma línea */}
+            <p data-leer className="m-0 flex items-center gap-2 font-semibold">
+              <Mountain className="size-5 flex-none text-muted" aria-hidden="true" />
+              {t.campoAltura(`${metros} m`, sube)}
+            </p>
+            <p className="m-0 text-xs text-muted">{t.campoAlturaNota}</p>
+          </div>
+        )}
         <MedidorTendencia
           zona={d}
           variable={variable}
@@ -48,6 +64,7 @@ export function Tendencia({ zona: d, perfil }: { zona: Zona; perfil: Perfil }) {
           escala={escala}
           modo="campo"
         />
+        <Confianza zona={d} perfil={perfil} />
       </div>
     )
   }

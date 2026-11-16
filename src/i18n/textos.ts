@@ -47,7 +47,6 @@ export type Frases = typeof frasesEs
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
-  inicioCorto: 'Home',
   saltarAlContenido: 'Skip to content',
   lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',

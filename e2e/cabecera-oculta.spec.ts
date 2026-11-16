@@ -1,6 +1,20 @@
 import { expect, type Page } from '@playwright/test'
 import { test } from './apoyo/espanol'
 
+/**
+ * Abre la página y espera a que la cabecera ya escuche el desplazamiento. useOcultarAlBajar se
+ * suscribe en un useEffect, después de dibujar: un scrollTo justo tras el goto podía llegar antes
+ * y perderse (la cabecera quedaba visible y la prueba fallaba a veces). Dos cuadros bastan para
+ * que corran los efectos.
+ */
+const abrir = async (page: Page, url: string) => {
+  await page.goto(url)
+  await expect(page.locator('body > div header').first()).toBeVisible()
+  await page.evaluate(
+    () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))),
+  )
+}
+
 /** Baja o sube la página y espera a que el cuadro de animación procese el desplazamiento. */
 const irA = async (page: Page, y: number) => {
   await page.evaluate((y) => scrollTo(0, y), y)
@@ -18,7 +32,7 @@ test.describe('celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 
   test('la cabecera se oculta al bajar y vuelve al subir', async ({ page }) => {
-    await page.goto('/metodologia')
+    await abrir(page, '/metodologia')
     expect(await bordeAbajo(page)).toBeGreaterThan(40)
 
     await irA(page, 700)
@@ -35,7 +49,7 @@ test.describe('celular', () => {
   })
 
   test('con el foco dentro de la cabecera no se oculta', async ({ page }) => {
-    await page.goto('/metodologia')
+    await abrir(page, '/metodologia')
     await irA(page, 700)
     await expect.poll(() => bordeAbajo(page)).toBeLessThanOrEqual(1)
     await page.locator('body > div header').first().getByRole('button', { name: 'Lluvia' }).focus()
@@ -45,7 +59,7 @@ test.describe('celular', () => {
 
 test('en escritorio la cabecera no se oculta', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 700 })
-  await page.goto('/metodologia')
+  await abrir(page, '/metodologia')
   await irA(page, 900)
   await page.waitForTimeout(400)
   expect(await bordeAbajo(page)).toBeGreaterThan(40)

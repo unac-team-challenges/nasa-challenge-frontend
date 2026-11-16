@@ -167,6 +167,11 @@ body {
   outline-offset: 2px;
 }
 
+/* «Saltar al contenido» enfoca <main> entero: sin borde (con capa, outline-none perdería) */
+#contenido:focus-visible {
+  outline: none;
+}
+
 h1,
 h2,
 h3 {

@@ -44,12 +44,12 @@ export default function App() {
           e.preventDefault()
           document.getElementById('contenido')?.focus()
         }}
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-m focus:bg-panel focus:px-3 focus:py-2 focus:text-sm focus:ring-2 focus:ring-[var(--accent)]"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-m focus:bg-panel focus:px-3 focus:py-2 focus:text-sm"
       >
         {TEXTOS[idioma].saltarAlContenido}
       </a>
       <Cabecera />
-      <main id="contenido" tabIndex={-1} className="relative flex flex-1 flex-col outline-none">
+      <main id="contenido" tabIndex={-1} className="relative flex flex-1 flex-col">
         {/* Un solo mapa para la portada y el explorador: al cambiar de pantalla no se recarga */}
         {ruta !== 'metodologia' && (
           <div

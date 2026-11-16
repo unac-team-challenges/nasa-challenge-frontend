@@ -47,7 +47,6 @@ export type Frases = typeof frasesEs
 const en: Textos = {
   marca: 'Peru Trend Detective',
   inicio: 'Peru Trend Detective: home',
-  inicioCorto: 'Home',
   saltarAlContenido: 'Skip to content',
   lema: 'Climate trends from NASA data',
   cambiarIdioma: 'Change language',
@@ -155,6 +154,8 @@ const en: Textos = {
     celdas === 0
       ? `${fuente}: no ${local ? '~50 km ' : ''}cell falls inside the department`
       : `${fuente}, annual ${variable === 'lluvia' ? 'rainfall' : variable === 'vegetacion' ? 'greenness (NDVI)' : 'temperature'} averaged over ${celdas} ${local ? (variable === 'vegetacion' ? '~27 km ' : '~50 km ') : ''}${celdas === 1 ? 'cell' : 'cells'}`,
+  fuenteCopia:
+    'This view comes from the local copy; the API only covers the full period with El Niño, so figures may differ from the main view.',
   notaFija: 'Average of very few or shared grid cells: low-confidence data',
   // Mismas reglas que el pipeline: lag1 > 0.5 (el aviso de 2014 de IMERG ya no va en la lluvia principal, POWER)
   avisoFijo: (_variable, lag1, motivo) =>
@@ -274,10 +275,6 @@ const en: Textos = {
   },
   otraVer: { lluvia: 'See the rain', temperatura: 'See the heat', vegetacion: 'See greenness' },
   otraCruce: 'Less rain and more heat at the same time in this area.',
-  escuchar: 'Listen',
-  escucharParar: 'Stop',
-  escucharAria: 'Listen to this report aloud',
-  escucharPararAria: 'Stop reading aloud',
   medExtremos: {
     lluvia: ['Less rain', 'More rain'],
     temperatura: ['Cooler', 'Warmer'],
@@ -474,9 +471,28 @@ const en: Textos = {
     'It describes what has already changed: it is not a forecast.',
   ],
   llevarH: 'Take it with you',
-  csvTablaBtn: 'Table of the 25 departments (CSV)',
   figSvg: 'Figure (SVG)',
   figPng: 'Figure (PNG)',
+  descModoLbl: 'What you want to take',
+  descModoZona: 'One zone, by years',
+  descModoAnio: 'One year, all 25 departments',
+  descDesde: 'From',
+  descHasta: 'To',
+  descAnio: 'Year',
+  descTodoPeriodo: 'Whole period (trend of each one)',
+  descRangoMal: 'The start year cannot be later than the end year.',
+  descCsv: 'Table (CSV)',
+  descPng: 'Chart (PNG)',
+  descPdf: 'Report (PDF)',
+  descPdfNota:
+    'The PDF holds the whole report, covering the full period. In the print dialog choose “Save as PDF”.',
+  descCsvNota: 'The CSV carries its source in the first lines, marked with “#”.',
+  descTituloPng: (zona, variable, desde, hasta) => `${zona} · ${variable}, ${desde}–${hasta}`,
+  descCita: (fuente, parametro, generado, enlace) => [
+    `Source: ${fuente} (parameter ${parametro}).`,
+    `Data generated on ${generado}. Detective del Perú, NASA Space Apps 2026.`,
+    `Exact view: ${enlace}`,
+  ],
   citarH: 'How to cite',
   citarCopiar: 'Copy',
   citarCopiado: 'Copied',

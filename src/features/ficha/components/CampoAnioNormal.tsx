@@ -29,23 +29,23 @@ export function CampoAnioNormal() {
       aria-labelledby="normal-h"
       className="flex flex-col gap-2 rounded-m border border-line p-3.5"
     >
-      <h3 id="normal-h" data-leer className="m-0 text-sm font-semibold">
+      <h3 id="normal-h" className="m-0 text-sm font-semibold">
         {t.normalH}
       </h3>
-      <p data-leer className="m-0">
+      <p className="m-0">
         {lluvia
           ? t.normalLluvia(mm(n.promedio), mm(n.bajo), mm(n.alto))
           : t.normalTemp(c(n.promedio), c(n.bajo), c(n.alto))}
       </p>
       {lluvia && (
-        <p data-leer className="m-0 flex items-center gap-2 font-semibold">
+        <p className="m-0 flex items-center gap-2 font-semibold">
           <Droplets className="size-5 flex-none text-up" aria-hidden="true" />
           {/* Redondeado a decenas: no tiene sentido más precisión con celdas de ~50 km */}
           {t.normalAgua(miles(Math.round(m3PorHectarea(n.promedio) / 10) * 10, idioma))}
         </p>
       )}
       {/* El último año con la misma vara: la mitad central de los años */}
-      <p data-leer className="m-0">
+      <p className="m-0">
         {t.normalUltimo[variable](
           ultimo.y,
           lluvia ? mm(ultimo.v) : c(ultimo.v),

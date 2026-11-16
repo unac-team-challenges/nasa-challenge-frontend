@@ -27,11 +27,6 @@ import { Fauna, type Animal } from '@/features/mapa/escena/fauna'
 import { Bosque, crearLocalizador, REGIONES, resumenPorDepto } from '@/features/mapa/escena/bosque'
 import { MQ_CELULAR } from '@/utils/disposicion'
 import {
-  COLOR_TENDENCIA,
-  LUGARES_VEGETACION,
-  type LugarVegetacion,
-} from '@/features/mapa/utils/vegetacion'
-import {
   LON0,
   LAT0,
   K,
@@ -248,23 +243,8 @@ export class EscenaPeru {
   private etiquetaSel: HTMLDivElement
   private etiquetaOceano: HTMLDivElement
   private etiquetasPais: { el: HTMLDivElement; x: number; z: number; es: string; en: string }[] = []
-  /** Modo «Vegetación»: departamentos planos y atenuados, y los 5 recuadros medidos encima. */
+  /** Vista de verdor (variable Vegetación en el explorador): relieve por NDVI medio y bosque. */
   private veg = false
-  /** Recuadros con vegetación medida (tamaño real), con su borde. */
-  private cajasVeg: {
-    caja: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
-    borde: THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>
-    lugar: LugarVegetacion
-  }[] = []
-  /** Nombres de los lugares con vegetación (solo en el modo Vegetación), junto a su recuadro. */
-  private marcasVeg: {
-    el: HTMLDivElement
-    x: number
-    z: number
-    lon: number
-    lat: number
-    departamento: string
-  }[] = []
   /** Lluvia viva: gotas que caen (lluvia) o calor que sube (temperatura) */
   private particulas: Particulas
   /** Nubes sobre las zonas donde llueve, con su sombra (2 draw calls para todas). */
@@ -525,42 +505,6 @@ export class EscenaPeru {
     this.etiquetaSel.hidden = true
     this.etiquetaOceano = nuevaEtiqueta('lbl3d ocean')
     this.etiquetaOceano.textContent = op.oceano
-    for (const l of LUGARES_VEGETACION) {
-      // Recuadro real (unos 25 km de lado), plano sobre su departamento
-      const [o, s, e, n] = l.caja
-      const centro = proyectar([l.lon, l.lat])
-      const geo = new THREE.PlaneGeometry((e - o) * COSLAT * K, (n - s) * K)
-      geo.rotateX(-Math.PI / 2)
-      const caja = new THREE.Mesh(
-        geo,
-        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, depthWrite: false }),
-      )
-      const borde = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geo),
-        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.9 }),
-      )
-      for (const obj of [caja, borde]) {
-        obj.position.set(centro.x + this.mapa.position.x, 0, -centro.y + this.mapa.position.z)
-        obj.renderOrder = 3
-        obj.visible = false
-        this.escena.add(obj)
-      }
-      this.cajasVeg.push({ caja, borde, lugar: l })
-    }
-    for (const l of LUGARES_VEGETACION) {
-      const v = proyectar([l.lon, l.lat])
-      const el = nuevaEtiqueta('lbl3d veg')
-      el.textContent = l.nombre
-      el.style.setProperty('--veg', `var(${COLOR_TENDENCIA[l.tendencia]})`)
-      this.marcasVeg.push({
-        el,
-        x: v.x + this.mapa.position.x,
-        z: -v.y + this.mapa.position.z,
-        lon: l.lon,
-        lat: l.lat,
-        departamento: l.departamento,
-      })
-    }
     for (let i = 0; i < EXTREMOS_VEG * 2; i++)
       this.etiquetasVeg.push({ id: '', el: nuevaEtiqueta('lbl3d') })
     for (const p of PAISES) {
@@ -805,6 +749,9 @@ export class EscenaPeru {
    */
   private fundir() {
     if (reducido() || !this.punteadas) return
+    // Ya empezó en este mismo cuadro (al entrar o salir de Vegetación cambian la variable y la vista
+    // de verdor juntas): se funde desde los colores de antes, no desde un paso intermedio
+    if (this.fundido === 0) return
     for (const m of this.mallas) {
       const P = m.material.userData.previo as Previo
       const mapa = m.material.map
@@ -884,14 +831,14 @@ export class EscenaPeru {
   }
 
   /**
-   * Modo «Vegetación»: cada columna sube según el verdor medio (NDVI) de su departamento, la tapa
-   * muestra el NDVI por celda, crecen las plantas de cada zona y encima van los 5 recuadros medidos.
+   * Vista de verdor (variable Vegetación): cada columna sube según el verdor medio (NDVI) de su
+   * departamento, la tapa muestra el NDVI por celda (o el del año elegido) y crecen las plantas de
+   * cada zona. La tendencia de cada departamento va en el informe.
    */
   setVegetacion(on: boolean) {
     if (this.veg === on) return
     this.fundir()
     this.veg = on
-    this.ubicarCajasVeg()
     this.pintar()
     this.alturas(false)
     this.textosEtiquetas()
@@ -1270,12 +1217,6 @@ export class EscenaPeru {
 
   destruir() {
     this.destruida = true
-    for (const c of this.cajasVeg) {
-      c.caja.geometry.dispose()
-      c.caja.material.dispose()
-      c.borde.geometry.dispose()
-      c.borde.material.dispose()
-    }
     clearTimeout(this.tipTimer)
     this.renderer.setAnimationLoop(null)
     this.quitarEventos()
@@ -1329,7 +1270,7 @@ export class EscenaPeru {
       let opacidad = 1
       const valorAnio = this.anio?.valores[m.userData.id]
       if (this.veg && malla) {
-        // Modo Vegetación: el NDVI por celda, pleno (la tendencia va solo en los 5 recuadros)
+        // Vista de verdor: el NDVI por celda, pleno (la tendencia va en el informe)
         mat.color.set(0xffffff)
         mapa = this.texturaCalor(malla, 'real')
       } else if (this.veg) {
@@ -1371,10 +1312,6 @@ export class EscenaPeru {
       mat.opacity = opacidad
       mat.emissive.copy(this.acento).multiplyScalar(BRILLO_HOVER * m.userData.brillo)
       this.pintarContorno(m)
-    }
-    for (const c of this.cajasVeg) {
-      c.caja.material.color.set(this.color(COLOR_TENDENCIA[c.lugar.tendencia]))
-      c.borde.material.color.set(this.color('--fg'))
     }
     this.sucio = true
   }
@@ -1680,7 +1617,6 @@ export class EscenaPeru {
     this.pasoParticulas(fondo ? dt : 0)
     this.fauna.paso(fondo ? dt : 0) // con «reducir movimiento» quedan quietos sobre su zona
     if (fondo) this.mar.material.uniforms.uTime.value += dt
-    this.ubicarCajasVeg()
     this.renderer.render(this.escena, this.camara)
     this.vigilarRendimiento(t, !ocupado)
     this.ubicarEtiquetas()
@@ -1718,16 +1654,6 @@ export class EscenaPeru {
     T.raiz.style.transform = tf
   }
 
-  /** Recuadros de vegetación sobre la cara de su departamento; va antes de dibujar (no después). */
-  private ubicarCajasVeg() {
-    const conVeg = this.veg && this.modo === 'explorar'
-    for (const c of this.cajasVeg) {
-      const m = this.porId.get(c.lugar.departamento)
-      c.caja.visible = c.borde.visible = conVeg && !!m
-      if (m) c.caja.position.y = c.borde.position.y = m.position.z + m.scale.z + 0.04
-    }
-  }
-
   private ubicarEtiquetas() {
     // En celular la portada no lleva etiquetas de departamentos (v12)
     const apretado = celular() && this.modo === 'inicio'
@@ -1760,13 +1686,8 @@ export class EscenaPeru {
           m.userData.centro.z,
         )
     }
-    // Modo Vegetación (solo en el explorador): recuadros y nombres sobre la cara de su departamento
+    // Vista de verdor (solo en el explorador)
     const conVeg = this.veg && this.modo === 'explorar'
-    for (const mv of this.marcasVeg) {
-      if (mv.el.hidden === conVeg) mv.el.hidden = !conVeg
-      const m = malla(mv.departamento)
-      if (conVeg && m) this.ubicarEtiqueta(mv.el, mv.x, m.position.z + m.scale.z + 0.2, mv.z)
-    }
     // Departamentos extremos (en celular, 2 de cada punta), sobre su columna como en lluvia y temperatura
     this.etiquetasVeg.forEach((e, i) => {
       const m = e.id ? malla(e.id) : undefined

@@ -19,7 +19,6 @@ import { Popover } from 'radix-ui'
 import { BotonCompartir } from '@/components/BotonCompartir'
 import { useMargenMapa } from '@/hooks/useMargenMapa'
 import { Button } from '@/components/ui/button'
-import { PanelVegetacion } from '@/app/rutas/PanelVegetacion'
 import { FRANJA, useInforme } from '@/app/rutas/useInforme'
 import { RETRASO_INFO_S, usePresentacionZona } from '@/app/rutas/usePresentacionZona'
 import { Guia } from '@/features/guia/components/Guia'
@@ -197,29 +196,23 @@ export function Explorador() {
           >
             <div className="vidrio pointer-events-auto flex flex-wrap items-baseline gap-x-2.5 self-start rounded-m px-3 py-1.5">
               <h2 className="m-0 font-display text-sm font-[650] tracking-display escritorio:text-xl">
-                {vegetacion ? (
-                  t.mapHVeg
-                ) : (
-                  <>
-                    {t.mapH[variable]} ·{' '}
-                    {anio == null
-                      ? t.mapModoTendencia(rango.year_start, rango.year_end)
-                      : t.mapModoAnio(anio)}
-                  </>
-                )}
+                {t.mapH[variable]} ·{' '}
+                {anio == null
+                  ? t.mapModoTendencia(rango.year_start, rango.year_end)
+                  : t.mapModoAnio(anio)}
               </h2>
               <span className="hidden text-[13px] text-muted escritorio:inline">
                 {vegetacion ? t.mapSubVeg : anio == null ? t.mapSub : t.mapSubAnio}
               </span>
             </div>
             {/* La guía explica lo mismo en su paso de la barra de tiempo: no van juntas */}
-            {!vegetacion && !guiaAbierta && <AyudaModo />}
+            {!guiaAbierta && <AyudaModo />}
             {!conWebgl && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.noGl}
               </p>
             )}
-            {sinNino && variable === 'lluvia' && !vegetacion && (
+            {sinNino && variable === 'lluvia' && (
               <p className="pointer-events-auto m-0 max-w-136 rounded-m border border-accent bg-accent-soft px-3 py-2 text-[13px] text-fg">
                 {t.ninoOn}
               </p>
@@ -227,8 +220,7 @@ export function Explorador() {
           </div>
           <div className="pointer-events-auto contents">
             <Leyenda />
-            {/* La vegetación no tiene máquina del tiempo (solo 5 lugares, 2001 frente a 2024) */}
-            {!vegetacion && <BarraTiempo />}
+            <BarraTiempo />
           </div>
           {/* Escritorio: los controles a la vista. Celular: detrás de un solo botón «⋯», para dejar el mapa libre */}
           <div
@@ -307,7 +299,7 @@ export function Explorador() {
               <span className="font-display text-[15px] font-[650] tracking-display whitespace-nowrap escritorio:rotate-180 escritorio:[writing-mode:vertical-rl]">
                 {sel ? NOMBRE[sel] : t.railHint}
               </span>
-              {d && d.status !== 'pocos_datos' && !vegetacion && (
+              {d && d.status !== 'pocos_datos' && (
                 <span
                   className="text-[13px] escritorio:rotate-180 escritorio:[writing-mode:vertical-rl]"
                   style={{ color: `var(${colorDireccion(d.slope_per_decade, variable)})` }}
@@ -329,7 +321,7 @@ export function Explorador() {
               className="entrada"
               style={{ '--retraso': intro ? `${RETRASO_INFO_S}s` : '0s' } as CSSProperties}
             >
-              {vegetacion ? <PanelVegetacion /> : <Ficha />}
+              <Ficha />
             </div>
           </div>
         )}

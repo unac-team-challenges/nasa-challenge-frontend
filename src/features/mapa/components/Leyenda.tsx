@@ -8,7 +8,6 @@ import { useVista, useZonas } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
 import { useCalor } from '@/features/mapa/hooks/useCalor'
 import { tieneAnio, type Calor } from '@/features/mapa/utils/calor'
-import { COLOR_TENDENCIA, type TendenciaVegetacion } from '@/features/mapa/utils/vegetacion'
 
 /** Degradado con los mismos tokens que pinta el mapa de color de la variable (`calor.paradas`). */
 const rampa = (paradas: string[]) =>
@@ -52,7 +51,7 @@ function Escala({ calor, extremo }: { calor: Calor; extremo: (x: number) => stri
 
 /**
  * Leyenda plegable del mapa. Empieza minimizada (una franja de una línea) y se abre con la flecha.
- * Lo que explica depende de lo que se ve: variable o modo Vegetación, tendencia o año, con o sin
+ * Lo que explica depende de lo que se ve: variable o vista de verdor (Vegetación en 3D), tendencia o año, con o sin
  * mapa de color, el perfil (agricultor o estudiante), el idioma y el tema (colores por token).
  */
 export function Leyenda() {
@@ -236,39 +235,22 @@ export function Leyenda() {
     </>
   )
 
-  // Modo Vegetación: el NDVI de fondo y los colores de los 5 recuadros
-  const tendencias: [TendenciaVegetacion, string][] = [
-    ['sube', t.vegSube],
-    ['baja', t.vegBaja],
-    ['igual', t.vegIgual],
-  ]
-  // Modo Vegetación: tres cosas que leer, sin notas (el detalle está en el informe y en Metodología)
+  // Vista de verdor (Vegetación en 3D): la altura y el NDVI de fondo, sin notas (la tendencia de
+  // cada departamento va en el informe y el detalle en Metodología)
   const contenidoVegetacion = (
-    <>
-      <section className="grid gap-1">
-        <Titulo>{t.legVegAltura}</Titulo>
-        {calor && (
-          <>
-            <Titulo>{t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}</Titulo>
-            <Escala calor={calor} extremo={extremo} />
-          </>
-        )}
-      </section>
-      <section className="grid gap-1">
-        <Titulo>{t.legCuadros}</Titulo>
-        <div className="grid grid-cols-3 gap-x-2 text-xs">
-          {tendencias.map(([k, texto]) => (
-            <span key={k} className="flex items-center gap-1.5 leading-tight text-fg">
-              <span
-                className={`${muestra} border border-fg`}
-                style={{ background: `var(${COLOR_TENDENCIA[k]})` }}
-              />
-              {texto}
-            </span>
-          ))}
-        </div>
-      </section>
-    </>
+    <section className="grid gap-1">
+      <Titulo>{t.legVegAltura}</Titulo>
+      {calor && (
+        <>
+          <Titulo>
+            {conCalor && anual
+              ? t.calorAnio(t.calorCosa.vegetacion, anio)
+              : t.legVegMalla(calor.anio0, calor.anio0 + calor.anios - 1)}
+          </Titulo>
+          <Escala calor={calor} extremo={extremo} />
+        </>
+      )}
+    </section>
   )
 
   // En celular, abierta es una hoja pegada al borde de abajo del mapa; tocar el mapa la cierra

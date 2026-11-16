@@ -28,6 +28,21 @@ describe('explorador con la URL', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('si la sesión usa la API pero la vista sale de la copia local, la ficha lo avisa', async () => {
+    useApp.setState({ fuente: 'api' })
+    renderRuta('/zona/20?sinnino=1')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    expect(await within(informe).findByText(/Esta vista sale de la copia local/)).toBeVisible()
+  })
+
+  it('con la copia local de toda la sesión no hay aviso (no hay cambio de fuente)', async () => {
+    useApp.setState({ fuente: 'local' })
+    renderRuta('/zona/20?sinnino=1')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] })
+    expect(within(informe).queryByText(/Esta vista sale de la copia local/)).toBeNull()
+  })
+
   it('el agricultor ve años de seca, El Niño, año normal y dónde seguir, sin fuentes ni WhatsApp', async () => {
     renderRuta('/zona/20?perfil=agricultor')
     const informe = await screen.findByRole('complementary', { name: /informe/i })

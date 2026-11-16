@@ -151,6 +151,9 @@ export const textos = {
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
       : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : variable === 'vegetacion' ? 'verdor (NDVI)' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? (variable === 'vegetacion' ? ' de ~27 km' : ' de ~50 km') : ''}`,
+  /** La API solo trae el periodo completo con El Niño: las demás vistas salen de la copia local */
+  fuenteCopia:
+    'Esta vista sale de la copia local; la API solo trae el periodo completo con El Niño, así que las cifras pueden diferir de la vista principal.',
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */

@@ -23,6 +23,10 @@ export const textos = {
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
+  menu: 'Menú',
+  cerrarMenu: 'Cerrar el menú',
+  idiomaLbl: 'Idioma',
+  temaLbl: 'Tema',
   variableLbl: 'Variable',
   perfilLbl: 'Perfil',
   periodoLbl: 'Periodo',
@@ -111,6 +115,8 @@ export const textos = {
   legCuadros: 'Los 5 cuadros: su tendencia',
   // Modo «Vegetación» del mapa: de fondo, el NDVI por celda de todo el Perú; encima, los 5 recuadros medidos de cerca
   vegetacionBtn: 'Lugares medidos',
+  /** Corto, para el botón de variable del celular */
+  vegetacionCorto: 'Lugares',
   vegConLugar: (lugar: string) => `vegetación medida: ${lugar}`,
   mapHVeg: 'Vegetación medida con satélite',
   mapSubVeg: 'MODIS, 2001–2024 · todo el Perú y 5 lugares',

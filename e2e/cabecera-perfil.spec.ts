@@ -30,20 +30,45 @@ test('el perfil es un interruptor con íconos, no una lista del sistema', async 
 test.describe('celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 
-  test('los dos botones de perfil miden al menos 36 px de alto y se tocan', async ({ page }) => {
+  test('la cabecera es 1 fila: marca, variable y menú ☰ sin salirse de la pantalla', async ({
+    page,
+  }) => {
     await page.goto('/explorar?sinwebgl')
-    const perfil = page.getByRole('group', { name: 'Perfil' })
-    for (const nombre of ['Agricultor', 'Estudiante']) {
-      const caja = (await perfil.getByRole('button', { name: nombre }).boundingBox())!
-      expect(caja.height).toBeGreaterThanOrEqual(36)
-    }
-    // ninguno queda cortado por el borde de la pantalla: se ven enteros sin deslizar la tira
-    for (const nombre of ['Agricultor', 'Estudiante']) {
-      const caja = (await perfil.getByRole('button', { name: nombre }).boundingBox())!
+    const cabecera = page.locator('body > div header').first()
+    const alto = (await cabecera.boundingBox())!.height
+    expect(alto).toBeLessThan(80)
+    for (const boton of [
+      page.getByRole('button', { name: /^Variable: / }),
+      page.getByRole('button', { name: 'Menú' }),
+    ]) {
+      const caja = (await boton.boundingBox())!
+      expect(caja.height).toBeGreaterThanOrEqual(44)
       expect(caja.x + caja.width).toBeLessThanOrEqual(390)
-      expect(caja.width).toBeGreaterThanOrEqual(36)
+    }
+  })
+
+  test('el selector de variable cambia la variable y muestra la actual', async ({ page }) => {
+    await page.goto('/explorar?sinwebgl')
+    await page.getByRole('button', { name: 'Variable: Lluvia' }).tap()
+    await page.getByRole('menuitemradio', { name: 'Temperatura' }).tap()
+    await expect(page).toHaveURL(/variable=temperatura/)
+    await expect(page.getByRole('button', { name: 'Variable: Temperatura' })).toBeVisible()
+  })
+
+  test('el perfil está en el menú ☰, con botones de 44 px que se tocan', async ({ page }) => {
+    await page.goto('/explorar?sinwebgl')
+    await page.getByRole('button', { name: 'Menú' }).tap()
+    const perfil = page.getByRole('dialog', { name: 'Menú' }).getByRole('group', { name: 'Perfil' })
+    for (const nombre of ['Agricultor', 'Estudiante']) {
+      const caja = (await perfil.getByRole('button', { name: nombre }).boundingBox())!
+      expect(caja.height).toBeGreaterThanOrEqual(44)
+      expect(caja.x + caja.width).toBeLessThanOrEqual(390)
     }
     await perfil.getByRole('button', { name: 'Estudiante' }).tap()
     await expect(page).toHaveURL(/perfil=estudiante/)
+    await expect(perfil.getByRole('button', { name: 'Estudiante' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })

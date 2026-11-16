@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { Check, Copy, Download, ExternalLink } from 'lucide-react'
+import { Check, Copy, ExternalLink } from 'lucide-react'
 import { GENERADO, NOMBRE, parametroDe } from '@/data/datos'
 import { REPOS } from '@/i18n/repos'
 import { TEXTOS } from '@/i18n/textos'
 import { useAnio, useBusqueda } from '@/lib/busqueda'
 import { API_URL } from '@/api/cliente'
-import { useVista, useZonas } from '@/hooks/useZonas'
+import { useVista } from '@/hooks/useZonas'
 import { useApp } from '@/stores/app'
-import { descargarTexto, tablaCsv } from '@/features/ficha/utils/estudiante'
+import { EstDescargas } from '@/features/ficha/components/EstDescargas'
 import { Button } from '@/components/ui/button'
 
 /** Bloque de texto copiable (cita APA, BibTeX, consulta a la API). */
@@ -45,14 +45,13 @@ function Copiable({ texto, etiqueta }: { texto: string; etiqueta: string }) {
 }
 
 /**
- * Estudiante: llevarse los datos (tabla de los 25 en CSV), citar (APA y BibTeX, con el enlace a
- * esta vista exacta) y reproducir el cálculo (la consulta a la API y los repositorios).
+ * Estudiante: llevarse los datos (EstDescargas), citar (APA y BibTeX, con el enlace a esta vista
+ * exacta) y reproducir el cálculo (la consulta a la API y los repositorios).
  */
 export function EstRecursos() {
   const idioma = useApp((s) => s.idioma)
   const { variable, sel } = useBusqueda()
   const t = TEXTOS[idioma]
-  const zonas = useZonas()
   const { api, rango } = useVista()
   // Se suscribe al año para que el enlace copiado no quede con el año anterior al mover la barra.
   useAnio()
@@ -83,27 +82,8 @@ export function EstRecursos() {
 
   return (
     <>
-      <section
-        aria-labelledby="llevar-h"
-        className="flex flex-col gap-2.5 rounded-m border border-line p-3.5"
-      >
-        <h3 id="llevar-h" className="m-0 text-sm font-semibold">
-          {t.llevarH}
-        </h3>
-        <div>
-          <Button
-            onClick={() =>
-              descargarTexto(
-                `departamentos-${variable}-${rango.year_start}-${rango.year_end}.csv`,
-                tablaCsv(zonas, variable),
-              )
-            }
-          >
-            <Download aria-hidden="true" />
-            {t.csvTablaBtn}
-          </Button>
-        </div>
-      </section>
+      {/* La zona y la variable en la key: al cambiar, el panel vuelve a todo el periodo */}
+      <EstDescargas key={`${sel}-${variable}`} />
 
       <section
         aria-labelledby="citar-h"

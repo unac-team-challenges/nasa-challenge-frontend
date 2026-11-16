@@ -551,26 +551,6 @@ h3 {
   }
 }
 
-/* Lugares con vegetación medida (Caso 2 y selva): punto verde y nombre, más chicos que los
-   departamentos para no competir con el dato del mapa */
-.lbl3d.veg {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 7px 1px 5px;
-}
-.lbl3d.veg::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  /* --veg: color de la tendencia del lugar (lo pone el mapa) */
-  background: var(--veg, var(--map-green));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--veg, var(--map-green)) 35%, transparent);
-}
-
 /* Nombres de países vecinos: tenues, solo para ubicar al Perú (v14) */
 .lbl3d.country {
   background: none;
@@ -669,5 +649,85 @@ h3 {
       transparent 55%,
       rgb(0 0 0 / 0.14)
     );
+  }
+}
+
+/*
+ * Imprimir = la ficha de la zona (botón «Ficha (PDF)» del estudiante). Se oculta todo menos el
+ * informe, se suelta de su caja (que en pantalla es fija y con scroll) y se fuerzan los colores
+ * del tema claro: un PDF oscuro gasta tinta y se lee peor.
+ */
+@media print {
+  :root:root:root {
+    --bg: #fff !important;
+    --panel: #fff !important;
+    --panel-2: #f3efe8 !important;
+    --line: #c9c2b8 !important;
+    --line-2: #8f867a !important;
+    --fg: #1c1612 !important;
+    --muted: #4d4036 !important;
+    --up: #1f5287 !important;
+    --up-soft: #c6d6e6 !important;
+    --down: #713f15 !important;
+    --down-soft: #e4cdb0 !important;
+    --green: #20553a !important;
+    --green-soft: #b3d2bf !important;
+    --map-up: #2f6fa8 !important;
+    --map-down: #a5652a !important;
+    --accent-text: #8e1f4b !important;
+    --nino: #ebdfbe !important;
+    color-scheme: light;
+  }
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #informe,
+  #informe * {
+    visibility: visible;
+  }
+  /* Los contenedores del informe dejan de ser cajas fijas con scroll */
+  #root > div,
+  #contenido,
+  #contenido > section,
+  [data-guia='informe'] {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  #informe {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  /* Lo de pantalla que no sirve en papel: los botones de acción (shadcn), los selectores y las
+     animaciones. Los <button> sueltos, como las filas del ranking, son contenido y se quedan. */
+  #informe [data-slot='button'],
+  #informe select {
+    display: none !important;
+  }
+  /* Las etiquetas del mapa 3D flotan sobre la página y, impresas, taparían el texto */
+  .lbl3d,
+  .tip3d,
+  .ficha3d {
+    display: none !important;
+  }
+  #informe * {
+    animation: none !important;
+    transition: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

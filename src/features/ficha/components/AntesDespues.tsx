@@ -63,14 +63,10 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
             </h3>
             <span className="text-xs text-muted">{t.verdeSub}</span>
           </div>
-          <p data-leer className="m-0 font-semibold">
+          <p className="m-0 font-semibold">
             {campo ? fraseHa : t.verdeEst(v.nombre, v.areaAntes, v.areaDespues, pct)}
           </p>
-          {campo && (
-            <p data-leer className="m-0">
-              {t.verdeRiego}
-            </p>
-          )}
+          {campo && <p className="m-0">{t.verdeRiego}</p>}
           {t.verdeCausa[departamento] && <p className="m-0">{t.verdeCausa[departamento]}</p>}
         </>
       ) : (
@@ -78,7 +74,7 @@ export function AntesDespues({ departamento, perfil }: { departamento: string; p
           <h3 id="verde-h" className="m-0 text-sm font-semibold">
             {t.verdeSub}
           </h3>
-          <p data-leer className="m-0">
+          <p className="m-0">
             {campo ? fraseHa : t.verdeNeutro(v.nombre, v.areaAntes, v.areaDespues, pct)}
           </p>
         </>

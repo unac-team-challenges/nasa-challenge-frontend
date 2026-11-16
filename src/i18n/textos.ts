@@ -509,8 +509,6 @@ const en: Textos = {
   citarCopiado: 'Copied',
   citarEnlace: 'Link to this exact view',
   reproH: 'Reproduce it',
-  reproApi: 'The API returns these same numbers:',
-  reproSinApi: 'This session uses the local copy; with the project API, the query is:',
   reproRepos: 'Code of the calculation (backend) and of this page (frontend):',
   causasH: 'Possible causes and consequences',
   causasCausa: 'Why might this be happening?',

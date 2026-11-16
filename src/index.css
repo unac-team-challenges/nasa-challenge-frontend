@@ -568,6 +568,11 @@ h3 {
 .lbl2d.gestando {
   transition: none;
 }
+/* Arrastrando con el ratón (botón derecho): la mano cerrada, también sobre los departamentos */
+.zoom2d.gestando,
+.zoom2d.gestando * {
+  cursor: grabbing !important;
+}
 /* Etiquetas del 2D: se deslizan con el zoom (las del 3D las mueve la escena cada cuadro) */
 .lbl2d {
   transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);

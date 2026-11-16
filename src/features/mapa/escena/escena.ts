@@ -30,6 +30,39 @@ import {
   LUGARES_VEGETACION,
   type LugarVegetacion,
 } from '@/features/mapa/utils/vegetacion'
+import {
+  LON0,
+  LAT0,
+  K,
+  COSLAT,
+  LUZ,
+  DIR_LUZ,
+  DIR_ASTRO,
+  N_NUBES,
+  proyectar,
+  MUNDO,
+  RELIEVE,
+  DPR_RELIEVE,
+} from '@/features/mapa/escena/constantes'
+import {
+  PARTICULAS_VS,
+  PARTICULAS_FS,
+  NUBE_VS,
+  NUBE_FS,
+  SUELO_VS,
+  SUELO_FS,
+} from '@/features/mapa/escena/shaders'
+import {
+  type RelieveTapa,
+  type Previo,
+  conSombraDeContacto,
+  texturaSombraPeru,
+  pixel,
+  texturaCielo,
+  texturaAstro,
+  texturaNube,
+  texturaPunteada,
+} from '@/features/mapa/escena/texturas'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -48,28 +81,6 @@ const ELEVA_SEL = 0.35
 const ELEVA_HOVER = 0.18
 /** Brillo de acento del departamento bajo el puntero (emisivo, entra y sale suave). */
 const BRILLO_HOVER = 0.2
-const LON0 = -75.0
-const LAT0 = -9.2
-const K = 2.2
-const COSLAT = Math.cos((LAT0 * Math.PI) / 180)
-/** Desde r155 las luces son físicas: ×π para igualar las intensidades de r128. */
-const LUZ = Math.PI
-/**
- * Hacia el sol/luna. En el hemisferio sur el sol va por el norte (-z). Es la luz, la sombra del
- * Perú y la de las nubes.
- */
-const DIR_LUZ = new THREE.Vector3(5, 45, -45).normalize()
-/**
- * El disco va en el mismo rumbo pero bajo, a ~4° sobre el horizonte: se ve en el cielo y su reflejo
- * cruza el mar cuando la cámara se inclina hacia el horizonte (camino de luz).
- */
-const DIR_ASTRO = new THREE.Vector3(DIR_LUZ.x, 0, DIR_LUZ.z).normalize().setY(0.07).normalize()
-/** Altura efectiva de la sombra del Perú (calibrada: con DIR_LUZ da el corrimiento de antes). */
-const SOMBRA = 2.4
-/** Nubes sobre el tope de su departamento: justo donde nacen las gotas (h = 9 en PARTICULAS_VS). */
-const ALTO_NUBE = 9.4
-const N_NUBES = 12
-const glsl = (v: THREE.Vector3) => `vec3(${v.x.toFixed(4)}, ${v.y.toFixed(4)}, ${v.z.toFixed(4)})`
 /** Zonas con etiqueta flotante. */
 const CLAVE = ['24', '20', '15', '21', '16', '08']
 /** En celular solo estas llevan etiqueta fija (Tumbes y Piura quedaban bajo los paneles); la elegida siempre tiene la suya. */
@@ -96,94 +107,6 @@ interface Particulas {
   geo: THREE.BufferGeometry
   puntos: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>
 }
-
-/**
- * Lluvia viva y calor que sube, animados en la GPU: cada partícula tiene (x, z) fijos, una
- * fase, una velocidad y el índice de su departamento. La altura la calcula el shader con el
- * reloj y la altura actual del departamento (uTope); el CPU solo sube 26 números por cuadro.
- */
-const PARTICULAS_VS = `
-uniform float uTime, uTam, uEscala, uCalor;
-uniform float uTope[${DEPARTAMENTOS.length}];
-attribute vec3 aSemilla; // x: fase 0..1, y: velocidad, z: departamento
-varying float vA;
-#include <fog_pars_vertex>
-void main() {
-  float tope = uTope[int(aSemilla.z + 0.5)];
-  float h = uCalor > 0.5 ? 2.6 : 9.0;
-  float f = fract(aSemilla.x + uTime * aSemilla.y / h);
-  vec3 p = position;
-  p.y = uCalor > 0.5 ? tope + h * f : tope + h * (1.0 - f);
-  vA = uCalor > 0.5 ? sin(3.14159 * f) : smoothstep(0.0, 0.12, 1.0 - f) * smoothstep(0.0, 0.06, f);
-  vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-  gl_Position = projectionMatrix * mvPosition;
-  gl_PointSize = uTam * uEscala / -mvPosition.z;
-  #include <fog_vertex>
-}`
-const PARTICULAS_FS = `
-uniform vec3 uColor;
-uniform float uOpacidad, uCalor;
-varying float vA;
-#include <fog_pars_fragment>
-void main() {
-  vec2 q = gl_PointCoord - 0.5;
-  float a = uCalor > 0.5
-    ? 1.0 - smoothstep(0.12, 0.5, length(q))                                                // brillo redondo
-    : (1.0 - smoothstep(0.03, 0.09, abs(q.x))) * (1.0 - smoothstep(0.15, 0.5, abs(q.y)));  // gota alargada
-  a *= vA * uOpacidad;
-  if (a < 0.02) discard;
-  gl_FragColor = vec4(uColor, a);
-  #include <fog_fragment>
-}`
-
-/**
- * Nubes de lluvia y su sombra: una sola geometría instanciada (x, z, departamento, peso) para las
- * dos pasadas. La altura sale de uTope y el vaivén de uTime, los mismos objetos que usan las gotas:
- * la GPU hace todo, el CPU no toca nada por cuadro.
- */
-const NUBE_VS = `
-uniform float uTime;
-uniform float uTope[${DEPARTAMENTOS.length}];
-attribute vec4 aNube; // x, z, departamento, peso 0..1
-varying vec2 vUv;
-varying float vPeso;
-const vec3 LUZ = ${glsl(DIR_LUZ)};
-#include <fog_pars_vertex>
-void main() {
-  float tope = uTope[int(aNube.z + 0.5)];
-  float tam = 1.6 + 2.0 * aNube.w; // chicas y translúcidas: nunca tapan el dato
-  vec3 c = vec3(aNube.x + sin(uTime * 0.12 + aNube.x) * 0.6, tope + ${ALTO_NUBE.toFixed(1)}, aNube.y);
-  vUv = uv;
-  vPeso = aNube.w;
-#ifdef SOMBRA
-  // Plana sobre el departamento, corrida en sentido contrario a la luz
-  c.xz -= LUZ.xz / LUZ.y * ${ALTO_NUBE.toFixed(1)};
-  c.y = tope + 0.03;
-  vec4 mvPosition = viewMatrix * vec4(c + vec3(position.x * 2.0, 0.0, -position.y) * tam, 1.0);
-#else
-  // Siempre de frente a la cámara
-  vec4 mvPosition = viewMatrix * vec4(c, 1.0);
-  mvPosition.xy += position.xy * vec2(2.0, 1.0) * tam;
-#endif
-  gl_Position = projectionMatrix * mvPosition;
-  #include <fog_vertex>
-}`
-const NUBE_FS = `
-uniform sampler2D uMapa;
-uniform vec3 uColor;
-varying vec2 vUv;
-varying float vPeso;
-#include <fog_pars_fragment>
-void main() {
-  float a = texture2D(uMapa, vUv).a;
-#ifdef SOMBRA
-  gl_FragColor = vec4(0.0, 0.0, 0.0, a * 0.14);
-#else
-  gl_FragColor = vec4(uColor * mix(1.0, 0.78, vPeso), a * 0.75); // más lluvia, nube más gris
-#endif
-  if (gl_FragColor.a < 0.01) discard;
-  #include <fog_fragment>
-}`
 
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
@@ -224,15 +147,6 @@ export interface OpcionesEscena {
   alPerderContexto?: () => void
 }
 
-const proyectar = ([lon, lat]: number[]) =>
-  new THREE.Vector2((lon - LON0) * COSLAT * K, (lat - LAT0) * K)
-
-/**
- * Suelo de Sudamérica en un solo shader: mar con profundidad sugerida, costa con espuma y
- * oleaje, tierra con sombreado suave del relieve real, ríos, lagos y fronteras tenues.
- * Las texturas se precalculan con scripts/generar_mundo.py (SRTM/ETOPO1 y Natural Earth).
- */
-const MUNDO = { lon0: -110, lon1: -30, lat0: -60, lat1: 25 } // caja de public/mapa/mundo*.webp
 const TEXTURAS_MUNDO = [
   ['mapa/mundo.webp', 'uMundo'],
   ['mapa/mundo2.webp', 'uMundo2'],
@@ -244,382 +158,6 @@ for (const [archivo] of TEXTURAS_MUNDO) {
   img.crossOrigin = 'anonymous'
   img.src = import.meta.env.BASE_URL + archivo
 }
-/** Exageración vertical del relieve: 6000 m de altura son RELIEVE unidades (~×15). */
-const RELIEVE = 1.8
-/** Por debajo de esta resolución adaptativa (equipo lento) el relieve deja de subir. */
-const DPR_RELIEVE = 0.7
-const SUELO_VS = `
-uniform sampler2D uMundo, uMundo2, uPeru;
-uniform vec4 uCaja, uCajaPeru;
-uniform float uRelieve;
-varying vec3 vW;
-#include <fog_pars_vertex>
-void main() {
-  vec4 w = modelMatrix * vec4(position, 1.0);
-  // Relieve real de los vecinos (SRTM): sube solo la tierra, nunca dentro del Perú (ahí están las columnas)
-  vec2 uv = (w.xz - uCaja.xy) / uCaja.zw;
-  if (uRelieve > 0.0 && all(greaterThan(uv, vec2(0.0))) && all(lessThan(uv, vec2(1.0)))) {
-    float tierra = smoothstep(0.5, 0.62, texture2D(uMundo, uv).g);
-    float peru = texture2D(uPeru, (w.xz - uCajaPeru.xy) / uCajaPeru.zw).g;
-    w.y += texture2D(uMundo2, uv).r * tierra * (1.0 - smoothstep(0.02, 0.3, peru)) * uRelieve;
-  }
-  vW = w.xyz;
-  vec4 mvPosition = viewMatrix * w;
-  gl_Position = projectionMatrix * mvPosition;
-  #include <fog_vertex>
-}`
-const SUELO_FS = `
-uniform float uTime;
-uniform sampler2D uMundo, uMundo2, uPeru;
-uniform vec4 uCaja, uCajaPeru;
-uniform vec3 uHondo, uSomero, uEspuma, uSombra, uTierraBaja, uTierraAlta, uNieve, uAgua, uFrontera;
-uniform vec3 uLuzColor;
-uniform float uBrillo;
-varying vec3 vW;
-const vec3 LUZ = ${glsl(DIR_LUZ)};
-const vec3 ASTRO = ${glsl(DIR_ASTRO)};
-#include <fog_pars_fragment>
-void main() {
-  vec2 uv = (vW.xz - uCaja.xy) / uCaja.zw;
-  vec3 t = texture2D(uMundo, uv).rgb;   // r: relieve (tierra) o profundidad (mar); g, b: costa
-  vec3 t2 = texture2D(uMundo2, uv).rgb; // g: ríos y lagos; b: fronteras
-  vec2 b2 = smoothstep(0.0, 0.04, uv) * smoothstep(0.0, 0.04, 1.0 - uv);
-  float borde = b2.x * b2.y; // fuera de la caja el mar sigue
-  float cerca = t.g * borde, lejos = t.b * borde, tierra = smoothstep(0.44, 0.56, cerca);
-  vec3 mar = mix(uSomero, uHondo, smoothstep(0.05, 0.95, mix(0.6, t.r, borde)));
-  mar = mix(mar, uSomero, smoothstep(0.05, 0.6, lejos) * 0.55);
-  // Olas: cuatro ondas en direcciones distintas; altura y normal con fórmula exacta (sin texturas)
-  vec2 p = vW.xz;
-  const vec3 w1 = vec3(0.8, 0.6, 0.9), w2 = vec3(-0.5, 0.86, 1.4), w3 = vec3(0.2, -0.98, 2.3),
-             w4 = vec3(-0.9, -0.44, 4.1);
-#ifdef OLAS_SIMPLES
-  // Celular: solo las dos ondas grandes (la mitad de senos por píxel)
-  vec2 f = vec2(dot(p, w1.xy) * w1.z, dot(p, w2.xy) * w2.z) + uTime * vec2(0.9, 1.3);
-  const vec2 amp = vec2(0.08, 0.055);
-  vec2 c = amp * cos(f);
-  vec2 g = w1.xy * w1.z * c.x + w2.xy * w2.z * c.y;
-  float h = dot(amp, sin(f)) / (amp.x + amp.y); // -1..1
-#else
-  vec4 f = vec4(dot(p, w1.xy) * w1.z, dot(p, w2.xy) * w2.z, dot(p, w3.xy) * w3.z, dot(p, w4.xy) * w4.z)
-         + uTime * vec4(0.9, 1.3, 1.9, 2.6);
-  const vec4 amp = vec4(0.08, 0.055, 0.03, 0.015);
-  vec4 c = amp * cos(f);
-  vec2 g = w1.xy * w1.z * c.x + w2.xy * w2.z * c.y + w3.xy * w3.z * c.z + w4.xy * w4.z * c.w;
-  float h = dot(amp, sin(f)) / dot(amp, vec4(1.0)); // -1..1
-#endif
-  vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
-  vec3 v = normalize(cameraPosition - vW);
-  float olas = 1.0 - lejos * 0.6; // calmas junto a la costa, vivas mar adentro
-  mar *= mix(1.0, 0.72 + 0.56 * max(dot(n, LUZ), 0.0), olas);                  // luz y sombra de cada ola
-  mar = mix(mar, uHondo, (1.0 - smoothstep(-0.9, -0.2, h)) * 0.35 * olas);      // valles más hondos
-  mar = mix(mar, uEspuma, smoothstep(0.25, 1.0, h) * 0.32 * olas);            // crestas claras
-  mar = mix(mar, uSomero, pow(1.0 - max(v.y, 0.0), 4.0) * 0.3);               // fresnel: más claro al ras
-  mar += uLuzColor * pow(max(dot(reflect(-ASTRO, n), v), 0.0), 40.0) * uBrillo; // camino de luz del sol o la luna
-  float banda = smoothstep(0.1, 0.36, cerca) * (1.0 - smoothstep(0.4, 0.47, cerca));
-  float corte = 0.6 + 0.4 * sin(p.x * 3.1 + uTime) * sin(p.y * 2.7 - uTime * 0.8); // espuma que se corta y viaja
-  mar = mix(mar, uEspuma, banda * (0.45 + 0.3 * sin(cerca * 40.0 - uTime * 1.5)) * corte);
-  // Color por altitud (t2.r = elevación / 6000 m), nieve solo sobre ~5200 m y sombreado real del relieve (t.r)
-  vec3 suelo = mix(uTierraBaja, uTierraAlta, smoothstep(0.02, 0.7, t2.r));
-  suelo = mix(suelo, uNieve, smoothstep(0.86, 0.95, t2.r));
-  suelo *= 0.62 + 0.7 * t.r;
-  suelo = mix(suelo, uAgua, t2.g * 0.55);
-  suelo = mix(suelo, uFrontera, t2.b * 0.45);
-  vec3 col = mix(mar, suelo, tierra);
-  // sombra suave del Perú, corrida según la luz: los departamentos se "apoyan" en el suelo
-  vec2 pv = (vW.xz + LUZ.xz / LUZ.y * ${SOMBRA.toFixed(2)} - uCajaPeru.xy) / uCajaPeru.zw;
-  col = mix(col, uSombra, texture2D(uPeru, pv).r * 0.35);
-  gl_FragColor = vec4(col, 1.0);
-  #include <fog_fragment>
-}`
-
-/**
- * Relieve real sobre la cara superior de las columnas: la textura y su caja, compartidas con el
- * suelo. uFundido (0 → 1) mezcla el color anterior de cada tapa con el nuevo al cambiar de modo;
- * uOrigen lleva del mundo a las coordenadas proyectadas (las de las texturas de las mallas).
- */
-interface RelieveTapa {
-  uMundo: { value: THREE.Texture | null }
-  uCaja: { value: THREE.Vector4 }
-  uFundido: { value: number }
-  uOrigen: { value: THREE.Vector2 }
-}
-
-/** Color que tenía la tapa antes del cambio: una textura (con su repeat/offset) o un color liso. */
-interface Previo {
-  uPrevio: { value: THREE.Texture | null }
-  uPrevioUV: { value: THREE.Vector4 }
-  uPrevioColor: { value: THREE.Color }
-  uPrevioMapa: { value: number }
-}
-
-/**
- * Sombra de contacto en las paredes de cada columna: más oscuras junto al suelo, como una maqueta
- * con oclusión ambiental. Se calcula en el mismo shader (sin pasadas extra ni SSAO). La distancia
- * es en unidades del mundo, así que una columna alta y una baja se oscurecen igual cerca del piso.
- */
-function conSombraDeContacto(mat: THREE.MeshStandardMaterial, tapa: RelieveTapa) {
-  const decl = '#include <common>\nvarying float vAlto, vPared;\nvarying vec2 vXZ;'
-  const previo: Previo = {
-    uPrevio: { value: null },
-    uPrevioUV: { value: new THREE.Vector4(1, 1, 0, 0) },
-    uPrevioColor: { value: new THREE.Color() },
-    uPrevioMapa: { value: 0 },
-  }
-  mat.userData.previo = previo
-  mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, previo)
-    sh.uniforms.uMundo = tapa.uMundo
-    sh.uniforms.uCaja = tapa.uCaja
-    sh.uniforms.uFundido = tapa.uFundido
-    sh.uniforms.uOrigen = tapa.uOrigen
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', decl).replace(
-      '#include <begin_vertex>',
-      `#include <begin_vertex>
-  vPared = 1.0 - abs(normal.z); // tapas: normal ±z en el espacio de la extrusión
-  vec4 wPos = modelMatrix * vec4(position, 1.0);
-  vAlto = wPos.y - (modelMatrix * vec4(position.xy, 0.0, 1.0)).y;
-  vXZ = wPos.xz;`,
-    )
-    sh.fragmentShader = sh.fragmentShader
-      .replace(
-        '#include <common>',
-        decl +
-          `
-uniform sampler2D uMundo, uPrevio;
-uniform vec4 uCaja, uPrevioUV;
-uniform vec3 uPrevioColor;
-uniform float uFundido, uPrevioMapa;
-uniform vec2 uOrigen;`,
-      )
-      .replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-  // Cambio de modo: del color anterior al nuevo, sin corte (la textura anterior con su propia caja)
-  if (uFundido < 1.0) {
-    vec2 pp = vec2(vXZ.x - uOrigen.x, uOrigen.y - vXZ.y);
-    vec3 antes = uPrevioMapa > 0.5 ? texture2D(uPrevio, pp * uPrevioUV.xy + uPrevioUV.zw).rgb : uPrevioColor;
-    diffuseColor.rgb = mix(antes, diffuseColor.rgb, uFundido);
-  }
-  // Cara superior: Andes, valles y llanura amazónica con el sombreado real (SRTM), sin cambiar la altura del dato
-  float hs = texture2D(uMundo, (vXZ - uCaja.xy) / uCaja.zw).r;
-#ifdef CALOR
-  // Mapa de calor: pared con degradado más marcado y relieve más fuerte, para que no se vea plano
-  diffuseColor.rgb *= mix(1.0, mix(0.35, 1.05, smoothstep(0.0, 1.8, vAlto)), vPared);
-  diffuseColor.rgb *= mix(0.6 + 0.8 * hs, 1.0, vPared);
-#else
-  diffuseColor.rgb *= mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 1.4, vAlto)), vPared);
-  diffuseColor.rgb *= mix(0.74 + 0.5 * hs, 1.0, vPared);
-#endif`,
-      )
-  }
-  mat.customProgramCacheKey = () => 'columna-sombra-relieve'
-  return mat
-}
-
-/** Desenfoque de caja separable, 3 pasadas (≈ gaussiano). */
-function desenfocar(src: Float32Array, S: number, r: number) {
-  const a = Float32Array.from(src)
-  const b = new Float32Array(S * S)
-  const n = 2 * r + 1
-  const cl = (v: number) => (v < 0 ? 0 : v >= S ? S - 1 : v)
-  for (let pasada = 0; pasada < 3; pasada++) {
-    for (let y = 0; y < S; y++) {
-      const o = y * S
-      let acc = 0
-      for (let x = -r; x <= r; x++) acc += a[o + cl(x)]
-      for (let x = 0; x < S; x++) {
-        b[o + x] = acc / n
-        acc += a[o + cl(x + r + 1)] - a[o + cl(x - r)]
-      }
-    }
-    for (let x = 0; x < S; x++) {
-      let acc = 0
-      for (let y = -r; y <= r; y++) acc += b[cl(y) * S + x]
-      for (let y = 0; y < S; y++) {
-        a[y * S + x] = acc / n
-        acc += b[cl(y + r + 1) * S + x] - b[cl(y - r) * S + x]
-      }
-    }
-  }
-  return a
-}
-
-/** Silueta del Perú difuminada (256 px, una vez): sombra suave sobre el suelo. */
-function texturaSombraPeru(desplaza: THREE.Vector3, caja: { x: number; z: number; w: number }) {
-  const S = 256
-  const c = document.createElement('canvas')
-  c.width = c.height = S
-  // Se lee con getImageData: canvas en CPU, sin esperar a que la GPU devuelva los píxeles
-  const g = c.getContext('2d', { willReadFrequently: true })!
-  g.fillStyle = '#000'
-  g.fillRect(0, 0, S, S)
-  g.fillStyle = '#fff'
-  for (const z of DEPARTAMENTOS)
-    for (const poly of z.polys) {
-      g.beginPath()
-      for (const ring of poly)
-        ring.forEach((p, i) => {
-          const v = proyectar(p)
-          const x = ((v.x + desplaza.x - caja.x) / caja.w) * S
-          const y = ((-v.y + desplaza.z - caja.z) / caja.w) * S
-          if (i) g.lineTo(x, y)
-          else g.moveTo(x, y)
-        })
-      g.fill('evenodd')
-    }
-  const img = g.getImageData(0, 0, S, S).data
-  const tierra = new Float32Array(S * S)
-  for (let i = 0; i < S * S; i++) tierra[i] = img[i * 4] / 255
-  const ancho = desenfocar(tierra, S, 6)
-  const fino = desenfocar(tierra, S, 1) // máscara del relieve: dentro del Perú no sube
-  const out = new Uint8Array(S * S * 4)
-  for (let i = 0; i < S * S; i++) {
-    out[i * 4] = ancho[i] * 255
-    out[i * 4 + 1] = fino[i] * 255
-    out[i * 4 + 3] = 255
-  }
-  const tx = new THREE.DataTexture(out, S, S, THREE.RGBAFormat)
-  tx.magFilter = tx.minFilter = THREE.LinearFilter
-  tx.needsUpdate = true
-  return tx
-}
-
-/** Textura de 1 píxel mientras carga la del mundo (mar liso, nunca negro). */
-function pixel(r: number, g: number, b: number) {
-  const tx = new THREE.DataTexture(new Uint8Array([r, g, b, 255]), 1, 1, THREE.RGBAFormat)
-  tx.needsUpdate = true
-  return tx
-}
-
-/**
- * Cielo anclado al mundo (equirectangular): v = 0 es el cenit, 0.5 el horizonte. Así el azul
- * sigue la altura real y no la pantalla. Bajo el horizonte, la bruma (= color de la niebla):
- * el mar lejano y el cielo se funden sin costura.
- */
-function texturaCielo(claro: boolean, bruma: string) {
-  const c = document.createElement('canvas')
-  c.width = 4
-  c.height = 512
-  const g = c.getContext('2d')!
-  const grad = g.createLinearGradient(0, 0, 0, 512)
-  const paradas: [number, string][] = claro
-    ? [
-        [0, '#2f6fb8'],
-        [0.38, '#4f8fd2'],
-        [0.47, '#8dbde8'],
-        [0.5, bruma],
-        [1, bruma],
-      ]
-    : [
-        [0, '#03050b'],
-        [0.32, '#0a1020'],
-        [0.46, '#182139'],
-        [0.5, bruma],
-        [1, bruma],
-      ]
-  for (const [t, col] of paradas) grad.addColorStop(t, col)
-  g.fillStyle = grad
-  g.fillRect(0, 0, 4, 512)
-  const tx = new THREE.CanvasTexture(c)
-  tx.mapping = THREE.EquirectangularReflectionMapping
-  return tx
-}
-
-/** Sol (claro: disco cálido y halo amplio) o luna (oscuro: disco pálido, manchas fijas y halo frío). */
-function texturaAstro(claro: boolean) {
-  const c = document.createElement('canvas')
-  c.width = c.height = 128
-  const g = c.getContext('2d')!
-  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-  const paradas: [number, string][] = claro
-    ? [
-        [0, '#fffaf0'],
-        [0.18, 'rgba(255,240,205,1)'],
-        [0.24, 'rgba(255,224,170,0.5)'],
-        [0.5, 'rgba(255,214,160,0.14)'],
-        [0.9, 'rgba(255,210,150,0)'], // se apaga antes del borde: sin halo cuadrado
-      ]
-    : [
-        [0, '#f2f5ff'],
-        [0.2, 'rgba(232,238,255,1)'],
-        [0.23, 'rgba(190,205,255,0.3)'],
-        [0.5, 'rgba(180,198,255,0.08)'],
-        [0.9, 'rgba(170,190,255,0)'], // se apaga antes del borde: sin halo cuadrado
-      ]
-  for (const [t, col] of paradas) grad.addColorStop(t, col)
-  g.fillStyle = grad
-  g.fillRect(0, 0, 128, 128)
-  if (!claro) {
-    g.fillStyle = 'rgba(150,160,185,0.45)'
-    for (const [x, y, r] of [
-      [58, 59, 4.5],
-      [69, 66, 3.5],
-      [61, 71, 2.5],
-      [69, 55, 2],
-    ]) {
-      g.beginPath()
-      g.arc(x, y, r, 0, Math.PI * 2)
-      g.fill()
-    }
-  }
-  return new THREE.CanvasTexture(c)
-}
-
-/** Nube: manchas blancas suaves que se solapan (el color lo pone el shader). */
-function texturaNube() {
-  const c = document.createElement('canvas')
-  c.width = 128
-  c.height = 64
-  const g = c.getContext('2d')!
-  for (const [x, y, r] of [
-    [36, 38, 20],
-    [58, 30, 24],
-    [82, 34, 22],
-    [100, 40, 16],
-    [26, 44, 14],
-    [64, 42, 22],
-    [46, 44, 18],
-  ]) {
-    const grad = g.createRadialGradient(x, y, 0, x, y, r)
-    grad.addColorStop(0, 'rgba(255,255,255,0.9)')
-    grad.addColorStop(1, 'rgba(255,255,255,0)')
-    g.fillStyle = grad
-    g.fillRect(x - r, y - r, r * 2, r * 2)
-  }
-  return new THREE.CanvasTexture(c)
-}
-
-/**
- * «Posible casualidad»: el color lavado con el panel y una trama fina de puntos del color pleno,
- * al tresbolillo. Se lee como "menos seguro" sin parecer rayado. La baldosa (64 px) se repite sin costura.
- */
-function texturaPunteada(hex: string) {
-  const c = document.createElement('canvas')
-  c.width = c.height = 64
-  const x = c.getContext('2d')!
-  const col = new THREE.Color(hex)
-  x.fillStyle =
-    '#' +
-    col
-      .clone()
-      .lerp(new THREE.Color(cssVar('--panel')), 0.5)
-      .getHexString()
-  x.fillRect(0, 0, 64, 64)
-  x.fillStyle = '#' + col.getHexString()
-  x.beginPath()
-  for (let f = 0; f < 4; f++)
-    for (let k = 0; k < 4; k++) {
-      const cx = k * 16 + (f % 2) * 8 + 4
-      x.moveTo(cx + 3, f * 16 + 8)
-      x.arc(cx, f * 16 + 8, 3, 0, Math.PI * 2)
-    }
-  x.fill()
-  const tx = new THREE.CanvasTexture(c)
-  tx.wrapS = tx.wrapT = THREE.RepeatWrapping
-  tx.repeat.set(1.2, 1.2)
-  return tx
-}
-
 /** Ficha técnica que aparece al pasar el puntero por un departamento (texto, nunca HTML). */
 function crearTarjeta(capa: HTMLElement) {
   const nuevo = (clase: string, padre: HTMLElement, tag = 'div') => {
@@ -826,6 +364,9 @@ export class EscenaPeru {
     c.minDistance = 12
     c.maxDistance = 120
     c.autoRotateSpeed = 0.55
+    // Sin desplazamiento: con clic derecho, Ctrl+arrastre, teclado o dos dedos el objetivo
+    // salía del mapa sin límite. Girar y acercar alcanzan; los vuelos mueven el objetivo por código.
+    c.enablePan = false
     this.controles = c
 
     this.escena.add(this.hemi)
@@ -1231,7 +772,8 @@ export class EscenaPeru {
       this.setAnimal(null)
     }
     const bajar = (e: PointerEvent) => {
-      abajo = [e.clientX, e.clientY]
+      // Solo el botón principal (o el dedo) elige zona: el clic derecho no hace nada
+      abajo = e.button === 0 ? [e.clientX, e.clientY] : null
     }
     const subir = (e: PointerEvent) => {
       if (!abajo) return
@@ -1650,9 +1192,10 @@ export class EscenaPeru {
    */
   private llenarTip(a: Animal) {
     const { nombre, dato, dept } = this.fauna.texto(a, this.idioma)
-    const anio = this.anio && this.numeroAnio != null
-      ? { numero: this.numeroAnio, valor: this.anio.valores[dept] }
-      : null
+    const anio =
+      this.anio && this.numeroAnio != null
+        ? { numero: this.numeroAnio, valor: this.anio.valores[dept] }
+        : null
     // En el modo Vegetación el mapa muestra el verdor, no la lluvia: el globo habla de lo mismo
     const k = this.veg ? DEPARTAMENTOS.findIndex((z) => z.id === dept) : -1
     const ndvi = this.veg ? (k >= 0 ? (this.ndvi?.media[k] ?? null) : null) : undefined

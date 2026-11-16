@@ -28,6 +28,21 @@ describe('explorador con la URL', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('si la sesión usa la API pero la vista sale de la copia local, la ficha lo avisa', async () => {
+    useApp.setState({ fuente: 'api' })
+    renderRuta('/zona/20?sinnino=1')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    expect(await within(informe).findByText(/Esta vista sale de la copia local/)).toBeVisible()
+  })
+
+  it('con la copia local de toda la sesión no hay aviso (no hay cambio de fuente)', async () => {
+    useApp.setState({ fuente: 'local' })
+    renderRuta('/zona/20?sinnino=1')
+    const informe = await screen.findByRole('complementary', { name: /informe/i })
+    await within(informe).findByRole('heading', { level: 2, name: NOMBRE['20'] })
+    expect(within(informe).queryByText(/Esta vista sale de la copia local/)).toBeNull()
+  })
+
   it('el agricultor ve años de seca, El Niño, año normal y dónde seguir, sin fuentes ni WhatsApp', async () => {
     renderRuta('/zona/20?perfil=agricultor')
     const informe = await screen.findByRole('complementary', { name: /informe/i })
@@ -195,44 +210,6 @@ describe('esperas y errores', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('No pudimos cargar la serie de años')
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(reintentar).toHaveBeenCalledOnce()
-  })
-})
-
-describe('Escuchar (agricultor)', () => {
-  it('lee en voz alta lo marcado de la ficha, sin las casillas de los años', async () => {
-    const speak = vi.fn()
-    const cancel = vi.fn()
-    vi.stubGlobal('speechSynthesis', { speak, cancel })
-    vi.stubGlobal(
-      'SpeechSynthesisUtterance',
-      class {
-        lang = ''
-        rate = 1
-        onend: (() => void) | null = null
-        onerror: (() => void) | null = null
-        text: string
-        constructor(text: string) {
-          this.text = text
-        }
-      },
-    )
-    try {
-      renderRuta('/zona/20?perfil=agricultor')
-      const informe = await screen.findByRole('complementary', { name: /informe/i })
-      await userEvent.click(await within(informe).findByRole('button', { name: /en voz alta/ }))
-      expect(speak).toHaveBeenCalledOnce()
-      const { text, lang } = speak.mock.calls[0][0] as { text: string; lang: string }
-      expect(lang).toBe('es-PE')
-      expect(text).toContain(`${NOMBRE['20']}.`)
-      expect(text).toContain('No se ve un cambio claro en la lluvia.')
-      expect(text).toContain('¿Ahora hay más años de seca?')
-      // Las casillas de los años («05») no se leen
-      expect(text).not.toContain(' 05 ')
-      // El mismo botón pasa a parar la lectura
-      expect(within(informe).getByRole('button', { name: /Parar la lectura/ })).toBeVisible()
-    } finally {
-      vi.unstubAllGlobals()
-    }
   })
 })
 

@@ -150,6 +150,9 @@ export const textos = {
     celdas === 0
       ? `${fuente}: ninguna celda${local ? ' de ~50 km' : ''} cae dentro del departamento`
       : `${fuente}, ${variable === 'lluvia' ? 'lluvia' : variable === 'vegetacion' ? 'verdor (NDVI)' : 'temperatura'} anual promedio de ${celdas} ${celdas === 1 ? 'celda' : 'celdas'}${local ? (variable === 'vegetacion' ? ' de ~27 km' : ' de ~50 km') : ''}`,
+  /** La API solo trae el periodo completo con El Niño: las demás vistas salen de la copia local */
+  fuenteCopia:
+    'Esta vista sale de la copia local; la API solo trae el periodo completo con El Niño, así que las cifras pueden diferir de la vista principal.',
   /** Aviso de la API cuando el promedio sale de muy pocas celdas (null = se muestra el de la API, en español) */
   notaFija: null as string | null,
   /** Aviso de la API (`stats.aviso`) en este idioma; null = se muestra el de la API, en español */
@@ -281,10 +284,6 @@ export const textos = {
   // Solo lo que miden los datos: no se afirma qué le pasa a la tierra (eso no lo medimos)
   otraCruce: 'Menos lluvia y más calor a la vez en esta zona.',
   /** Botón para oír la ficha del agricultor */
-  escuchar: 'Escuchar',
-  escucharParar: 'Parar',
-  escucharAria: 'Escuchar este informe en voz alta',
-  escucharPararAria: 'Parar la lectura en voz alta',
   medExtremos: {
     lluvia: ['Llueve menos', 'Llueve más'],
     temperatura: ['Más frío', 'Más calor'],

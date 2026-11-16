@@ -44,14 +44,7 @@ import {
   RELIEVE,
   DPR_RELIEVE,
 } from '@/features/mapa/escena/constantes'
-import {
-  PARTICULAS_VS,
-  PARTICULAS_FS,
-  NUBE_VS,
-  NUBE_FS,
-  SUELO_VS,
-  SUELO_FS,
-} from '@/features/mapa/escena/shaders'
+import { SUELO_VS, SUELO_FS } from '@/features/mapa/escena/shaders'
 import {
   type RelieveTapa,
   type Previo,
@@ -60,9 +53,16 @@ import {
   pixel,
   texturaCielo,
   texturaAstro,
-  texturaNube,
   texturaPunteada,
 } from '@/features/mapa/escena/texturas'
+import {
+  crearEstrellas,
+  crearParticulas,
+  llenarNubes,
+  muestrasLluvia,
+  N_PARTICULAS,
+  type Particulas,
+} from '@/features/mapa/escena/construccion'
 
 // Mismo aspecto que el prototipo en r128: sin gestión de color y salida lineal.
 THREE.ColorManagement.enabled = false
@@ -100,14 +100,6 @@ const PAISES = [
   { es: 'Bolivia', en: 'Bolivia', lon: -64.6, lat: -16.2 },
   { es: 'Chile', en: 'Chile', lon: -69.5, lat: -20.6 },
 ]
-/** Partículas de la lluvia viva (máximo). */
-const N_PARTICULAS = 1600
-
-interface Particulas {
-  geo: THREE.BufferGeometry
-  puntos: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>
-}
-
 const reducido = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const celular = () => matchMedia('(max-width: 900px)').matches
 /** ¿Esta zona lleva etiqueta fija en esta pantalla? Si no, la elegida usa la etiqueta suelta. */
@@ -580,104 +572,12 @@ export class EscenaPeru {
     }
 
     // Lluvia viva: puntos de muestra dentro de cada departamento (en coordenadas del mundo)
-    for (const z of DEPARTAMENTOS) {
-      const anillos = z.polys.flatMap((poly) => poly.map((r) => r.map((p) => proyectar(p))))
-      let x0 = Infinity
-      let x1 = -Infinity
-      let y0 = Infinity
-      let y1 = -Infinity
-      for (const r of anillos)
-        for (const v of r) {
-          x0 = Math.min(x0, v.x)
-          x1 = Math.max(x1, v.x)
-          y0 = Math.min(y0, v.y)
-          y1 = Math.max(y1, v.y)
-        }
-      const dentro = (x: number, y: number) => {
-        let ins = false
-        for (const r of anillos)
-          for (let i = 0, j = r.length - 1; i < r.length; j = i++)
-            if (
-              r[i].y > y !== r[j].y > y &&
-              x < ((r[j].x - r[i].x) * (y - r[i].y)) / (r[j].y - r[i].y) + r[i].x
-            )
-              ins = !ins
-        return ins
-      }
-      const out: [number, number][] = []
-      for (let k = 0; k < 3000 && out.length < 40; k++) {
-        const x = x0 + Math.random() * (x1 - x0)
-        const y = y0 + Math.random() * (y1 - y0)
-        if (dentro(x, y)) out.push([x + this.mapa.position.x, -y + this.mapa.position.z])
-      }
-      this.muestras.push(out)
-    }
-    const geoP = new THREE.BufferGeometry()
-    geoP.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N_PARTICULAS * 3), 3))
-    geoP.setAttribute('aSemilla', new THREE.BufferAttribute(new Float32Array(N_PARTICULAS * 3), 3))
-    const matP = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        THREE.UniformsLib.fog,
-        {
-          uTime: { value: 0 },
-          uTam: { value: 0.55 },
-          uEscala: { value: 400 },
-          uCalor: { value: 0 },
-          uColor: { value: new THREE.Color() },
-          uOpacidad: { value: 0.85 },
-          uTope: { value: new Float32Array(DEPARTAMENTOS.length) },
-        },
-      ]),
-      vertexShader: PARTICULAS_VS,
-      fragmentShader: PARTICULAS_FS,
-      transparent: true,
-      depthWrite: false,
-      fog: true,
-    })
-    const puntos = new THREE.Points(geoP, matP)
-    puntos.frustumCulled = false
-    puntos.visible = false
-    this.escena.add(puntos)
+    this.muestras = muestrasLluvia(this.mapa.position)
+    const particulas = crearParticulas()
+    this.escena.add(particulas.puntos)
 
     // Nubes y su sombra: comparten geometría y uniforms; uTime y uTope son los de las gotas
-    const plano = new THREE.PlaneGeometry(1, 1)
-    this.geoNubes.setIndex(plano.index)
-    this.geoNubes.setAttribute('position', plano.attributes.position)
-    this.geoNubes.setAttribute('uv', plano.attributes.uv)
-    this.geoNubes.setAttribute(
-      'aNube',
-      new THREE.InstancedBufferAttribute(new Float32Array(N_NUBES * 4), 4),
-    )
-    this.geoNubes.instanceCount = 0
-    const uNubes = {
-      ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
-      uTime: matP.uniforms.uTime,
-      uTope: matP.uniforms.uTope,
-      uMapa: { value: texturaNube() },
-      uColor: { value: new THREE.Color() },
-    }
-    for (const sombra of [true, false]) {
-      const malla = new THREE.Mesh(
-        this.geoNubes,
-        new THREE.ShaderMaterial({
-          uniforms: uNubes,
-          vertexShader: NUBE_VS,
-          fragmentShader: NUBE_FS,
-          defines: sombra ? { SOMBRA: '' } : {},
-          transparent: true,
-          depthWrite: false,
-          fog: true,
-          // La sombra es una calcomanía sobre la tapa: se acerca a la cámara para no parpadear (z-fighting)
-          polygonOffset: sombra,
-          polygonOffsetFactor: -2,
-          polygonOffsetUnits: -2,
-        }),
-      )
-      malla.frustumCulled = false
-      malla.renderOrder = sombra ? 3 : 5
-      this.nubes.add(malla)
-    }
-    this.nubes.visible = false
+    llenarNubes(this.nubes, this.geoNubes, particulas.puntos.material)
     this.escena.add(this.nubes)
 
     this.astro.position.copy(DIR_ASTRO).multiplyScalar(320) // lejos del plano «far» (600)
@@ -685,27 +585,7 @@ export class EscenaPeru {
     this.escena.add(this.astro)
 
     // Estrellas en la media cúpula de arriba (radio 450, dentro de far = 600)
-    const cielo = new Float32Array(500 * 3)
-    for (let i = 0; i < 500; i++) {
-      const az = Math.random() * Math.PI * 2
-      const y = 0.02 + Math.random() * 0.98
-      const r = Math.sqrt(1 - y * y) * 450
-      cielo.set([Math.cos(az) * r, y * 450, Math.sin(az) * r], i * 3)
-    }
-    const geoCielo = new THREE.BufferGeometry()
-    geoCielo.setAttribute('position', new THREE.BufferAttribute(cielo, 3))
-    this.estrellas = new THREE.Points(
-      geoCielo,
-      new THREE.PointsMaterial({
-        size: 1.6,
-        sizeAttenuation: false,
-        fog: false,
-        transparent: true,
-        opacity: 0.8,
-        depthWrite: false,
-      }),
-    )
-    this.estrellas.visible = false
+    this.estrellas = crearEstrellas()
     this.escena.add(this.estrellas)
 
     // Fauna y gente de cada región, sobre su departamento
@@ -728,7 +608,7 @@ export class EscenaPeru {
     this.tip = nuevaEtiqueta('tip3d')
     this.tip.hidden = true
     this.tarjeta = crearTarjeta(capaEtiquetas)
-    this.particulas = { geo: geoP, puntos }
+    this.particulas = particulas
 
     // Dibujar en el mismo callback (antes de que el navegador pinte): sin cuadro en blanco
     const ro = new ResizeObserver(() => {

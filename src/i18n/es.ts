@@ -19,6 +19,7 @@ export const textos = {
   marca: 'Detective del Perú',
   inicio: 'Detective del Perú: inicio',
   inicioCorto: 'Inicio',
+  saltarAlContenido: 'Saltar al contenido',
   lema: 'Tendencias del clima con datos de la NASA',
   cambiarIdioma: 'Cambiar idioma',
   cambiarTema: 'Cambiar tema',
